@@ -1,0 +1,22 @@
+Copyright © 2026 Vikram Singh
+
+All rights reserved.
+
+This software, including but not limited to its source code,
+algorithms, architecture, design, structure, interface,
+features, visual elements, and underlying concepts,
+is the exclusive intellectual property of Vikram Singh.
+
+No part of this software may be copied, reproduced,
+modified, distributed, reverse engineered, republished,
+transmitted, displayed, or used in any form,
+in whole or in part, without explicit prior written
+permission from Vikram Singh.
+
+Unauthorized use, duplication, imitation, or
+commercial exploitation of this software or its
+associated concepts is strictly prohibited.
+
+No license or rights are granted to any party
+except for personal, non-commercial use of the
+publicly accessible application interface.
