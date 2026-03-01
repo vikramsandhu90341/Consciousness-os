@@ -1,12 +1,28 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="light">
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Consciousness OS v6.0</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyCR7-T4qXy9xQqNBUMMNjbQaj-lyLUJlLc",
+  authDomain: "consciousness-os-e44ac.firebaseapp.com",
+  projectId: "consciousness-os-e44ac",
+  storageBucket: "consciousness-os-e44ac.firebasestorage.app",
+  messagingSenderId: "937572840979",
+  appId: "1:937572840979:web:78ba13e9e0714a160971e6",
+  measurementId: "G-SMQDEN6FMD"
+};
+
+firebase.initializeApp(firebaseConfig);
+
+const auth = firebase.auth();
+const db = firebase.firestore();
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -7102,22 +7118,7 @@ function init(){
 }
 document.addEventListener('DOMContentLoaded',init);
 </script>
-<script>
-const firebaseConfig = {
-  apiKey: "AIzaSyCR7-T4qXy9xQqNBUMM",
-  authDomain: "consciousness-os.firebaseapp.com",
-  projectId: "consciousness-os",
-  storageBucket: "consciousness-os.appspot.com",
-  messagingSenderId: "937572840979",
-  appId: "1:937572840979:web:d01c5f",
-  measurementId: "G-SMQD"
-};
 
-firebase.initializeApp(firebaseConfig);
-
-const auth = firebase.auth();
-const db = firebase.firestore();
-</script>
 <script>
 async function testLogin(){
   try{
