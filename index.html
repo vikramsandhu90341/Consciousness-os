@@ -940,6 +940,7 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
         <input type="password" id="loginPass" class="form-input" placeholder="Enter password" style="background:#f8f6ff;border:1.5px solid #e2d9f3" onkeydown="if(event.key==='Enter')doLogin()">
       </div>
       <button class="btn btn-primary btn-block" onclick="doLogin()" style="margin-bottom:10px">🔐 Sign In</button>
+      <button onclick="firebaseLogin()" class="btn btn-primary btn-block" style="margin-bottom:10px">🔐 Sign In</button>
       <div style="text-align:center;font-size:12px;color:#888;margin-bottom:12px">— or —</div>
       <button class="btn btn-block" onclick="doGoogleLogin()" style="background:#fff;border:1.5px solid #ddd;color:#333;margin-bottom:8px">🔵 Continue with Google</button>
       <button class="btn btn-block" onclick="doPhoneLogin()" style="background:#fff;border:1.5px solid #ddd;color:#333">📱 Sign in with Phone</button>
