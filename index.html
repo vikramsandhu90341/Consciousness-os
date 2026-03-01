@@ -7134,5 +7134,20 @@ async function testLogin(){
 <button onclick="testLogin()" style="position:fixed;bottom:20px;right:20px;z-index:9999;">
 Login Test
 </button>
+<script>
+async function firebaseLogin(){
+  const email = document.querySelector('input[type="email"], input[name="email"], #email')?.value
+               || document.querySelector('input[placeholder*="email"]')?.value;
+
+  const password = document.querySelector('input[type="password"]')?.value;
+
+  try{
+    await auth.signInWithEmailAndPassword(email, password);
+    alert("Login success");
+  }catch(e){
+    alert(e.message);
+  }
+}
+</script>
 </body>
 </html>
