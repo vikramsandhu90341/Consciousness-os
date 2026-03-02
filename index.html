@@ -17,9 +17,7 @@ const firebaseConfig = {
   appId: "1:937572840979:web:78ba13e9e0714a160971e6",
   measurementId: "G-SMQDEN6FMD"
 };
-
 firebase.initializeApp(firebaseConfig);
-
 const auth = firebase.auth();
 const db = firebase.firestore();
 </script>
@@ -956,7 +954,6 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
         <input type="password" id="loginPass" class="form-input" placeholder="Enter password" style="background:#f8f6ff;border:1.5px solid #e2d9f3" onkeydown="if(event.key==='Enter')doLogin()">
       </div>
       <button class="btn btn-primary btn-block" onclick="doLogin()" style="margin-bottom:10px">🔐 Sign In</button>
-      <button onclick="firebaseLogin()" class="btn btn-primary btn-block" style="margin-bottom:10px">🔐 Sign In</button>
       <div style="text-align:center;font-size:12px;color:#888;margin-bottom:12px">— or —</div>
       <button class="btn btn-block" onclick="doGoogleLogin()" style="background:#fff;border:1.5px solid #ddd;color:#333;margin-bottom:8px">🔵 Continue with Google</button>
       <button class="btn btn-block" onclick="doPhoneLogin()" style="background:#fff;border:1.5px solid #ddd;color:#333">📱 Sign in with Phone</button>
@@ -6492,21 +6489,38 @@ function switchLoginTab(tab,btn){
   document.getElementById('loginMsg').textContent='';
 }
 
-function doLogin(){
+async function doLogin(){
   const u=document.getElementById('loginUser').value.trim();
   const p=document.getElementById('loginPass').value;
-  if(!u||!p){document.getElementById('loginMsg').textContent='Please enter username and password.';return;}
-  const users=getUsers();
-  const found=users.find(user=>
-    (user.username===u||user.email===u)&&user.password===btoa(p)
-  );
-  if(!found){document.getElementById('loginMsg').textContent='❌ Invalid credentials. Try again.';return;}
-  setCurrentUser(found.id);
-  localStorage.setItem('cos_has_account','1');
-  showToast(`👋 Welcome back, ${found.name}!`);
-  loadUserProfile(found);
-  buildProfileBar();
-  switchTab('log');
+  const msgEl=document.getElementById('loginMsg');
+  if(!u||!p){msgEl.textContent='Please enter email and password.';return;}
+  msgEl.textContent='Signing in...';
+  try{
+    const cred=await auth.signInWithEmailAndPassword(u,p);
+    const fbUser=cred.user;
+    const profile={
+      id:fbUser.uid,
+      name:fbUser.displayName||u.split('@')[0]||'User',
+      username:u,
+      email:fbUser.email,
+      avatar:'brain',
+      isFirebase:true,
+      created:new Date().toISOString()
+    };
+    const users=getUsers();
+    const idx=users.findIndex(x=>x.id===fbUser.uid);
+    if(idx===-1)users.push(profile);else users[idx]={...users[idx],...profile};
+    saveUsers(users);
+    setCurrentUser(fbUser.uid);
+    localStorage.setItem('cos_has_account','1');
+    closeLoginOverlay();
+    showToast('Welcome back, '+profile.name+'!');
+    loadUserProfile(profile);
+    buildProfileBar();
+    switchTab('log');
+  }catch(e){
+    msgEl.textContent='Login failed: '+e.message;
+  }
 }
 
 function doRegister(){
@@ -7117,39 +7131,6 @@ function init(){
   }
 }
 document.addEventListener('DOMContentLoaded',init);
-</script>
-
-<script>
-async function testLogin(){
-  try{
-    await auth.signInWithEmailAndPassword(
-      "test@test.com",
-      "123456"
-    );
-    alert("Login success");
-  }catch(e){
-    alert(e.message);
-  }
-}
-</script>
-
-<button onclick="testLogin()" style="position:fixed;bottom:20px;right:20px;z-index:9999;">
-Login Test
-</button>
-<script>
-async function firebaseLogin(){
-  const email = document.querySelector('input[type="email"], input[name="email"], #email')?.value
-               || document.querySelector('input[placeholder*="email"]')?.value;
-
-  const password = document.querySelector('input[type="password"]')?.value;
-
-  try{
-    await auth.signInWithEmailAndPassword(email, password);
-    alert("Login success");
-  }catch(e){
-    alert(e.message);
-  }
-}
 </script>
 </body>
 </html>
