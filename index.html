@@ -3851,7 +3851,7 @@ mentalEnergy=${avg('mentalEnergy')}, score=${avg('score')}`;
   let response, result;
   try{
     response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_KEY}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -7617,7 +7617,7 @@ document.addEventListener('DOMContentLoaded',init);
      Toggle with the 🐛 button. Shows all dbg() calls.
      Auto-appears on errors — works perfectly on mobile.
 ════════════════════════════════════════════════════════ -->
-<div id="_dbgPanel" style="display:none;position:fixed;bottom:0;left:0;right:0;height:55vh;z-index:99999;
+<div id="_dbgPanel" style="display:none;position:fixed;bottom:52px;left:0;right:0;height:55vh;z-index:99999;
   flex-direction:column;background:#0a0a0f;border-top:2px solid rgba(124,58,237,.6);
   font-family:'DM Mono',monospace,sans-serif;box-shadow:0 -8px 40px rgba(0,0,0,.7)">
 
@@ -7646,7 +7646,7 @@ document.addEventListener('DOMContentLoaded',init);
 <!-- 🐛 Floating debug toggle button (top-right corner) -->
 <button onclick="toggleDebugPanel()" id="_dbgToggleBtn"
   title="Toggle Debug Console"
-  style="position:fixed;top:14px;right:14px;z-index:99998;width:34px;height:34px;border-radius:50%;
+  style="position:fixed;bottom:14px;right:14px;z-index:99998;width:34px;height:34px;border-radius:50%;
   border:1px solid rgba(124,58,237,.4);background:rgba(10,10,20,.85);
   font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;
   backdrop-filter:blur(6px);box-shadow:0 2px 12px rgba(0,0,0,.4);transition:opacity .2s"
