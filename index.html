@@ -19,18 +19,17 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
-const db = firebase.firestore();
+const db   = firebase.firestore();
 
-// 🔥 Auto-load Firestore logs whenever Firebase auth state is ready
+// ─── API KEY ────────────────────────────────────────────────
+const GEMINI_KEY = "AIzaSyAN7RCdbHjV_0dF6F3TqictZjswb80RT2c";
+
+// ─── AUTO-LOAD FIRESTORE DATA WHEN SESSION RESTORES ─────────
 auth.onAuthStateChanged(function(fbUser){
   if(fbUser){
-    // User is signed in to Firebase — load their cloud logs
-    if(typeof loadLogsFromFirestore === 'function'){
-      loadLogsFromFirestore(fbUser.uid);
-    }
-    // Update account UI to show synced state
-    const statusEl=document.getElementById('accountStatus');
-    if(statusEl)statusEl.textContent='✅ Signed in · Data synced';
+    if(typeof loadLogsFromFirestore === 'function') loadLogsFromFirestore(fbUser.uid);
+    const s = document.getElementById('accountStatus');
+    if(s) s.textContent = '✅ Signed in · Data synced';
   }
 });
 </script>
@@ -1390,6 +1389,9 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
   <button class="btn btn-primary btn-block" onclick="saveLog()" style="margin-bottom:14px">
     ✨ <span data-t="save_entry">Save Entry</span>
   </button>
+
+  <!-- AI INSIGHT CARD — rendered by generateAIInsight() after each save -->
+  <div id="aiInsightCard" style="display:none;margin-bottom:14px"></div>
 
   <div class="card" id="recentLogsCard">
     <div class="card-title"><span class="emoji">📋</span> Recent Entries</div>
@@ -3535,76 +3537,179 @@ function updateScore(){
   return score;
 }
 
-// ─── GET LOGS (reads from localStorage) ─────────────────────
-function getLogs(){return JSON.parse(localStorage.getItem('cos_logs')||'[]');}
+// ════════════════════════════════════════════════════════════
+//  CORE DATA LAYER
+// ════════════════════════════════════════════════════════════
 
-// ─── FIRESTORE: Load cloud logs on sign-in ───────────────────
-async function loadLogsFromFirestore(uid){
-  try{
-    const snap=await db.collection('users').doc(uid).collection('logs').orderBy('ts','desc').limit(200).get();
-    if(snap.empty)return;
-    const cloudLogs=snap.docs.map(d=>{const data=d.data();delete data.syncedAt;return data;});
-    // Merge: combine local + cloud, deduplicate by id, keep newest
-    const localLogs=getLogs();
-    const merged=Object.values(
-      [...localLogs,...cloudLogs].reduce((acc,log)=>{
-        if(!acc[log.id]||log.ts>acc[log.id].ts)acc[log.id]=log;
-        return acc;
-      },{})
-    ).sort((a,b)=>b.ts>a.ts?1:-1);
-    localStorage.setItem('cos_logs',JSON.stringify(merged));
-    renderRecentLogs();
-    console.log(`✅ Loaded ${cloudLogs.length} logs from Firestore, merged to ${merged.length} total`);
-  }catch(e){
-    console.warn('Firestore load failed (using local):',e.message);
-  }
+// ─── GET LOGS ── reads flat log array from localStorage ──────
+function getLogs(){ return JSON.parse(localStorage.getItem('cos_logs') || '[]'); }
+
+// ─── FLATTEN ── nested Firestore doc → flat local object ─────
+// Keeps all existing analysis/render/AI-chat code working unchanged.
+function flattenLog(s){
+  return {
+    id: s.id,
+    ts: s.ts_local || new Date().toISOString(),
+    // meta
+    date:         s.meta?.date         || '',
+    timeOfDay:    s.meta?.timeOfDay    || '',
+    activity:     s.meta?.activity     || '',
+    brainwave:    s.meta?.brainwave    || '',
+    emotion:      s.meta?.emotion      || '',
+    sensation:    s.meta?.sensation    || '',
+    // state
+    mood:           s.state?.mood,
+    focus:          s.state?.focus,
+    clarity:        s.state?.clarity,
+    stress:         s.state?.stress,
+    anxiety:        s.state?.anxiety,
+    mentalEnergy:   s.state?.mentalEnergy,
+    physicalEnergy: s.state?.physicalEnergy,
+    flow:           s.state?.flow,
+    stability:      s.state?.stability,
+    // traits
+    willpower:   s.traits?.discipline,
+    creativity:  s.traits?.creativity,
+    intuition:   s.traits?.intuition,
+    mindfulness: s.traits?.mindfulness,
+    motivation:  s.traits?.motivation,
+    // context
+    sleep:    s.context?.sleep,
+    social:   s.context?.social,
+    obstacle: s.context?.obstacle || '',
+    goal:     s.context?.goal     || '',
+    action:   s.context?.action   || '',
+    // reflection
+    thought:   s.reflection?.thought   || '',
+    insight:   s.reflection?.insight   || '',
+    gratitude: s.reflection?.gratitude || '',
+    pattern:   s.reflection?.pattern   || '',
+    // computed
+    score: s.computed?.score || 0,
+  };
 }
 
-// ─── LOG ─────────────────────────────────────────────────────
+// ─── FIRESTORE LOAD ── pull cloud logs on sign-in ────────────
+async function loadLogsFromFirestore(uid){
+  try{
+    const snap = await db.collection('users').doc(uid).collection('logs')
+                         .orderBy('ts_local','desc').limit(300).get();
+    if(snap.empty){ console.log('Firestore: no logs yet'); return; }
+    const cloudLogs = snap.docs.map(d=>{
+      const data = d.data();
+      if(data.meta) return flattenLog({...data, id: data.id || d.id});
+      const flat = {...data}; delete flat.syncedAt; return flat;
+    });
+    const localLogs = getLogs();
+    const merged = Object.values(
+      [...localLogs, ...cloudLogs].reduce((acc, log)=>{
+        if(!acc[log.id] || (log.score||0) > (acc[log.id].score||0)) acc[log.id] = log;
+        return acc;
+      }, {})
+    ).sort((a,b)=> (b.ts||'') > (a.ts||'') ? 1 : -1);
+    localStorage.setItem('cos_logs', JSON.stringify(merged));
+    renderRecentLogs();
+    console.log(`✅ Firestore: ${cloudLogs.length} cloud logs → ${merged.length} merged`);
+  }catch(e){ console.warn('Firestore load failed:', e.message); }
+}
+
+// ─── LOG SAVE ── structured Firestore write + flat localStorage ─
 async function saveLog(){
-  const score=updateScore();
-  const entry={id:Date.now(),ts:new Date().toISOString(),
-    date:document.getElementById('logDate')?.value||new Date().toISOString().split('T')[0],
-    timeOfDay:document.getElementById('logTime')?.value,activity:document.getElementById('logActivity')?.value,
-    brainwave:document.getElementById('logBrainwave')?.value,emotion:document.getElementById('logEmotion')?.value,
-    sensation:document.getElementById('logSensation')?.value,thought:document.getElementById('logThought')?.value,
-    insight:document.getElementById('logInsight')?.value,goal:document.getElementById('logGoal')?.value,
-    obstacle:document.getElementById('logObstacle')?.value,gratitude:document.getElementById('logGratitude')?.value,
-    pattern:document.getElementById('logPattern')?.value,action:document.getElementById('logAction')?.value,
-    score:parseFloat(score.toFixed(2))};
-  SLIDERS.forEach(s=>{entry[s.id]=getSliderVal(s.id);});
+  const score   = updateScore();
+  const id      = Date.now();
+  const ts_local = new Date().toISOString();
 
-  // Save locally first (works offline)
-  const logs=getLogs();logs.unshift(entry);
-  localStorage.setItem('cos_logs',JSON.stringify(logs));
+  // ── Build structured document ──────────────────────────────
+  const structured = {
+    id, ts_local,
+    meta: {
+      date:      document.getElementById('logDate')?.value      || ts_local.split('T')[0],
+      timeOfDay: document.getElementById('logTime')?.value      || '',
+      activity:  document.getElementById('logActivity')?.value  || '',
+      brainwave: document.getElementById('logBrainwave')?.value || '',
+      emotion:   document.getElementById('logEmotion')?.value   || '',
+      sensation: document.getElementById('logSensation')?.value || '',
+    },
+    state: {
+      mood:           getSliderVal('mood'),
+      focus:          getSliderVal('focus'),
+      clarity:        getSliderVal('clarity'),
+      stress:         getSliderVal('stress'),
+      anxiety:        getSliderVal('anxiety'),
+      mentalEnergy:   getSliderVal('mentalEnergy'),
+      physicalEnergy: getSliderVal('physicalEnergy'),
+      flow:           getSliderVal('flow'),
+      stability:      getSliderVal('stability'),
+    },
+    traits: {
+      discipline:  getSliderVal('willpower'),
+      creativity:  getSliderVal('creativity'),
+      intuition:   getSliderVal('intuition'),
+      mindfulness: getSliderVal('mindfulness'),
+      motivation:  getSliderVal('motivation'),
+    },
+    context: {
+      sleep:    getSliderVal('sleep'),
+      social:   getSliderVal('social'),
+      obstacle: document.getElementById('logObstacle')?.value || '',
+      goal:     document.getElementById('logGoal')?.value     || '',
+      action:   document.getElementById('logAction')?.value   || '',
+    },
+    reflection: {
+      thought:   document.getElementById('logThought')?.value   || '',
+      insight:   document.getElementById('logInsight')?.value   || '',
+      gratitude: document.getElementById('logGratitude')?.value || '',
+      pattern:   document.getElementById('logPattern')?.value   || '',
+    },
+    computed: { score: parseFloat(score.toFixed(2)) },
+  };
 
-  // Push to CSE state engine
+  // ── Flatten for localStorage ────────────────────────────────
+  const flat = flattenLog(structured);
+  SLIDERS.forEach(s=>{ if(flat[s.id] === undefined) flat[s.id] = getSliderVal(s.id); });
+
+  // ── Save locally (offline-first) ───────────────────────────
+  const logs = getLogs();
+  logs.unshift(flat);
+  localStorage.setItem('cos_logs', JSON.stringify(logs));
+
+  // ── Push to CSE state engine ────────────────────────────────
   pushCSEState(
-    getSliderVal('mood')||5,
-    getSliderVal('energy')||5,
-    getSliderVal('focus')||5,
-    getSliderVal('awareness')||5,
+    getSliderVal('mood')||5, getSliderVal('physicalEnergy')||5,
+    getSliderVal('focus')||5, getSliderVal('mindfulness')||5,
     getSliderVal('stress')||5
   );
 
-  // Sync to Firestore if signed in
+  // ── Write STRUCTURED doc to Firestore + trigger Gemini insight ─
   try{
-    const user=auth.currentUser;
-    if(user){
-      await db.collection('users').doc(user.uid).collection('logs').add({
-        ...entry,
-        syncedAt:firebase.firestore.FieldValue.serverTimestamp()
+    const fbUser = auth.currentUser;
+    if(fbUser){
+      const docRef = await db.collection('users').doc(fbUser.uid).collection('logs').add({
+        ...structured,
+        syncedAt: firebase.firestore.FieldValue.serverTimestamp()
       });
-      showToast('✨ Saved & synced to cloud');
+      showToast('✨ Saved & synced to cloud ☁️');
+      // 🤖 Generate Gemini insight and save to Firestore
+      generateStructuredInsight(structured).then(insight=>{
+        if(insight) saveInsightToFirestore(docRef.id, insight);
+        renderGeminiInsightCard(insight, flat, getLogs());
+      }).catch(()=>{
+        renderGeminiInsightCard(null, flat, getLogs());
+      });
     }else{
       showToast('✨ Saved locally');
+      // Still show fallback insight card when offline
+      renderGeminiInsightCard(null, flat, getLogs());
     }
   }catch(e){
-    console.warn('Firestore sync failed (saved locally):',e.message);
+    console.warn('Firestore sync failed:', e.message);
     showToast('✨ Saved (offline)');
+    renderGeminiInsightCard(null, flat, getLogs());
   }
+
   renderRecentLogs();
 }
+
 function renderRecentLogs(){
   const el=document.getElementById('recentLogs');if(!el)return;
   const logs=getLogs().slice(0,5);
@@ -3615,6 +3720,229 @@ function renderRecentLogs(){
         <div style="font-size:11px;color:var(--text3);margin-top:2px">${e.emotion||''} · ${e.activity||''}</div></div>
       <div style="text-align:right"><div style="font-family:Syne,sans-serif;font-weight:800;font-size:18px;color:var(--primary)">${e.score}</div><div style="font-size:10px;color:var(--text3)">score</div></div>
     </div>`).join('');
+}
+
+// ════════════════════════════════════════════════════════════
+//  GEMINI AI INSIGHT ENGINE
+// ════════════════════════════════════════════════════════════
+
+// STEP 2 — Structured JSON output from Gemini
+async function generateStructuredInsight(logData){
+  const recent = getLogs().slice(0,7);
+  const avg = key => recent.length
+    ? (recent.reduce((s,e)=>s+(e[key]||0),0)/recent.length).toFixed(1)
+    : 'n/a';
+
+  const prompt = `You are a cognitive analysis engine for a consciousness tracking app.
+
+Analyze this structured consciousness log entry and the user's recent averages.
+
+Return ONLY valid JSON — no markdown, no backticks, no explanation. Exactly this shape:
+
+{
+  "summary": "2-3 sentence overall state assessment",
+  "riskSignals": ["signal 1", "signal 2"],
+  "recommendations": ["action 1", "action 2", "action 3"],
+  "stateTrend": "improving | stable | declining",
+  "focusScoreInterpretation": "1-2 sentence interpretation of focus level",
+  "confidence": 0.0
+}
+
+CURRENT LOG:
+${JSON.stringify({
+  score:   logData.computed?.score,
+  mood:    logData.state?.mood,
+  focus:   logData.state?.focus,
+  stress:  logData.state?.stress,
+  anxiety: logData.state?.anxiety,
+  flow:    logData.state?.flow,
+  sleep:   logData.context?.sleep,
+  creativity: logData.traits?.creativity,
+  mentalEnergy: logData.state?.mentalEnergy,
+  physicalEnergy: logData.state?.physicalEnergy,
+  clarity: logData.state?.clarity,
+  motivation: logData.traits?.motivation,
+  mindfulness: logData.traits?.mindfulness,
+  emotion: logData.meta?.emotion,
+  activity: logData.meta?.activity,
+  timeOfDay: logData.meta?.timeOfDay,
+  thought: logData.reflection?.thought,
+  goal: logData.context?.goal,
+  obstacle: logData.context?.obstacle,
+}, null, 2)}
+
+7-DAY AVERAGES (${recent.length} entries):
+mood=${avg('mood')}, focus=${avg('focus')}, stress=${avg('stress')},
+sleep=${avg('sleep')}, flow=${avg('flow')}, creativity=${avg('creativity')},
+mentalEnergy=${avg('mentalEnergy')}, score=${avg('score')}`;
+
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents:[{ parts:[{ text: prompt }] }] })
+    }
+  );
+
+  const result = await response.json();
+  if(result.error){ console.warn('Gemini error:', result.error.message); return null; }
+
+  const rawText = result.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  // Strip any accidental markdown fences
+  const clean = rawText.replace(/```json|```/g,'').trim();
+  try{
+    const parsed = JSON.parse(clean);
+    console.log('✅ Gemini insight:', parsed);
+    return parsed;
+  }catch(e){
+    console.error('Invalid JSON from Gemini:', rawText);
+    return null;
+  }
+}
+
+// STEP 3 — Save insight to Firestore
+async function saveInsightToFirestore(logDocId, insightData){
+  try{
+    const fbUser = auth.currentUser;
+    if(!fbUser) return;
+    await db.collection('users').doc(fbUser.uid).collection('insights').add({
+      logId: logDocId,
+      summary:                insightData.summary               || '',
+      riskSignals:            insightData.riskSignals           || [],
+      recommendations:        insightData.recommendations       || [],
+      stateTrend:             insightData.stateTrend            || 'stable',
+      focusScoreInterpretation: insightData.focusScoreInterpretation || '',
+      confidence:             insightData.confidence            || 0,
+      generatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    console.log('✅ Insight saved to Firestore');
+  }catch(e){ console.warn('Insight Firestore save failed:', e.message); }
+}
+
+// STEP 4 — Render the insight card in the UI
+function renderGeminiInsightCard(insight, flat, allLogs){
+  const el = document.getElementById('aiInsightCard');
+  if(!el) return;
+
+  // Show loading briefly then render
+  el.style.display = 'block';
+
+  if(!insight){
+    // ── Offline / fallback: rule-based card ───────────────────
+    const score  = flat.score  || 0;
+    const stress = flat.stress || 0;
+    const sleep  = flat.sleep  || 5;
+    const flow   = flat.flow   || 0;
+    const focus  = flat.focus  || 5;
+
+    const trend    = score>=7?'improving':score>=4?'stable':'declining';
+    const trendClr = trend==='improving'?'var(--success)':trend==='declining'?'var(--danger)':'var(--accent)';
+
+    const risks = [];
+    if(stress>=7) risks.push('⚠️ High stress — do 4-7-8 breathing now');
+    if(sleep<=3)  risks.push('😴 Poor sleep detected — prioritise recovery tonight');
+    if((flat.anxiety||0)>=7) risks.push('😬 Elevated anxiety — grounding exercise recommended');
+    if(!risks.length) risks.push('✅ No critical risk signals detected');
+
+    const recs = [
+      flow>=7 ? '🌊 Flow state active — protect this window, no interruptions' : '🎯 Start 25-min focused work block to build flow',
+      score>=7 ? '⚡ High performance state — tackle your hardest task now' : '🔋 State below peak — small wins first, build momentum',
+      sleep<=4 ? '🌙 Sleep debt present — aim for 8h tonight, no screens 1h before bed' : '💪 Sleep looks okay — maintain your sleep schedule',
+    ];
+
+    el.innerHTML = buildInsightHTML({
+      summary: `Score ${score.toFixed(1)}/10. ${score>=7?'Strong state — use it.':score>=4?'Average state — steady progress.':'Recovery mode — rest is productive.'}`,
+      riskSignals: risks,
+      recommendations: recs,
+      stateTrend: trend,
+      focusScoreInterpretation: `Focus at ${focus}/10. ${focus>=7?'Sharp and sustained — ideal for deep work.':focus>=4?'Moderate. Remove one distraction source.':'Low. Break tasks into 5-min chunks.'}`,
+      confidence: 0.6,
+      _isAI: false,
+    }, flat);
+    return;
+  }
+
+  // ── Full Gemini AI card ───────────────────────────────────
+  el.innerHTML = buildInsightHTML({...insight, _isAI: true}, flat);
+}
+
+function buildInsightHTML(data, flat){
+  const trendIcon  = data.stateTrend==='improving'?'📈':data.stateTrend==='declining'?'📉':'➡️';
+  const trendColor = data.stateTrend==='improving'?'var(--success)':data.stateTrend==='declining'?'var(--danger)':'var(--accent)';
+  const confPct    = Math.round((data.confidence||0)*100);
+  const bgGrad     = data.stateTrend==='improving'
+    ? 'linear-gradient(135deg,rgba(16,185,129,.12),rgba(6,182,212,.07))'
+    : data.stateTrend==='declining'
+      ? 'linear-gradient(135deg,rgba(239,68,68,.12),rgba(245,158,11,.07))'
+      : 'linear-gradient(135deg,rgba(124,58,237,.12),rgba(236,72,153,.07))';
+  const borderClr  = data.stateTrend==='improving'?'rgba(16,185,129,.3)':data.stateTrend==='declining'?'rgba(239,68,68,.3)':'rgba(124,58,237,.3)';
+
+  const risks = (data.riskSignals||[]).slice(0,3).map(r=>
+    `<div style="display:flex;align-items:flex-start;gap:6px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:12px;color:var(--text2)"><span style="flex-shrink:0">•</span>${r}</div>`
+  ).join('');
+
+  const recs = (data.recommendations||[]).slice(0,3).map((r,i)=>
+    `<div style="display:flex;align-items:flex-start;gap:7px;padding:5px 0;font-size:12px;color:var(--text2)">
+      <span style="font-weight:800;color:var(--primary);flex-shrink:0">${i+1}.</span>${r}
+    </div>`
+  ).join('');
+
+  return `
+  <div style="background:${bgGrad};border:1px solid ${borderClr};border-radius:14px;padding:16px">
+
+    <!-- Header -->
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
+      <div style="display:flex;align-items:center;gap:8px">
+        <div style="font-size:20px">${data._isAI?'🤖':'🧠'}</div>
+        <div>
+          <div style="font-family:Syne,sans-serif;font-weight:800;font-size:14px;color:var(--text)">${data._isAI?'Gemini AI Insight':'AI Insight (Offline)'}</div>
+          <div style="font-size:10px;color:var(--text3)">${flat.date||'today'} · ${flat.timeOfDay||''} ${data._isAI&&confPct?'· '+confPct+'% confidence':''}</div>
+        </div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:11px;font-weight:700;color:${trendColor}">${trendIcon} ${data.stateTrend||'stable'}</div>
+        <div style="font-size:10px;color:var(--text3)">trend</div>
+      </div>
+    </div>
+
+    <!-- Summary -->
+    <div style="background:rgba(255,255,255,.06);border-radius:10px;padding:10px;margin-bottom:10px;font-size:13px;color:var(--text);line-height:1.6">
+      ${data.summary||''}
+    </div>
+
+    <!-- Two columns: Risk Signals + Focus Interpretation -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+      <div style="background:rgba(255,255,255,.05);border-radius:10px;padding:10px">
+        <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">⚠️ Risk Signals</div>
+        ${risks||'<div style="font-size:12px;color:var(--success)">✅ No risks detected</div>'}
+      </div>
+      <div style="background:rgba(255,255,255,.05);border-radius:10px;padding:10px">
+        <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">🎯 Focus</div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.5">${data.focusScoreInterpretation||''}</div>
+      </div>
+    </div>
+
+    <!-- Recommendations -->
+    <div style="background:rgba(255,255,255,.05);border-radius:10px;padding:10px;margin-bottom:10px">
+      <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">💡 Recommendations</div>
+      ${recs}
+    </div>
+
+    <!-- Footer: score bar + dismiss -->
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div style="display:flex;align-items:center;gap:6px">
+        <div style="font-size:11px;color:var(--text3)">Score</div>
+        <div style="height:6px;width:80px;background:var(--border);border-radius:3px;overflow:hidden">
+          <div style="height:100%;width:${Math.round((flat.score||0)/10*100)}%;background:linear-gradient(to right,var(--primary),var(--accent));border-radius:3px"></div>
+        </div>
+        <div style="font-size:12px;font-weight:800;color:var(--primary)">${(flat.score||0).toFixed(1)}</div>
+      </div>
+      <button onclick="document.getElementById('aiInsightCard').style.display='none'"
+        style="background:none;border:1px solid var(--border);color:var(--text3);font-size:11px;cursor:pointer;padding:3px 9px;border-radius:6px">✕ dismiss</button>
+    </div>
+
+  </div>`;
 }
 
 // ─── BRAINWAVE AUDIO ─────────────────────────────────────────
@@ -4545,8 +4873,13 @@ function getDreams(){return JSON.parse(localStorage.getItem('cos_dreams')||'[]')
 function saveDream(){
   const entry={id:Date.now(),date:document.getElementById('dreamDate')?.value||new Date().toISOString().split('T')[0],title:document.getElementById('dreamTitle')?.value||'Untitled',type:selDreamType,desc:document.getElementById('dreamDesc')?.value,vividness:parseInt(document.getElementById('dreamVividness')?.value||5),lucidity:parseInt(document.getElementById('dreamLucidity')?.value||0),signs:document.getElementById('dreamSigns')?.value,emotions:document.getElementById('dreamEmotions')?.value};
   const dreams=getDreams();dreams.unshift(entry);localStorage.setItem('cos_dreams',JSON.stringify(dreams));
-  // Sync dream to Firestore if signed in
-  try{const fbUser=auth.currentUser;if(fbUser){db.collection('users').doc(fbUser.uid).collection('dreams').add({...entry,syncedAt:firebase.firestore.FieldValue.serverTimestamp()}).catch(e=>console.warn('Dream sync:',e.message));}}catch(e){}
+  // 🔥 Sync dream to Firestore if signed in
+  try{
+    const fbUser=auth.currentUser;
+    if(fbUser) db.collection('users').doc(fbUser.uid).collection('dreams')
+      .add({...entry,syncedAt:firebase.firestore.FieldValue.serverTimestamp()})
+      .catch(e=>console.warn('Dream sync:',e.message));
+  }catch(e){}
   showToast('💤 Dream saved!');renderDreamJournal();analyzeDream(entry);
 }
 async function analyzeDream(entry){
@@ -6574,8 +6907,7 @@ async function doLogin(){
     loadUserProfile(profile);
     buildProfileBar();
     switchTab('log');
-    // 🔥 Load existing logs from Firestore into the app
-    loadLogsFromFirestore(fbUser.uid);
+    loadLogsFromFirestore(fbUser.uid); // 🔥 pull cloud logs
   }catch(e){
     msgEl.textContent='❌ '+e.message;
   }
