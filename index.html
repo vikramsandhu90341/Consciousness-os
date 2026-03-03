@@ -27,9 +27,12 @@ const GEMINI_KEY = "AIzaSyAN7RCdbHjV_0dF6F3TqictZjswb80RT2c";
 // ─── AUTO-LOAD FIRESTORE DATA WHEN SESSION RESTORES ─────────
 auth.onAuthStateChanged(function(fbUser){
   if(fbUser){
+    dbg('info', '🔐 Auth state: signed in as ' + (fbUser.email||fbUser.uid));
     if(typeof loadLogsFromFirestore === 'function') loadLogsFromFirestore(fbUser.uid);
     const s = document.getElementById('accountStatus');
     if(s) s.textContent = '✅ Signed in · Data synced';
+  }else{
+    dbg('log', '🔐 Auth state: signed out');
   }
 });
 </script>
@@ -3591,10 +3594,11 @@ function flattenLog(s){
 
 // ─── FIRESTORE LOAD ── pull cloud logs on sign-in ────────────
 async function loadLogsFromFirestore(uid){
+  dbg('log', '🔄 loadLogsFromFirestore uid=' + uid);
   try{
     const snap = await db.collection('users').doc(uid).collection('logs')
                          .orderBy('ts_local','desc').limit(300).get();
-    if(snap.empty){ console.log('Firestore: no logs yet'); return; }
+    if(snap.empty){ dbg('log', 'Firestore: no logs for this user yet'); return; }
     const cloudLogs = snap.docs.map(d=>{
       const data = d.data();
       if(data.meta) return flattenLog({...data, id: data.id || d.id});
@@ -3609,8 +3613,10 @@ async function loadLogsFromFirestore(uid){
     ).sort((a,b)=> (b.ts||'') > (a.ts||'') ? 1 : -1);
     localStorage.setItem('cos_logs', JSON.stringify(merged));
     renderRecentLogs();
-    console.log(`✅ Firestore: ${cloudLogs.length} cloud logs → ${merged.length} merged`);
-  }catch(e){ console.warn('Firestore load failed:', e.message); }
+    dbg('info', `✅ Firestore load: ${cloudLogs.length} cloud + ${localLogs.length} local → ${merged.length} merged`);
+  }catch(e){
+    dbg('error', 'loadLogsFromFirestore failed:', e.message);
+  }
 }
 
 // ─── LOG SAVE ── structured Firestore write + flat localStorage ─
@@ -3684,25 +3690,32 @@ async function saveLog(){
   try{
     const fbUser = auth.currentUser;
     if(fbUser){
+      dbg('log', '☁️ Saving to Firestore... uid=' + fbUser.uid);
       const docRef = await db.collection('users').doc(fbUser.uid).collection('logs').add({
         ...structured,
         syncedAt: firebase.firestore.FieldValue.serverTimestamp()
       });
+      dbg('info', '✅ Firestore log saved. docId=' + docRef.id);
       showToast('✨ Saved & synced to cloud ☁️');
       // 🤖 Generate Gemini insight and save to Firestore
       generateStructuredInsight(structured).then(insight=>{
-        if(insight) saveInsightToFirestore(docRef.id, insight);
+        if(insight){
+          saveInsightToFirestore(docRef.id, insight);
+        }else{
+          dbg('warn', 'Gemini returned null — showing fallback insight card');
+        }
         renderGeminiInsightCard(insight, flat, getLogs());
-      }).catch(()=>{
+      }).catch(err=>{
+        dbg('error', 'Insight pipeline error:', err.message || err);
         renderGeminiInsightCard(null, flat, getLogs());
       });
     }else{
+      dbg('warn', 'No Firebase user — saving locally only');
       showToast('✨ Saved locally');
-      // Still show fallback insight card when offline
       renderGeminiInsightCard(null, flat, getLogs());
     }
   }catch(e){
-    console.warn('Firestore sync failed:', e.message);
+    dbg('error', 'Firestore save failed:', e.message);
     showToast('✨ Saved (offline)');
     renderGeminiInsightCard(null, flat, getLogs());
   }
@@ -3726,6 +3739,61 @@ function renderRecentLogs(){
 //  GEMINI AI INSIGHT ENGINE
 // ════════════════════════════════════════════════════════════
 
+// ════════════════════════════════════════════════════════════
+//  IN-APP DEBUG CONSOLE
+//  Shows live logs in a floating panel. Visible on mobile.
+//  Tap the 🐛 button (top-right) to toggle. Auto-shows on errors.
+// ════════════════════════════════════════════════════════════
+const _dbgLogs = [];
+function dbg(level, ...args){
+  const msg = args.map(a => typeof a === 'object' ? JSON.stringify(a, null, 2) : String(a)).join(' ');
+  const ts  = new Date().toLocaleTimeString();
+  const entry = { level, msg, ts };
+  _dbgLogs.unshift(entry);
+  if(_dbgLogs.length > 80) _dbgLogs.length = 80;
+
+  // Mirror to browser console
+  if(level === 'error')  console.error(`[COS] ${msg}`);
+  else if(level === 'warn') console.warn(`[COS] ${msg}`);
+  else                    console.log(`[COS] ${msg}`);
+
+  // Update panel if open
+  _refreshDebugPanel();
+
+  // Auto-show panel on errors
+  if(level === 'error'){
+    const p = document.getElementById('_dbgPanel');
+    if(p) p.style.display = 'flex';
+  }
+}
+function _refreshDebugPanel(){
+  const list = document.getElementById('_dbgList');
+  const countBadge = document.getElementById('_dbgCount');
+  if(countBadge){
+    const errs = _dbgLogs.filter(e=>e.level==='error').length;
+    countBadge.textContent = `${_dbgLogs.length} entries${errs?' · '+errs+' error(s)':''}`;
+    countBadge.style.color = errs ? '#ff6b6b' : '#666';
+  }
+  if(!list || document.getElementById('_dbgPanel')?.style.display === 'none') return;
+  const colorMap = { error:'#ff6b6b', warn:'#ffd93d', info:'#6bcb77', log:'#aaa' };
+  list.innerHTML = _dbgLogs.map(e =>
+    `<div style="padding:3px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:11px;line-height:1.5">
+      <span style="color:#666;margin-right:4px">${e.ts}</span>
+      <span style="color:${colorMap[e.level]||'#aaa'};font-weight:700">[${e.level.toUpperCase()}]</span>
+      <span style="color:#ddd;white-space:pre-wrap;word-break:break-all"> ${e.msg}</span>
+    </div>`
+  ).join('');
+}
+function toggleDebugPanel(){
+  const p = document.getElementById('_dbgPanel');
+  if(!p) return;
+  p.style.display = p.style.display === 'none' ? 'flex' : 'none';
+  if(p.style.display === 'flex') _refreshDebugPanel();
+}
+function clearDebugPanel(){ _dbgLogs.length = 0; _refreshDebugPanel(); }
+
+// ─── GEMINI AI ENGINE — hardened with full debug output ─────
+
 // STEP 2 — Structured JSON output from Gemini
 async function generateStructuredInsight(logData){
   const recent = getLogs().slice(0,7);
@@ -3733,11 +3801,33 @@ async function generateStructuredInsight(logData){
     ? (recent.reduce((s,e)=>s+(e[key]||0),0)/recent.length).toFixed(1)
     : 'n/a';
 
+  const payload = {
+    score:          logData.computed?.score,
+    mood:           logData.state?.mood,
+    focus:          logData.state?.focus,
+    stress:         logData.state?.stress,
+    anxiety:        logData.state?.anxiety,
+    flow:           logData.state?.flow,
+    sleep:          logData.context?.sleep,
+    creativity:     logData.traits?.creativity,
+    mentalEnergy:   logData.state?.mentalEnergy,
+    physicalEnergy: logData.state?.physicalEnergy,
+    clarity:        logData.state?.clarity,
+    motivation:     logData.traits?.motivation,
+    mindfulness:    logData.traits?.mindfulness,
+    emotion:        logData.meta?.emotion,
+    activity:       logData.meta?.activity,
+    timeOfDay:      logData.meta?.timeOfDay,
+    thought:        logData.reflection?.thought,
+    goal:           logData.context?.goal,
+    obstacle:       logData.context?.obstacle,
+  };
+
   const prompt = `You are a cognitive analysis engine for a consciousness tracking app.
 
 Analyze this structured consciousness log entry and the user's recent averages.
 
-Return ONLY valid JSON — no markdown, no backticks, no explanation. Exactly this shape:
+Return ONLY valid JSON — no markdown, no backticks, no preamble. Exactly this shape:
 
 {
   "summary": "2-3 sentence overall state assessment",
@@ -3745,58 +3835,57 @@ Return ONLY valid JSON — no markdown, no backticks, no explanation. Exactly th
   "recommendations": ["action 1", "action 2", "action 3"],
   "stateTrend": "improving | stable | declining",
   "focusScoreInterpretation": "1-2 sentence interpretation of focus level",
-  "confidence": 0.0
+  "confidence": 0.85
 }
 
 CURRENT LOG:
-${JSON.stringify({
-  score:   logData.computed?.score,
-  mood:    logData.state?.mood,
-  focus:   logData.state?.focus,
-  stress:  logData.state?.stress,
-  anxiety: logData.state?.anxiety,
-  flow:    logData.state?.flow,
-  sleep:   logData.context?.sleep,
-  creativity: logData.traits?.creativity,
-  mentalEnergy: logData.state?.mentalEnergy,
-  physicalEnergy: logData.state?.physicalEnergy,
-  clarity: logData.state?.clarity,
-  motivation: logData.traits?.motivation,
-  mindfulness: logData.traits?.mindfulness,
-  emotion: logData.meta?.emotion,
-  activity: logData.meta?.activity,
-  timeOfDay: logData.meta?.timeOfDay,
-  thought: logData.reflection?.thought,
-  goal: logData.context?.goal,
-  obstacle: logData.context?.obstacle,
-}, null, 2)}
+${JSON.stringify(payload, null, 2)}
 
 7-DAY AVERAGES (${recent.length} entries):
 mood=${avg('mood')}, focus=${avg('focus')}, stress=${avg('stress')},
 sleep=${avg('sleep')}, flow=${avg('flow')}, creativity=${avg('creativity')},
 mentalEnergy=${avg('mentalEnergy')}, score=${avg('score')}`;
 
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contents:[{ parts:[{ text: prompt }] }] })
-    }
-  );
+  dbg('log', '🤖 Calling Gemini API...');
 
-  const result = await response.json();
-  if(result.error){ console.warn('Gemini error:', result.error.message); return null; }
+  let response, result;
+  try{
+    response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents:[{ parts:[{ text: prompt }] }] })
+      }
+    );
+    result = await response.json();
+    dbg('log', 'Gemini raw response:', result);
+  }catch(err){
+    dbg('error', 'Gemini fetch failed:', err.message || err);
+    return null;
+  }
 
-  const rawText = result.candidates?.[0]?.content?.parts?.[0]?.text || '';
-  // Strip any accidental markdown fences
+  if(result.error){
+    dbg('error', 'Gemini API error:', result.error.code, result.error.message);
+    return null;
+  }
+
+  const rawText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+  if(!rawText){
+    dbg('error', 'Gemini returned empty response. Full result:', result);
+    return null;
+  }
+
+  dbg('log', 'Gemini raw text:', rawText);
+
+  // Strip accidental markdown fences
   const clean = rawText.replace(/```json|```/g,'').trim();
   try{
     const parsed = JSON.parse(clean);
-    console.log('✅ Gemini insight:', parsed);
+    dbg('info', '✅ Gemini insight parsed OK. stateTrend=' + parsed.stateTrend + ' confidence=' + parsed.confidence);
     return parsed;
   }catch(e){
-    console.error('Invalid JSON from Gemini:', rawText);
+    dbg('error', 'JSON parse failed. Raw text was:', rawText);
     return null;
   }
 }
@@ -7522,6 +7611,46 @@ function init(){
 }
 document.addEventListener('DOMContentLoaded',init);
 </script>
+
+<!-- ════════════════════════════════════════════════════════
+     IN-APP DEBUG CONSOLE PANEL
+     Toggle with the 🐛 button. Shows all dbg() calls.
+     Auto-appears on errors — works perfectly on mobile.
+════════════════════════════════════════════════════════ -->
+<div id="_dbgPanel" style="display:none;position:fixed;bottom:0;left:0;right:0;height:55vh;z-index:99999;
+  flex-direction:column;background:#0a0a0f;border-top:2px solid rgba(124,58,237,.6);
+  font-family:'DM Mono',monospace,sans-serif;box-shadow:0 -8px 40px rgba(0,0,0,.7)">
+
+  <!-- Panel header -->
+  <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 14px;
+    background:rgba(124,58,237,.15);border-bottom:1px solid rgba(124,58,237,.3);flex-shrink:0">
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="font-size:14px">🐛</span>
+      <span style="font-size:12px;font-weight:700;color:#a78bfa">Debug Console</span>
+      <span style="font-size:10px;color:#666;background:rgba(255,255,255,.08);padding:2px 7px;border-radius:10px" id="_dbgCount"></span>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button onclick="clearDebugPanel()"
+        style="background:rgba(255,255,255,.08);border:none;color:#888;font-size:11px;cursor:pointer;
+        padding:3px 10px;border-radius:6px">🗑 Clear</button>
+      <button onclick="toggleDebugPanel()"
+        style="background:rgba(239,68,68,.2);border:1px solid rgba(239,68,68,.4);color:#f87171;font-size:11px;
+        cursor:pointer;padding:3px 10px;border-radius:6px">✕ Close</button>
+    </div>
+  </div>
+
+  <!-- Log list -->
+  <div id="_dbgList" style="flex:1;overflow-y:auto;padding:8px 14px;font-size:11px"></div>
+</div>
+
+<!-- 🐛 Floating debug toggle button (top-right corner) -->
+<button onclick="toggleDebugPanel()" id="_dbgToggleBtn"
+  title="Toggle Debug Console"
+  style="position:fixed;top:14px;right:14px;z-index:99998;width:34px;height:34px;border-radius:50%;
+  border:1px solid rgba(124,58,237,.4);background:rgba(10,10,20,.85);
+  font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  backdrop-filter:blur(6px);box-shadow:0 2px 12px rgba(0,0,0,.4);transition:opacity .2s"
+  onmouseenter="this.style.opacity='.7'" onmouseleave="this.style.opacity='1'">🐛</button>
 
 </body>
 </html>
