@@ -20,6 +20,19 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
+
+// 🔥 Auto-load Firestore logs whenever Firebase auth state is ready
+auth.onAuthStateChanged(function(fbUser){
+  if(fbUser){
+    // User is signed in to Firebase — load their cloud logs
+    if(typeof loadLogsFromFirestore === 'function'){
+      loadLogsFromFirestore(fbUser.uid);
+    }
+    // Update account UI to show synced state
+    const statusEl=document.getElementById('accountStatus');
+    if(statusEl)statusEl.textContent='✅ Signed in · Data synced';
+  }
+});
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -3522,6 +3535,31 @@ function updateScore(){
   return score;
 }
 
+// ─── GET LOGS (reads from localStorage) ─────────────────────
+function getLogs(){return JSON.parse(localStorage.getItem('cos_logs')||'[]');}
+
+// ─── FIRESTORE: Load cloud logs on sign-in ───────────────────
+async function loadLogsFromFirestore(uid){
+  try{
+    const snap=await db.collection('users').doc(uid).collection('logs').orderBy('ts','desc').limit(200).get();
+    if(snap.empty)return;
+    const cloudLogs=snap.docs.map(d=>{const data=d.data();delete data.syncedAt;return data;});
+    // Merge: combine local + cloud, deduplicate by id, keep newest
+    const localLogs=getLogs();
+    const merged=Object.values(
+      [...localLogs,...cloudLogs].reduce((acc,log)=>{
+        if(!acc[log.id]||log.ts>acc[log.id].ts)acc[log.id]=log;
+        return acc;
+      },{})
+    ).sort((a,b)=>b.ts>a.ts?1:-1);
+    localStorage.setItem('cos_logs',JSON.stringify(merged));
+    renderRecentLogs();
+    console.log(`✅ Loaded ${cloudLogs.length} logs from Firestore, merged to ${merged.length} total`);
+  }catch(e){
+    console.warn('Firestore load failed (using local):',e.message);
+  }
+}
+
 // ─── LOG ─────────────────────────────────────────────────────
 async function saveLog(){
   const score=updateScore();
@@ -4507,6 +4545,8 @@ function getDreams(){return JSON.parse(localStorage.getItem('cos_dreams')||'[]')
 function saveDream(){
   const entry={id:Date.now(),date:document.getElementById('dreamDate')?.value||new Date().toISOString().split('T')[0],title:document.getElementById('dreamTitle')?.value||'Untitled',type:selDreamType,desc:document.getElementById('dreamDesc')?.value,vividness:parseInt(document.getElementById('dreamVividness')?.value||5),lucidity:parseInt(document.getElementById('dreamLucidity')?.value||0),signs:document.getElementById('dreamSigns')?.value,emotions:document.getElementById('dreamEmotions')?.value};
   const dreams=getDreams();dreams.unshift(entry);localStorage.setItem('cos_dreams',JSON.stringify(dreams));
+  // Sync dream to Firestore if signed in
+  try{const fbUser=auth.currentUser;if(fbUser){db.collection('users').doc(fbUser.uid).collection('dreams').add({...entry,syncedAt:firebase.firestore.FieldValue.serverTimestamp()}).catch(e=>console.warn('Dream sync:',e.message));}}catch(e){}
   showToast('💤 Dream saved!');renderDreamJournal();analyzeDream(entry);
 }
 async function analyzeDream(entry){
@@ -6530,10 +6570,12 @@ async function doLogin(){
     setCurrentUser(fbUser.uid);
     localStorage.setItem('cos_has_account','1');
     closeLoginOverlay();
-    showToast('👋 Welcome back, '+profile.name+'!');
+    showToast('👋 Welcome back, '+profile.name+'! Loading your data...');
     loadUserProfile(profile);
     buildProfileBar();
     switchTab('log');
+    // 🔥 Load existing logs from Firestore into the app
+    loadLogsFromFirestore(fbUser.uid);
   }catch(e){
     msgEl.textContent='❌ '+e.message;
   }
@@ -7149,103 +7191,5 @@ function init(){
 document.addEventListener('DOMContentLoaded',init);
 </script>
 
-
-</button>
-<!-- Firestore Sync Layer for Consciousness OS --><script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-  import { getFirestore, collection, doc, addDoc, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-  // 🔹 Your Firebase config
-  const firebaseConfig = {
-    apiKey: "AIzaSyCR7-T4qXy9xQqNBUMMNjbQaj-lyLUJlLc",
-  authDomain: "consciousness-os-e44ac.firebaseapp.com",
-  projectId: "consciousness-os-e44ac",
-  storageBucket: "consciousness-os-e44ac.firebasestorage.app",
-  messagingSenderId: "937572840979",
-  appId: "1:937572840979:web:78ba13e9e0714a160971e6",
-  };
-  
-// 🔹 Init
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db = getFirestore(app);
-
-  let currentUserId = null;
-
-  // 🔹 Auth state
-  onAuthStateChanged(auth, (user) => {
-    if (user) {
-      currentUserId = user.uid;
-      console.log("User connected:", currentUserId);
-      loadLogs();
-    } else {
-      currentUserId = null;
-    }
-  });
-
-  // =============================
-  // SAVE LOG
-  // =============================
-  async function saveLog(data) {
-    if (!currentUserId) return;
-
-    await addDoc(
-      collection(db, "users", currentUserId, "logs"),
-      {
-        ...data,
-        createdAt: serverTimestamp()
-      }
-    );
-
-    console.log("Log saved");
-  }
-
-  // =============================
-  // LOAD LOGS
-  // =============================
-  async function loadLogs() {
-    if (!currentUserId) return;
-
-    const snap = await getDocs(
-      collection(db, "users", currentUserId, "logs")
-    );
-
-    const logs = snap.docs.map(d => d.data());
-    console.log("Logs:", logs);
-
-    // Example UI hook
-    window.renderLogs?.(logs);
-  }
-
-  // =============================
-  // UI HOOK EXAMPLES
-  // =============================
-
-  // Call this when user saves consciousness entry
-  window.saveConsciousnessEntry = () => {
-    const data = {
-      timeOfDay: document.querySelector("#timeOfDay")?.value,
-      activity: document.querySelector("#activity")?.value,
-      brainwave: document.querySelector("#brainwave")?.value
-    };
-
-    saveLog(data);
-  };
-
-  // Example render
-  window.renderLogs = (logs) => {
-    const el = document.querySelector("#logOutput");
-    if (!el) return;
-
-    el.innerHTML = logs.map(l => `
-      <div class="log-item">
-        ${l.timeOfDay || ""} | ${l.activity || ""} | ${l.brainwave || ""}
-      </div>
-    `).join("");
-  };
-</script><!-- Example UI --><button onclick="saveConsciousnessEntry()">Save State</button>
-
-<div id="logOutput"></div>
 </body>
 </html>
