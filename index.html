@@ -3523,7 +3523,7 @@ function updateScore(){
 }
 
 // ─── LOG ─────────────────────────────────────────────────────
-function saveLog(){
+async function saveLog(){
   const score=updateScore();
   const entry={id:Date.now(),ts:new Date().toISOString(),
     date:document.getElementById('logDate')?.value||new Date().toISOString().split('T')[0],
@@ -3535,8 +3535,11 @@ function saveLog(){
     pattern:document.getElementById('logPattern')?.value,action:document.getElementById('logAction')?.value,
     score:parseFloat(score.toFixed(2))};
   SLIDERS.forEach(s=>{entry[s.id]=getSliderVal(s.id);});
+
+  // Save locally first (works offline)
   const logs=getLogs();logs.unshift(entry);
   localStorage.setItem('cos_logs',JSON.stringify(logs));
+
   // Push to CSE state engine
   pushCSEState(
     getSliderVal('mood')||5,
@@ -3545,9 +3548,25 @@ function saveLog(){
     getSliderVal('awareness')||5,
     getSliderVal('stress')||5
   );
-  showToast('✨ '+t('saved'));renderRecentLogs();
+
+  // Sync to Firestore if signed in
+  try{
+    const user=auth.currentUser;
+    if(user){
+      await db.collection('users').doc(user.uid).collection('logs').add({
+        ...entry,
+        syncedAt:firebase.firestore.FieldValue.serverTimestamp()
+      });
+      showToast('✨ Saved & synced to cloud');
+    }else{
+      showToast('✨ Saved locally');
+    }
+  }catch(e){
+    console.warn('Firestore sync failed (saved locally):',e.message);
+    showToast('✨ Saved (offline)');
+  }
+  renderRecentLogs();
 }
-function getLogs(){return JSON.parse(localStorage.getItem('cos_logs')||'[]');}
 function renderRecentLogs(){
   const el=document.getElementById('recentLogs');if(!el)return;
   const logs=getLogs().slice(0,5);
@@ -6501,10 +6520,7 @@ async function doLogin(){
     const profile={
       id:fbUser.uid,
       name:fbUser.displayName||u.split('@')[0]||'User',
-      username:u,
-      email:fbUser.email,
-      avatar:'brain',
-      isFirebase:true,
+      username:u,email:fbUser.email,avatar:'🧠',isFirebase:true,
       created:new Date().toISOString()
     };
     const users=getUsers();
@@ -6514,12 +6530,12 @@ async function doLogin(){
     setCurrentUser(fbUser.uid);
     localStorage.setItem('cos_has_account','1');
     closeLoginOverlay();
-    showToast('Welcome back, '+profile.name+'!');
+    showToast('👋 Welcome back, '+profile.name+'!');
     loadUserProfile(profile);
     buildProfileBar();
     switchTab('log');
   }catch(e){
-    msgEl.textContent='Login failed: '+e.message;
+    msgEl.textContent='❌ '+e.message;
   }
 }
 
@@ -7132,5 +7148,104 @@ function init(){
 }
 document.addEventListener('DOMContentLoaded',init);
 </script>
+
+
+</button>
+<!-- Firestore Sync Layer for Consciousness OS --><script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+  import { getFirestore, collection, doc, addDoc, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+  // 🔹 Your Firebase config
+  const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_PROJECT.firebaseapp.com",
+    projectId: "YOUR_PROJECT",
+    storageBucket: "YOUR_PROJECT.appspot.com",
+    messagingSenderId: "XXXX",
+    appId: "XXXX"
+  };
+
+  // 🔹 Init
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  let currentUserId = null;
+
+  // 🔹 Auth state
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      currentUserId = user.uid;
+      console.log("User connected:", currentUserId);
+      loadLogs();
+    } else {
+      currentUserId = null;
+    }
+  });
+
+  // =============================
+  // SAVE LOG
+  // =============================
+  async function saveLog(data) {
+    if (!currentUserId) return;
+
+    await addDoc(
+      collection(db, "users", currentUserId, "logs"),
+      {
+        ...data,
+        createdAt: serverTimestamp()
+      }
+    );
+
+    console.log("Log saved");
+  }
+
+  // =============================
+  // LOAD LOGS
+  // =============================
+  async function loadLogs() {
+    if (!currentUserId) return;
+
+    const snap = await getDocs(
+      collection(db, "users", currentUserId, "logs")
+    );
+
+    const logs = snap.docs.map(d => d.data());
+    console.log("Logs:", logs);
+
+    // Example UI hook
+    window.renderLogs?.(logs);
+  }
+
+  // =============================
+  // UI HOOK EXAMPLES
+  // =============================
+
+  // Call this when user saves consciousness entry
+  window.saveConsciousnessEntry = () => {
+    const data = {
+      timeOfDay: document.querySelector("#timeOfDay")?.value,
+      activity: document.querySelector("#activity")?.value,
+      brainwave: document.querySelector("#brainwave")?.value
+    };
+
+    saveLog(data);
+  };
+
+  // Example render
+  window.renderLogs = (logs) => {
+    const el = document.querySelector("#logOutput");
+    if (!el) return;
+
+    el.innerHTML = logs.map(l => `
+      <div class="log-item">
+        ${l.timeOfDay || ""} | ${l.activity || ""} | ${l.brainwave || ""}
+      </div>
+    `).join("");
+  };
+</script><!-- Example UI --><button onclick="saveConsciousnessEntry()">Save State</button>
+
+<div id="logOutput"></div>
 </body>
 </html>
