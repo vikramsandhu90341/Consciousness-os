@@ -7355,16 +7355,11 @@ async function doGoogleLogin(){
   const provider = new firebase.auth.GoogleAuthProvider();
   provider.addScope('email');
   provider.addScope('profile');
+  provider.setCustomParameters({ prompt: 'select_account' });
   try {
     showToast('🔵 Opening Google sign-in...');
     let result;
-    // Use redirect on mobile (more reliable on Android Chrome)
-    if(/Mobi|Android/i.test(navigator.userAgent)){
-      await auth.signInWithRedirect(provider);
-      return; // page will reload, auth handled in onAuthStateChanged
-    } else {
-      result = await auth.signInWithPopup(provider);
-    }
+    result = await auth.signInWithPopup(provider);
     const fbUser = result.user;
     const profile = {
       id: fbUser.uid,
