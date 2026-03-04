@@ -620,12 +620,13 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
   right: 0;
   height: var(--bottom-nav-h);
   background: var(--bg2);
-  border-top: 1px solid var(--border);
+  border-top: 2px solid var(--border);
   z-index: 200;
   overflow-x: auto;
   overflow-y: hidden;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
+  box-shadow: 0 -4px 16px rgba(124,58,237,0.10);
 }
 .mobile-bottom-nav::-webkit-scrollbar { display: none; }
 .mobile-bottom-nav-inner {
@@ -7802,7 +7803,7 @@ function calcTDEE(){
   let goal = _calGoal==='lose' ? tdee-500 : _calGoal==='gain' ? tdee+300 : tdee;
   _calTDEE = goal;
   localStorage.setItem('cos_cal_tdee', goal);
-  document.getElementById('tdeeResult').innerHTML = `✅ BMR: <strong>${Math.round(bmr)} kcal</strong> · TDEE: <strong>${tdee} kcal</strong> · Goal: <strong style="color:var(--success)">${goal} kcal/day</strong>`;
+  document.getElementById('tdeeResult').innerHTML = '<span style="color:var(--success);font-weight:700">\u2705 BMR: <strong>' + Math.round(bmr) + ' kcal</strong> \u00b7 TDEE: <strong>' + tdee + ' kcal</strong> \u00b7 Goal: <strong>' + goal + ' kcal/day</strong></span>';
   document.getElementById('calGoalDisplay').textContent = goal;
   updateCalUI();
 }
@@ -7814,23 +7815,23 @@ function updateCalUI(){
   const prot = _calEntries.reduce((s,e)=>s+(e.protein||0),0);
   const goal = _calTDEE;
   const remain = goal - total;
-  document.getElementById('calTotal').textContent = total;
-  document.getElementById('calGoalDisplay').textContent = goal;
-  document.getElementById('calRemain').textContent = remain;
-  document.getElementById('calProtein').textContent = Math.round(prot)+'g';
-  document.getElementById('calProgressBar').style.width = Math.min(100,(total/goal*100))+'%';
-  document.getElementById('calProgressBar').style.background = total>goal ? 'linear-gradient(to right,var(--warning),var(--danger))' : 'linear-gradient(to right,var(--success),var(--warning))';
-  // Render list
+  const calTotalEl = document.getElementById('calTotal'); if(calTotalEl) calTotalEl.textContent = total;
+  const calGoalEl = document.getElementById('calGoalDisplay'); if(calGoalEl) calGoalEl.textContent = goal;
+  const calRemEl = document.getElementById('calRemain'); if(calRemEl) calRemEl.textContent = remain;
+  const calProtEl = document.getElementById('calProtein'); if(calProtEl) calProtEl.textContent = Math.round(prot)+'g';
+  const calBar = document.getElementById('calProgressBar');
+  if(calBar){ calBar.style.width = Math.min(100,(total/goal*100))+'%'; calBar.style.background = total>goal ? 'linear-gradient(to right,var(--warning),var(--danger))' : 'linear-gradient(to right,var(--success),var(--warning))'; }
   const logEl = document.getElementById('calFoodLog');
-  logEl.innerHTML = _calEntries.length ? _calEntries.map((e,i)=>`
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 10px;background:var(--bg3);border-radius:8px;margin-bottom:5px;font-size:12px">
-      <div><strong>${e.name}</strong> <span style="color:var(--text3)">· ${e.portion}</span></div>
-      <div style="display:flex;gap:8px;align-items:center">
-        <span style="color:var(--danger);font-weight:700">${e.kcal} kcal</span>
-        <span style="color:var(--accent)">${e.protein||0}g P</span>
-        <button onclick="removeCalEntry(${i})" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px">✕</button>
-      </div>
-    </div>`).join('') : '<div class="empty-state" style="padding:14px"><span class="es-icon" style="font-size:24px">🍽️</span><div class="es-text" style="font-size:12px">No food logged yet today</div></div>';
+  if(!logEl) return;
+  logEl.innerHTML = _calEntries.length ? _calEntries.map(function(e,i){
+    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 10px;background:var(--bg3);border-radius:8px;margin-bottom:5px;font-size:12px">'
+      + '<div><strong>' + e.name + '</strong> <span style="color:var(--text3)">\u00b7 ' + e.portion + '</span></div>'
+      + '<div style="display:flex;gap:8px;align-items:center">'
+      + '<span style="color:var(--danger);font-weight:700">' + e.kcal + ' kcal</span>'
+      + '<span style="color:var(--accent)">' + (e.protein||0) + 'g P</span>'
+      + '<button onclick="removeCalEntry(' + i + ')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px">\u2715</button>'
+      + '</div></div>';
+  }).join('') : '<div class="empty-state" style="padding:14px"><span class="es-icon" style="font-size:24px">\ud83c\udf7d\ufe0f</span><div class="es-text" style="font-size:12px">No food logged yet today</div></div>';
 }
 
 function removeCalEntry(i){ _calEntries.splice(i,1); localStorage.setItem('cos_calories_today',JSON.stringify(_calEntries)); updateCalUI(); }
@@ -7843,66 +7844,51 @@ async function logCalorieAI(){
   const btn = document.getElementById('calAddBtn');
   btn.innerHTML = '<span class="spinner"></span> Analyzing...'; btn.disabled=true;
   const outEl = document.getElementById('calAIOutput');
-  outEl.style.display='block'; outEl.innerHTML='🤖 Estimating calories...';
-
-  const prompt = `You are a nutrition expert. Estimate the calories and macros for this food description.
-Food: "${food}"
-
-Return ONLY valid JSON, no markdown:
-{
-  "items": [{"name":"food name","portion":"serving size","kcal":250,"protein":15,"carbs":30,"fat":8}],
-  "totalKcal": 250,
-  "totalProtein": 15,
-  "totalCarbs": 30,
-  "totalFat": 8,
-  "note": "brief nutrition note"
-}`;
-
+  outEl.style.display='block'; outEl.innerHTML='\ud83e\udd16 Estimating calories...';
+  const prompt = 'You are a nutrition expert. Estimate calories and macros for this food.\nFood: "' + food + '"\n\nReturn ONLY valid JSON, no markdown:\n{"items":[{"name":"food name","portion":"serving","kcal":250,"protein":15,"carbs":30,"fat":8}],"totalKcal":250,"totalProtein":15,"totalCarbs":30,"totalFat":8,"note":"brief note"}';
   try {
-    const resp = await fetch(\`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=\${GEMINI_KEY}\`,{
+    const resp = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + GEMINI_KEY, {
       method:'POST', headers:{'Content-Type':'application/json'},
       body:JSON.stringify({contents:[{parts:[{text:prompt}]}]})
     });
     const data = await resp.json();
-    let raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    raw = raw.replace(/\`\`\`json|\`\`\`/g,'').trim();
+    let raw = data && data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts[0] ? data.candidates[0].content.parts[0].text : '';
+    raw = raw.replace(/```json|```/g,'').trim();
     const parsed = JSON.parse(raw);
-    parsed.items.forEach(item => {
+    parsed.items.forEach(function(item){
       _calEntries.push({name:item.name, portion:item.portion, kcal:item.kcal, protein:item.protein||0, carbs:item.carbs||0, fat:item.fat||0});
     });
     localStorage.setItem('cos_calories_today', JSON.stringify(_calEntries));
-    outEl.innerHTML = \`✅ <strong>+\${parsed.totalKcal} kcal</strong> · Protein: \${parsed.totalProtein}g · Carbs: \${parsed.totalCarbs}g · Fat: \${parsed.totalFat}g<br><span style="color:var(--text3)">\${parsed.note||''}</span>\`;
+    outEl.innerHTML = '\u2705 <strong>+' + parsed.totalKcal + ' kcal</strong> \u00b7 Protein: ' + parsed.totalProtein + 'g \u00b7 Carbs: ' + parsed.totalCarbs + 'g \u00b7 Fat: ' + parsed.totalFat + 'g<br><span style="color:var(--text3)">' + (parsed.note||'') + '</span>';
     document.getElementById('calFoodInput').value='';
     updateCalUI();
   } catch(e) {
-    outEl.innerHTML = '❌ Could not parse. Try again or enter manually.';
+    outEl.innerHTML = '\u274c Could not parse. Try again or enter manually.';
     dbg('error','Calorie AI error:', e.message);
   }
-  btn.innerHTML='🤖 AI Log'; btn.disabled=false;
+  btn.innerHTML='\ud83e\udd16 AI Log'; btn.disabled=false;
 }
 
 async function showCalAIInsight(){
   const el = document.getElementById('calNutritionInsight');
-  el.innerHTML='🧠 Analyzing your nutrition...';
-  const total = _calEntries.reduce((s,e)=>s+e.kcal,0);
-  const prot = _calEntries.reduce((s,e)=>s+(e.protein||0),0);
-  const carbs = _calEntries.reduce((s,e)=>s+(e.carbs||0),0);
-  const fat = _calEntries.reduce((s,e)=>s+(e.fat||0),0);
-  const prompt = \`Analyze today's nutrition: \${total} kcal, \${prot}g protein, \${carbs}g carbs, \${fat}g fat. Goal: \${_calTDEE} kcal.
-Foods eaten: \${_calEntries.map(e=>e.name).join(', ')||'none'}.
-Give 2-3 sentence personalized insight on cognitive performance impact and 2 quick tips. Keep it brief and actionable.\`;
+  el.innerHTML='\ud83e\udde0 Analyzing your nutrition...';
+  const total = _calEntries.reduce(function(s,e){return s+e.kcal;},0);
+  const prot = _calEntries.reduce(function(s,e){return s+(e.protein||0);},0);
+  const carbs = _calEntries.reduce(function(s,e){return s+(e.carbs||0);},0);
+  const fat = _calEntries.reduce(function(s,e){return s+(e.fat||0);},0);
+  const prompt = 'Analyze today\'s nutrition: ' + total + ' kcal, ' + prot + 'g protein, ' + carbs + 'g carbs, ' + fat + 'g fat. Goal: ' + _calTDEE + ' kcal. Foods: ' + (_calEntries.map(function(e){return e.name;}).join(', ')||'none') + '. Give 2-3 sentence insight on cognitive performance impact and 2 quick tips. Be brief and actionable.';
   try {
-    const resp = await fetch(\`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=\${GEMINI_KEY}\`,{
+    const resp = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + GEMINI_KEY, {
       method:'POST', headers:{'Content-Type':'application/json'},
       body:JSON.stringify({contents:[{parts:[{text:prompt}]}]})
     });
     const data = await resp.json();
-    el.innerHTML = '🧠 ' + (data?.candidates?.[0]?.content?.parts?.[0]?.text || 'No insight available');
+    el.innerHTML = '\ud83e\udde0 ' + (data && data.candidates && data.candidates[0] ? data.candidates[0].content.parts[0].text : 'No insight available');
   } catch(e) { el.innerHTML='Could not load insight.'; }
 }
 
-// Init calorie from storage
-window.addEventListener('DOMContentLoaded', function(){
+// Init calorie from storage on DOMContentLoaded
+function initCalorieTracker(){
   const savedTDEE = localStorage.getItem('cos_cal_tdee');
   if(savedTDEE){ _calTDEE=parseInt(savedTDEE); }
   const today = new Date().toDateString();
@@ -7911,9 +7897,8 @@ window.addEventListener('DOMContentLoaded', function(){
   if(savedDate === today){ _calEntries = saved; }
   else { localStorage.removeItem('cos_calories_today'); }
   localStorage.setItem('cos_cal_date', today);
-  updateCalUI();
-});
-
+  if(document.getElementById('calTotal')) updateCalUI();
+}
 
 // ─── INIT ────────────────────────────────────────────────────
 function init(){
@@ -7944,6 +7929,7 @@ function init(){
   loadDailyTip();
   initNewFeatures_v7();
   initNewFeatures();
+  initCalorieTracker();
   // Science timestamp
   updateScienceTimestamp();
   buildScienceDisplay();
