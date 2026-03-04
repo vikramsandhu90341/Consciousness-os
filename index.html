@@ -21,6 +21,39 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db   = firebase.firestore();
 
+// Enable offline persistence
+db.enablePersistence().catch(err => {
+  if(err.code === 'failed-precondition') console.warn('Offline persistence: multiple tabs open');
+  else if(err.code === 'unimplemented') console.warn('Offline persistence not available');
+});
+
+// Handle redirect result (mobile Google sign-in returns here)
+auth.getRedirectResult().then(result => {
+  if(result && result.user){
+    const fbUser = result.user;
+    const profile = {
+      id: fbUser.uid,
+      name: fbUser.displayName || 'Google User',
+      username: fbUser.email || fbUser.uid,
+      email: fbUser.email || '',
+      avatar: '🔵',
+      isGoogle: true,
+      isFirebase: true,
+      created: new Date().toISOString()
+    };
+    const users = getUsers ? getUsers() : [];
+    const idx = users.findIndex(u => u.id === fbUser.uid);
+    if(idx === -1) users.push(profile); else users[idx] = {...users[idx], ...profile};
+    if(typeof saveUsers === 'function') saveUsers(users);
+    if(typeof setCurrentUser === 'function') setCurrentUser(fbUser.uid);
+    localStorage.setItem('cos_has_account','1');
+    if(typeof closeLoginOverlay === 'function') closeLoginOverlay();
+    showToast('🔵 Signed in as ' + profile.name + '! Syncing...');
+    if(typeof loadLogsFromFirestore === 'function') loadLogsFromFirestore(fbUser.uid);
+    if(typeof buildProfileBar === 'function') buildProfileBar();
+  }
+}).catch(err => { if(err.code !== 'auth/no-auth-event') console.error('Redirect result error:', err); });
+
 // ─── API KEY ────────────────────────────────────────────────
 const GEMINI_KEY = "AIzaSyAN7RCdbHjV_0dF6F3TqictZjswb80RT2c";
 
@@ -29,8 +62,27 @@ auth.onAuthStateChanged(function(fbUser){
   if(fbUser){
     dbg('info', '🔐 Auth state: signed in as ' + (fbUser.email||fbUser.uid));
     if(typeof loadLogsFromFirestore === 'function') loadLogsFromFirestore(fbUser.uid);
+    if(typeof loadDreamsFromFirestore === 'function') loadDreamsFromFirestore(fbUser.uid);
     const s = document.getElementById('accountStatus');
-    if(s) s.textContent = '✅ Signed in · Data synced';
+    if(s) s.textContent = '✅ Signed in · Cloud sync active';
+    // Restore local profile from Firebase user if needed
+    if(typeof getCurrentUser === 'function' && !getCurrentUser()){
+      const profile = {
+        id: fbUser.uid,
+        name: fbUser.displayName || 'User',
+        username: fbUser.email || fbUser.uid,
+        email: fbUser.email || '',
+        avatar: fbUser.photoURL ? '🔵' : '🧠',
+        isFirebase: true,
+        created: new Date().toISOString()
+      };
+      if(typeof getUsers === 'function'){
+        const users = getUsers();
+        if(!users.find(u=>u.id===fbUser.uid)){ users.push(profile); if(typeof saveUsers==='function') saveUsers(users); }
+      }
+      if(typeof setCurrentUser === 'function') setCurrentUser(fbUser.uid);
+      if(typeof buildProfileBar === 'function') setTimeout(buildProfileBar, 500);
+    }
   }else{
     dbg('log', '🔐 Auth state: signed out');
   }
@@ -3820,6 +3872,29 @@ async function loadLogsFromFirestore(uid){
   }
 }
 
+// ─── DREAM LOAD FROM FIRESTORE ───────────────────────────────
+async function loadDreamsFromFirestore(uid){
+  dbg('log', '🔄 loadDreamsFromFirestore uid=' + uid);
+  try{
+    const snap = await db.collection('users').doc(uid).collection('dreams')
+                         .orderBy('syncedAt','desc').limit(100).get();
+    if(snap.empty){ dbg('log', 'Firestore: no dreams yet'); return; }
+    const cloudDreams = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const localDreams = getDreams();
+    const merged = Object.values(
+      [...localDreams, ...cloudDreams].reduce((acc, dream) => {
+        if(!acc[dream.id]) acc[dream.id] = dream;
+        return acc;
+      }, {})
+    ).sort((a,b) => (b.date||'') > (a.date||'') ? 1 : -1);
+    localStorage.setItem('cos_dreams', JSON.stringify(merged));
+    if(typeof renderDreamJournal === 'function') renderDreamJournal();
+    dbg('info', `✅ Dreams: ${cloudDreams.length} cloud + ${localDreams.length} local → ${merged.length} merged`);
+  }catch(e){
+    dbg('error', 'loadDreamsFromFirestore failed:', e.message);
+  }
+}
+
 // ─── LOG SAVE ── structured Firestore write + flat localStorage ─
 async function saveLog(){
   const score   = updateScore();
@@ -6597,13 +6672,7 @@ function updateAccountUI(){
     if(status)status.textContent='Currently in local mode · Data stays on your device';
   }
 }
-function signOut(){
-  if(confirm('Sign out? Your local data stays on this device.')){
-    localStorage.removeItem('cos_user');
-    updateAccountUI();
-    showToast('👋 Signed out');
-  }
-}
+// signOut defined below (async, handles Firebase + localStorage)
 
 // ─── GUIDE NAV MAP ─────────────────────────────────────────
 function buildGuideNavMap(){
@@ -7282,17 +7351,63 @@ function verifyOTP(){
   }
 }
 
-function doGoogleLogin(){
-  // Simulate Google login with a local account
-  const name='Google User';
-  const existing=getUsers().find(u=>u.username==='google_user');
-  if(existing){setCurrentUser(existing.id);closeLoginOverlay();loadUserProfile(existing);buildProfileBar();showToast('🔵 Signed in with Google!');return;}
-  const gUser={id:'goog_'+Date.now(),name,username:'google_user',avatar:'🔵',email:'user@gmail.com',isGoogle:true,created:new Date().toISOString()};
-  const users=getUsers();users.push(gUser);saveUsers(users);
-  setCurrentUser(gUser.id);
-  closeLoginOverlay();
-  showToast('🔵 Google sign-in successful!');
-  buildProfileBar();
+async function doGoogleLogin(){
+  const provider = new firebase.auth.GoogleAuthProvider();
+  provider.addScope('email');
+  provider.addScope('profile');
+  try {
+    showToast('🔵 Opening Google sign-in...');
+    let result;
+    // Use redirect on mobile (more reliable on Android Chrome)
+    if(/Mobi|Android/i.test(navigator.userAgent)){
+      await auth.signInWithRedirect(provider);
+      return; // page will reload, auth handled in onAuthStateChanged
+    } else {
+      result = await auth.signInWithPopup(provider);
+    }
+    const fbUser = result.user;
+    const profile = {
+      id: fbUser.uid,
+      name: fbUser.displayName || 'Google User',
+      username: fbUser.email || fbUser.uid,
+      email: fbUser.email || '',
+      avatar: '🔵',
+      isGoogle: true,
+      isFirebase: true,
+      created: new Date().toISOString()
+    };
+    // Save to local users list
+    const users = getUsers();
+    const idx = users.findIndex(u => u.id === fbUser.uid);
+    if(idx === -1) users.push(profile); else users[idx] = {...users[idx], ...profile};
+    saveUsers(users);
+    setCurrentUser(fbUser.uid);
+    localStorage.setItem('cos_has_account','1');
+    closeLoginOverlay();
+    showToast('🔵 Signed in as ' + profile.name + '! Syncing data...');
+    loadUserProfile(profile);
+    buildProfileBar();
+    switchTab('log');
+    loadLogsFromFirestore(fbUser.uid);
+    // Save user profile to Firestore
+    try {
+      await db.collection('users').doc(fbUser.uid).set({
+        name: profile.name,
+        email: profile.email,
+        avatar: '🔵',
+        lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+      }, {merge: true});
+    } catch(e){ console.warn('Profile sync:', e.message); }
+  } catch(error) {
+    console.error('Google sign-in error:', error);
+    if(error.code === 'auth/popup-blocked'){
+      showToast('⚠️ Popup blocked — trying redirect...');
+      const provider2 = new firebase.auth.GoogleAuthProvider();
+      await auth.signInWithRedirect(provider2);
+    } else {
+      showToast('❌ Sign-in failed: ' + error.message);
+    }
+  }
 }
 function doPhoneLogin(){switchLoginTab('guest',document.querySelectorAll('.login-tab-btn')[2]);}
 
@@ -7307,15 +7422,15 @@ function openLoginOverlay(preferTab){
   if(btn) switchLoginTab(tab, btn);
 }
 
-function signOut(){
-  localStorage.removeItem(CURRENT_KEY);
-  showToast('👋 Signed out');
-  updateAccountUI();
-  buildProfileBar();
-  // Show login after short delay
-  setTimeout(()=>{
-    if(!getCurrentUser())openLoginOverlay();
-  },800);
+async function signOut(){
+  if(confirm('Sign out? Your local data stays on this device.')){
+    try { await auth.signOut(); } catch(e){}
+    localStorage.removeItem(CURRENT_KEY);
+    showToast('👋 Signed out');
+    updateAccountUI();
+    buildProfileBar();
+    setTimeout(()=>{ if(!getCurrentUser()) openLoginOverlay(); }, 800);
+  }
 }
 
 function signInGoogle(){doGoogleLogin();}
