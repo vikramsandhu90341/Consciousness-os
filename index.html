@@ -368,6 +368,20 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
 .comparison-box .cv{font-size:22px;font-weight:800;font-family:"Syne",sans-serif}
 .comparison-box .cl{font-size:11px;color:var(--text3);margin-top:3px}
 
+
+/* ── VIDEO LINK CARDS ── */
+.video-link-card{display:flex;align-items:flex-start;gap:10px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:10px 12px;text-decoration:none;color:inherit;transition:all .2s;margin-bottom:4px}
+.video-link-card:hover{border-color:var(--accent);background:rgba(6,182,212,.07);transform:translateX(2px)}
+.vlc-emoji{font-size:22px;flex-shrink:0;margin-top:1px}
+.vlc-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:2px}
+.vlc-sub{font-size:11px;color:var(--text3);line-height:1.4}
+/* ── ARTIFACT PORTAL CARDS ── */
+.artifact-portal-card{background:linear-gradient(135deg,rgba(124,58,237,.1),rgba(6,182,212,.08));border:1px solid rgba(124,58,237,.25);border-radius:12px;padding:14px;text-align:center;cursor:pointer;transition:all .25s}
+.artifact-portal-card:hover{border-color:var(--primary);transform:translateY(-2px);box-shadow:0 6px 20px rgba(124,58,237,.2)}
+#artifactModal{display:none}
+#artifactModal.open{display:flex}
+
+
 /* ── THEME ENGINE ── */
 [data-theme="scifi"]{--bg:#020818;--bg2:#05122e;--bg3:#0a1f42;--text:#a0d4ff;--text2:#7ab8e8;--text3:#4a8fbe;--border:#1a3a6a;--primary:#00b4ff;--primary2:#0088cc;--accent:#00ffcc;--pink:#ff006a;--card-shadow:0 0 20px rgba(0,180,255,0.15)}
 [data-theme="natural"]{--bg:#f0f7ee;--bg2:#ffffff;--bg3:#e8f5e3;--text:#1a3a1f;--text2:#2d5a35;--text3:#5a8a5f;--border:#c5e0c5;--primary:#2d7a3a;--primary2:#1d5a2a;--accent:#5dba6f;--pink:#c87f5f;--card-shadow:0 2px 12px rgba(45,122,58,0.1)}
@@ -1070,6 +1084,7 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
       </select>
       <button class="tb-btn" onclick="toggleTheme()" id="themeBtnMob" title="Toggle theme">🌙</button>
       <button class="tb-btn" onclick="openProfileSwitcher()" id="profileTopBtnMob" title="Account">👤</button>
+      <button class="tb-btn" onclick="toggleDebugPanel()" id="_dbgTopBtnMob" title="Debug">🐛</button>
     </div>
   </div>
   <!-- Row 2: Desktop quick action buttons -->
@@ -1703,6 +1718,98 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
     <div class="card-title"><span class="emoji">👨‍⚕️</span> AI Doctor Analysis</div>
     <div id="aiDoctorOutput"></div>
   </div>
+
+  <!-- ── CALORIE COUNTER WITH AI ── -->
+  <div class="card" style="border:2px solid var(--success);margin-top:14px" id="calorieCard">
+    <div class="card-title"><span class="emoji">🔥</span> AI Calorie Tracker</div>
+    <div style="font-size:12px;color:var(--text3);margin-bottom:12px">Log food items — AI estimates calories, macros &amp; gives nutrition insight. Tracks your daily intake vs goal.</div>
+
+    <!-- TDEE Setup -->
+    <div id="calorieTDEESetup" style="background:var(--bg3);border-radius:12px;padding:12px;margin-bottom:12px">
+      <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px">⚙️ Daily Calorie Goal (TDEE)</div>
+      <div class="form-row">
+        <div class="form-group" style="margin-bottom:8px">
+          <label class="form-label">Weight (kg)</label>
+          <input type="number" class="form-input" id="calWeight" placeholder="70" min="30" max="300">
+        </div>
+        <div class="form-group" style="margin-bottom:8px">
+          <label class="form-label">Height (cm)</label>
+          <input type="number" class="form-input" id="calHeight" placeholder="175" min="100" max="250">
+        </div>
+        <div class="form-group" style="margin-bottom:8px">
+          <label class="form-label">Age</label>
+          <input type="number" class="form-input" id="calAge" placeholder="25" min="10" max="100">
+        </div>
+        <div class="form-group" style="margin-bottom:8px">
+          <label class="form-label">Activity</label>
+          <select class="form-select" id="calActivity">
+            <option value="1.2">Sedentary</option>
+            <option value="1.375">Light active</option>
+            <option value="1.55" selected>Moderate</option>
+            <option value="1.725">Very active</option>
+            <option value="1.9">Athlete</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <div style="display:flex;gap:0;border-radius:8px;overflow:hidden;border:1px solid var(--border)">
+          <button class="unit-btn active" id="calSexM" onclick="calSetSex('M')">♂ Male</button>
+          <button class="unit-btn" id="calSexF" onclick="calSetSex('F')">♀ Female</button>
+        </div>
+        <div style="display:flex;gap:0;border-radius:8px;overflow:hidden;border:1px solid var(--border)">
+          <button class="unit-btn active" id="calGoalMaint" onclick="calSetGoal('maintain')">Maintain</button>
+          <button class="unit-btn" id="calGoalLose" onclick="calSetGoal('lose')">Lose</button>
+          <button class="unit-btn" id="calGoalGain" onclick="calSetGoal('gain')">Gain</button>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="calcTDEE()">Calculate TDEE</button>
+      </div>
+      <div id="tdeeResult" style="margin-top:10px;font-size:13px;color:var(--success);font-weight:700"></div>
+    </div>
+
+    <!-- Daily Summary Bar -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;margin-bottom:12px">
+      <div style="background:var(--bg3);border-radius:10px;padding:10px;text-align:center">
+        <div style="font-size:20px;font-weight:800;font-family:Syne,sans-serif;color:var(--danger)" id="calTotal">0</div>
+        <div style="font-size:10px;color:var(--text3)">kcal eaten</div>
+      </div>
+      <div style="background:var(--bg3);border-radius:10px;padding:10px;text-align:center">
+        <div style="font-size:20px;font-weight:800;font-family:Syne,sans-serif;color:var(--success)" id="calGoalDisplay">2000</div>
+        <div style="font-size:10px;color:var(--text3)">kcal goal</div>
+      </div>
+      <div style="background:var(--bg3);border-radius:10px;padding:10px;text-align:center">
+        <div style="font-size:20px;font-weight:800;font-family:Syne,sans-serif;color:var(--accent)" id="calRemain">2000</div>
+        <div style="font-size:10px;color:var(--text3)">remaining</div>
+      </div>
+      <div style="background:var(--bg3);border-radius:10px;padding:10px;text-align:center">
+        <div style="font-size:20px;font-weight:800;font-family:Syne,sans-serif;color:var(--primary)" id="calProtein">0g</div>
+        <div style="font-size:10px;color:var(--text3)">protein</div>
+      </div>
+    </div>
+    <!-- Progress bar -->
+    <div class="progress-bar-wrap" style="margin-bottom:12px">
+      <div class="progress-bar-fill" id="calProgressBar" style="width:0%;background:linear-gradient(to right,var(--success),var(--warning))"></div>
+    </div>
+
+    <!-- Food Input -->
+    <div style="display:flex;gap:8px;margin-bottom:8px">
+      <input type="text" class="form-input" id="calFoodInput" placeholder="e.g., 2 roti + dal 150ml + 1 banana..." style="flex:1"
+        onkeydown="if(event.key==='Enter')logCalorieAI()">
+      <button class="btn btn-primary" onclick="logCalorieAI()" id="calAddBtn" style="white-space:nowrap">🤖 AI Log</button>
+    </div>
+    <div style="font-size:11px;color:var(--text3);margin-bottom:10px">💡 Describe what you ate in plain language — AI will estimate calories &amp; macros</div>
+
+    <!-- AI Response -->
+    <div id="calAIOutput" style="display:none;background:linear-gradient(135deg,rgba(16,185,129,.1),rgba(6,182,212,.1));border:1px solid rgba(16,185,129,.3);border-radius:10px;padding:12px;margin-bottom:10px;font-size:13px;line-height:1.6;color:var(--text2)"></div>
+
+    <!-- Food Log List -->
+    <div id="calFoodLog" style="margin-bottom:10px"></div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-secondary btn-sm" onclick="clearCalorieDay()">🗑 Clear Day</button>
+      <button class="btn btn-secondary btn-sm" onclick="showCalAIInsight()">🧠 AI Nutrition Insight</button>
+    </div>
+    <div id="calNutritionInsight" style="margin-top:10px;font-size:13px;line-height:1.6;color:var(--text2)"></div>
+  </div>
+
 </div>
 
 <!-- ════════════════════════════════════════════
@@ -2420,6 +2527,99 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
     </div>
     <div id="scienceAIResult" style="margin-top:10px"></div>
   </div>
+
+  <!-- ── MIND-BENDING VIDEOS ── -->
+  <div class="card" style="border:2px solid var(--accent);margin-top:14px">
+    <div class="card-title"><span class="emoji">🌌</span> Mind-Bending Reality Shakers</div>
+    <div style="font-size:12px;color:var(--text3);margin-bottom:12px">World's highest-quality consciousness-expanding & reality-shaking content — curated for peak intelligence.</div>
+    <div id="mindBendingVideos" style="display:grid;gap:8px">
+      <!-- Consciousness & Reality -->
+      <div style="font-size:11px;font-weight:800;color:var(--primary);text-transform:uppercase;letter-spacing:.8px;margin-bottom:2px">🧠 Consciousness & Reality</div>
+      <a href="https://www.youtube.com/watch?v=H6u0VBqNBQ8" target="_blank" class="video-link-card">
+        <span class="vlc-emoji">🌌</span><div><div class="vlc-title">Does Consciousness Create Reality?</div><div class="vlc-sub">PBS Space Time · Quantum observer effect, measurement problem</div></div>
+      </a>
+      <a href="https://www.youtube.com/watch?v=1TLqzT7Bkcs" target="_blank" class="video-link-card">
+        <span class="vlc-emoji">🔮</span><div><div class="vlc-title">What Is Reality? — The Brain</div><div class="vlc-sub">BBC Documentary · Your brain constructs the world you see</div></div>
+      </a>
+      <a href="https://www.youtube.com/watch?v=OHl2CdSGaFo" target="_blank" class="video-link-card">
+        <span class="vlc-emoji">♾️</span><div><div class="vlc-title">How to Count Past Infinity</div><div class="vlc-sub">Vsauce · Ordinal & cardinal infinity — will break your mind</div></div>
+      </a>
+
+      <!-- Physics & Universe -->
+      <div style="font-size:11px;font-weight:800;color:var(--accent);text-transform:uppercase;letter-spacing:.8px;margin-top:8px;margin-bottom:2px">⚛️ Physics & The Universe</div>
+      <a href="https://www.youtube.com/watch?v=zELAfmp3fXY" target="_blank" class="video-link-card">
+        <span class="vlc-emoji">🔭</span><div><div class="vlc-title">Hubble Deep Field: The Most Important Image</div><div class="vlc-sub">Every point of light is a galaxy — 13 billion years of time</div></div>
+      </a>
+      <a href="https://www.youtube.com/watch?v=p_8yK2kmxoo" target="_blank" class="video-link-card">
+        <span class="vlc-emoji">🌀</span><div><div class="vlc-title">Parallel Universes — Brian Greene</div><div class="vlc-sub">World Science Festival · 9 types of multiverse explained</div></div>
+      </a>
+      <a href="https://www.youtube.com/watch?v=MBRqu0YOH14" target="_blank" class="video-link-card">
+        <span class="vlc-emoji">⏳</span><div><div class="vlc-title">The Illusion of Time — Brian Greene</div><div class="vlc-sub">NOVA · Is time travel possible? Does the past still exist?</div></div>
+      </a>
+
+      <!-- AGI & Future -->
+      <div style="font-size:11px;font-weight:800;color:var(--pink);text-transform:uppercase;letter-spacing:.8px;margin-top:8px;margin-bottom:2px">🤖 AGI, Singularity & Immortality</div>
+      <a href="https://www.youtube.com/watch?v=z0HsPBKfhoI" target="_blank" class="video-link-card">
+        <span class="vlc-emoji">🚀</span><div><div class="vlc-title">The Fermi Paradox — Where Is Everybody?</div><div class="vlc-sub">Kurzgesagt · Scale of universe vs silence of space</div></div>
+      </a>
+      <a href="https://www.youtube.com/watch?v=yjfIVRsFkHs" target="_blank" class="video-link-card">
+        <span class="vlc-emoji">💀</span><div><div class="vlc-title">Death — What Happens When You Die?</div><div class="vlc-sub">Kurzgesagt · The most existential video on YouTube</div></div>
+      </a>
+      <a href="https://www.youtube.com/watch?v=G6qmEn3eMPw" target="_blank" class="video-link-card">
+        <span class="vlc-emoji">🧬</span><div><div class="vlc-title">Are You Conscious? — Michio Kaku</div><div class="vlc-sub">Big Think · What consciousness is & is not</div></div>
+      </a>
+      <a href="https://www.youtube.com/watch?v=8CCZR-5gQ9c" target="_blank" class="video-link-card">
+        <span class="vlc-emoji">🌐</span><div><div class="vlc-title">Nick Bostrom: Are You Living in a Simulation?</div><div class="vlc-sub">TED · The Simulation Hypothesis rigorously argued</div></div>
+      </a>
+
+      <!-- Mathematics & Cognition -->
+      <div style="font-size:11px;font-weight:800;color:var(--success);text-transform:uppercase;letter-spacing:.8px;margin-top:8px;margin-bottom:2px">📐 Mathematics & Neural Networks</div>
+      <a href="https://www.youtube.com/watch?v=aircAruvnKk" target="_blank" class="video-link-card">
+        <span class="vlc-emoji">🔢</span><div><div class="vlc-title">But What Is a Neural Network?</div><div class="vlc-sub">3Blue1Brown · Most intuitive deep-learning visual ever made</div></div>
+      </a>
+      <a href="https://www.youtube.com/watch?v=spUNpyF58BY" target="_blank" class="video-link-card">
+        <span class="vlc-emoji">📊</span><div><div class="vlc-title">The Map of Mathematics</div><div class="vlc-sub">Domain of Science · Entire field of math in 12 minutes</div></div>
+      </a>
+    </div>
+  </div>
+
+  <!-- ── INTEGRATED AI ARTIFACT PORTALS ── -->
+  <div class="card" style="border:2px solid var(--primary);margin-top:14px">
+    <div class="card-title"><span class="emoji">🛸</span> AI Artifact Portals</div>
+    <div style="font-size:12px;color:var(--text3);margin-bottom:12px">Live AI-powered tools integrated directly. Tap to expand in full view.</div>
+    <div id="artifactPortals" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+      <div class="artifact-portal-card" onclick="openArtifactModal('science','🔬 Science & Tech AI','https://claude.site/artifacts/ff423f3b-4207-4d53-9420-7b31a80f34c3')">
+        <div style="font-size:28px;margin-bottom:6px">🔬</div>
+        <div style="font-weight:700;font-size:13px">Science & Tech</div>
+        <div style="font-size:11px;color:var(--text3)">AI frontier updates</div>
+      </div>
+      <div class="artifact-portal-card" onclick="openArtifactModal('paisa','💰 Paisa Finance AI','https://claude.site/artifacts/ce571ce0-333c-41b6-b992-65b67a0456f5')">
+        <div style="font-size:28px;margin-bottom:6px">💰</div>
+        <div style="font-weight:700;font-size:13px">Paisa Finance</div>
+        <div style="font-size:11px;color:var(--text3)">Markets & wealth AI</div>
+      </div>
+      <div class="artifact-portal-card" onclick="openArtifactModal('artifacts','🛸 Artifacts Hub','https://claude.site/artifacts/8db5a112-7214-459c-860a-b93a98cb92b2')">
+        <div style="font-size:28px;margin-bottom:6px">🛸</div>
+        <div style="font-weight:700;font-size:13px">Artifacts Hub</div>
+        <div style="font-size:11px;color:var(--text3)">Claude AI tools</div>
+      </div>
+      <div class="artifact-portal-card" onclick="openArtifactModal('movies','🎬 Movie Explainer AI','https://claude.site/artifacts/e70e1d5a-f9bd-4cd1-a8cd-fa74348388a1')">
+        <div style="font-size:28px;margin-bottom:6px">🎬</div>
+        <div style="font-weight:700;font-size:13px">Movie Explainer</div>
+        <div style="font-size:11px;color:var(--text3)">Deep film analysis</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Artifact Modal -->
+  <div id="artifactModal" style="display:none;position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,.85);flex-direction:column">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0">
+      <span style="font-weight:700;font-size:14px" id="artifactModalTitle">Portal</span>
+      <button onclick="closeArtifactModal()" style="background:var(--danger);color:#fff;border:none;border-radius:8px;padding:5px 12px;cursor:pointer;font-size:13px">✕ Close</button>
+    </div>
+    <iframe id="artifactModalFrame" src="" style="flex:1;border:none;width:100%;height:100%;background:#fff"></iframe>
+  </div>
+
 </div>
 
 <!-- ════════════════════════════════════════════
@@ -3851,7 +4051,7 @@ mentalEnergy=${avg('mentalEnergy')}, score=${avg('score')}`;
   let response, result;
   try{
     response = await fetch(
-      `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -4164,7 +4364,7 @@ function buildBWEducation(){
 const AI_MODELS=[
   {id:'claude',name:'Claude',emoji:'🟣',provider:'anthropic',apiModel:'claude-sonnet-4-20250514',persona:'You are Claude by Anthropic — thoughtful, precise, and deeply analytical. Help users understand their consciousness data with care.'},
   {id:'chatgpt',name:'ChatGPT',emoji:'🟢',provider:'openai',apiModel:'gpt-4o',persona:'You are ChatGPT by OpenAI. Be helpful, conversational, and insightful.'},
-  {id:'gemini',name:'Gemini',emoji:'🔵',provider:'google',apiModel:'gemini-1.5-pro',persona:'You are Gemini by Google. Be creative, well-rounded, and grounded in facts.'},
+  {id:'gemini',name:'Gemini',emoji:'🔵',provider:'google',apiModel:'gemini-2.0-flash',persona:'You are Gemini by Google. Be creative, well-rounded, and grounded in facts.'},
   {id:'grok',name:'Grok',emoji:'⚡',provider:'xai',apiModel:'grok-2',persona:'You are Grok by xAI. Be witty, direct, and unfiltered but genuinely helpful.'},
   {id:'perplexity',name:'Perplexity',emoji:'🔍',provider:'perplexity',apiModel:'llama-3.1-sonar-large-128k-online',persona:'You are Perplexity AI. Provide grounded, well-sourced answers with depth.'},
   {id:'deepseek',name:'DeepSeek',emoji:'🌊',provider:'deepseek',apiModel:'deepseek-chat',persona:'You are DeepSeek. Be technically precise, deeply analytical, and thorough.'},
@@ -7566,6 +7766,155 @@ function initNewFeatures_v7(){
   }
 }
 
+
+
+// ─── ARTIFACT MODAL ──────────────────────────────────────────
+function openArtifactModal(id, title, url){
+  const modal = document.getElementById('artifactModal');
+  document.getElementById('artifactModalTitle').textContent = title;
+  document.getElementById('artifactModalFrame').src = url;
+  modal.classList.add('open');
+  document.body.style.overflow='hidden';
+}
+function closeArtifactModal(){
+  const modal = document.getElementById('artifactModal');
+  modal.classList.remove('open');
+  document.getElementById('artifactModalFrame').src='';
+  document.body.style.overflow='';
+}
+
+
+// ─── CALORIE TRACKER WITH AI ─────────────────────────────────
+let _calSex = 'M', _calGoal = 'maintain', _calTDEE = 2000;
+let _calEntries = JSON.parse(localStorage.getItem('cos_calories_today')||'[]');
+let _calDate = new Date().toDateString();
+
+function calSetSex(s){ _calSex=s; document.getElementById('calSexM').classList.toggle('active',s==='M'); document.getElementById('calSexF').classList.toggle('active',s==='F'); }
+function calSetGoal(g){ _calGoal=g; ['calGoalMaint','calGoalLose','calGoalGain'].forEach(id=>document.getElementById(id).classList.remove('active')); document.getElementById({maintain:'calGoalMaint',lose:'calGoalLose',gain:'calGoalGain'}[g]).classList.add('active'); }
+
+function calcTDEE(){
+  const w=parseFloat(document.getElementById('calWeight').value)||70;
+  const h=parseFloat(document.getElementById('calHeight').value)||175;
+  const a=parseFloat(document.getElementById('calAge').value)||25;
+  const act=parseFloat(document.getElementById('calActivity').value)||1.55;
+  let bmr = _calSex==='M' ? 10*w + 6.25*h - 5*a + 5 : 10*w + 6.25*h - 5*a - 161;
+  let tdee = Math.round(bmr * act);
+  let goal = _calGoal==='lose' ? tdee-500 : _calGoal==='gain' ? tdee+300 : tdee;
+  _calTDEE = goal;
+  localStorage.setItem('cos_cal_tdee', goal);
+  document.getElementById('tdeeResult').innerHTML = `✅ BMR: <strong>${Math.round(bmr)} kcal</strong> · TDEE: <strong>${tdee} kcal</strong> · Goal: <strong style="color:var(--success)">${goal} kcal/day</strong>`;
+  document.getElementById('calGoalDisplay').textContent = goal;
+  updateCalUI();
+}
+
+function updateCalUI(){
+  const today = new Date().toDateString();
+  if(_calDate !== today){ _calEntries=[]; _calDate=today; localStorage.removeItem('cos_calories_today'); }
+  const total = _calEntries.reduce((s,e)=>s+e.kcal,0);
+  const prot = _calEntries.reduce((s,e)=>s+(e.protein||0),0);
+  const goal = _calTDEE;
+  const remain = goal - total;
+  document.getElementById('calTotal').textContent = total;
+  document.getElementById('calGoalDisplay').textContent = goal;
+  document.getElementById('calRemain').textContent = remain;
+  document.getElementById('calProtein').textContent = Math.round(prot)+'g';
+  document.getElementById('calProgressBar').style.width = Math.min(100,(total/goal*100))+'%';
+  document.getElementById('calProgressBar').style.background = total>goal ? 'linear-gradient(to right,var(--warning),var(--danger))' : 'linear-gradient(to right,var(--success),var(--warning))';
+  // Render list
+  const logEl = document.getElementById('calFoodLog');
+  logEl.innerHTML = _calEntries.length ? _calEntries.map((e,i)=>`
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 10px;background:var(--bg3);border-radius:8px;margin-bottom:5px;font-size:12px">
+      <div><strong>${e.name}</strong> <span style="color:var(--text3)">· ${e.portion}</span></div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span style="color:var(--danger);font-weight:700">${e.kcal} kcal</span>
+        <span style="color:var(--accent)">${e.protein||0}g P</span>
+        <button onclick="removeCalEntry(${i})" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px">✕</button>
+      </div>
+    </div>`).join('') : '<div class="empty-state" style="padding:14px"><span class="es-icon" style="font-size:24px">🍽️</span><div class="es-text" style="font-size:12px">No food logged yet today</div></div>';
+}
+
+function removeCalEntry(i){ _calEntries.splice(i,1); localStorage.setItem('cos_calories_today',JSON.stringify(_calEntries)); updateCalUI(); }
+
+function clearCalorieDay(){ _calEntries=[]; localStorage.removeItem('cos_calories_today'); updateCalUI(); showToast('Day cleared'); }
+
+async function logCalorieAI(){
+  const food = document.getElementById('calFoodInput').value.trim();
+  if(!food){ showToast('Describe what you ate'); return; }
+  const btn = document.getElementById('calAddBtn');
+  btn.innerHTML = '<span class="spinner"></span> Analyzing...'; btn.disabled=true;
+  const outEl = document.getElementById('calAIOutput');
+  outEl.style.display='block'; outEl.innerHTML='🤖 Estimating calories...';
+
+  const prompt = `You are a nutrition expert. Estimate the calories and macros for this food description.
+Food: "${food}"
+
+Return ONLY valid JSON, no markdown:
+{
+  "items": [{"name":"food name","portion":"serving size","kcal":250,"protein":15,"carbs":30,"fat":8}],
+  "totalKcal": 250,
+  "totalProtein": 15,
+  "totalCarbs": 30,
+  "totalFat": 8,
+  "note": "brief nutrition note"
+}`;
+
+  try {
+    const resp = await fetch(\`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=\${GEMINI_KEY}\`,{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({contents:[{parts:[{text:prompt}]}]})
+    });
+    const data = await resp.json();
+    let raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    raw = raw.replace(/\`\`\`json|\`\`\`/g,'').trim();
+    const parsed = JSON.parse(raw);
+    parsed.items.forEach(item => {
+      _calEntries.push({name:item.name, portion:item.portion, kcal:item.kcal, protein:item.protein||0, carbs:item.carbs||0, fat:item.fat||0});
+    });
+    localStorage.setItem('cos_calories_today', JSON.stringify(_calEntries));
+    outEl.innerHTML = \`✅ <strong>+\${parsed.totalKcal} kcal</strong> · Protein: \${parsed.totalProtein}g · Carbs: \${parsed.totalCarbs}g · Fat: \${parsed.totalFat}g<br><span style="color:var(--text3)">\${parsed.note||''}</span>\`;
+    document.getElementById('calFoodInput').value='';
+    updateCalUI();
+  } catch(e) {
+    outEl.innerHTML = '❌ Could not parse. Try again or enter manually.';
+    dbg('error','Calorie AI error:', e.message);
+  }
+  btn.innerHTML='🤖 AI Log'; btn.disabled=false;
+}
+
+async function showCalAIInsight(){
+  const el = document.getElementById('calNutritionInsight');
+  el.innerHTML='🧠 Analyzing your nutrition...';
+  const total = _calEntries.reduce((s,e)=>s+e.kcal,0);
+  const prot = _calEntries.reduce((s,e)=>s+(e.protein||0),0);
+  const carbs = _calEntries.reduce((s,e)=>s+(e.carbs||0),0);
+  const fat = _calEntries.reduce((s,e)=>s+(e.fat||0),0);
+  const prompt = \`Analyze today's nutrition: \${total} kcal, \${prot}g protein, \${carbs}g carbs, \${fat}g fat. Goal: \${_calTDEE} kcal.
+Foods eaten: \${_calEntries.map(e=>e.name).join(', ')||'none'}.
+Give 2-3 sentence personalized insight on cognitive performance impact and 2 quick tips. Keep it brief and actionable.\`;
+  try {
+    const resp = await fetch(\`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=\${GEMINI_KEY}\`,{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({contents:[{parts:[{text:prompt}]}]})
+    });
+    const data = await resp.json();
+    el.innerHTML = '🧠 ' + (data?.candidates?.[0]?.content?.parts?.[0]?.text || 'No insight available');
+  } catch(e) { el.innerHTML='Could not load insight.'; }
+}
+
+// Init calorie from storage
+window.addEventListener('DOMContentLoaded', function(){
+  const savedTDEE = localStorage.getItem('cos_cal_tdee');
+  if(savedTDEE){ _calTDEE=parseInt(savedTDEE); }
+  const today = new Date().toDateString();
+  const saved = JSON.parse(localStorage.getItem('cos_calories_today')||'[]');
+  const savedDate = localStorage.getItem('cos_cal_date');
+  if(savedDate === today){ _calEntries = saved; }
+  else { localStorage.removeItem('cos_calories_today'); }
+  localStorage.setItem('cos_cal_date', today);
+  updateCalUI();
+});
+
+
 // ─── INIT ────────────────────────────────────────────────────
 function init(){
   const th=localStorage.getItem('cos_theme')||'light';
@@ -7613,13 +7962,11 @@ document.addEventListener('DOMContentLoaded',init);
 </script>
 
 <!-- ════════════════════════════════════════════════════════
-     IN-APP DEBUG CONSOLE PANEL
-     Toggle with the 🐛 button. Shows all dbg() calls.
-     Auto-appears on errors — works perfectly on mobile.
+     IN-APP DEBUG CONSOLE PANEL - Appears below topbar
 ════════════════════════════════════════════════════════ -->
-<div id="_dbgPanel" style="display:none;position:fixed;bottom:52px;left:0;right:0;height:55vh;z-index:99999;
-  flex-direction:column;background:#0a0a0f;border-top:2px solid rgba(124,58,237,.6);
-  font-family:'DM Mono',monospace,sans-serif;box-shadow:0 -8px 40px rgba(0,0,0,.7)">
+<div id="_dbgPanel" style="display:none;position:fixed;top:var(--topbar-h);left:0;right:0;height:55vh;z-index:99999;
+  flex-direction:column;background:#0a0a0f;border-bottom:2px solid rgba(124,58,237,.6);
+  font-family:'DM Mono',monospace,sans-serif;box-shadow:0 8px 40px rgba(0,0,0,.7)">
 
   <!-- Panel header -->
   <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 14px;
@@ -7643,14 +7990,7 @@ document.addEventListener('DOMContentLoaded',init);
   <div id="_dbgList" style="flex:1;overflow-y:auto;padding:8px 14px;font-size:11px"></div>
 </div>
 
-<!-- 🐛 Floating debug toggle button (top-right corner) -->
-<button onclick="toggleDebugPanel()" id="_dbgToggleBtn"
-  title="Toggle Debug Console"
-  style="position:fixed;bottom:14px;right:14px;z-index:99998;width:34px;height:34px;border-radius:50%;
-  border:1px solid rgba(124,58,237,.4);background:rgba(10,10,20,.85);
-  font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;
-  backdrop-filter:blur(6px);box-shadow:0 2px 12px rgba(0,0,0,.4);transition:opacity .2s"
-  onmouseenter="this.style.opacity='.7'" onmouseleave="this.style.opacity='1'">🐛</button>
+<!-- 🐛 debug toggle button now in topbar -->
 
 </body>
 </html>
