@@ -27,35 +27,22 @@ db.enablePersistence().catch(err => {
   else if(err.code === 'unimplemented') console.warn('Offline persistence not available');
 });
 
-// Handle redirect result (mobile Google sign-in returns here)
+// Handle redirect result (mobile Google sign-in)
 auth.getRedirectResult().then(result => {
-  if(result && result.user){
-    const fbUser = result.user;
-    const profile = {
-      id: fbUser.uid,
-      name: fbUser.displayName || 'Google User',
-      username: fbUser.email || fbUser.uid,
-      email: fbUser.email || '',
-      avatar: '🔵',
-      isGoogle: true,
-      isFirebase: true,
-      created: new Date().toISOString()
-    };
-    const users = getUsers ? getUsers() : [];
-    const idx = users.findIndex(u => u.id === fbUser.uid);
-    if(idx === -1) users.push(profile); else users[idx] = {...users[idx], ...profile};
-    if(typeof saveUsers === 'function') saveUsers(users);
-    if(typeof setCurrentUser === 'function') setCurrentUser(fbUser.uid);
-    localStorage.setItem('cos_has_account','1');
-    if(typeof closeLoginOverlay === 'function') closeLoginOverlay();
-    showToast('🔵 Signed in as ' + profile.name + '! Syncing...');
-    if(typeof loadLogsFromFirestore === 'function') loadLogsFromFirestore(fbUser.uid);
-    if(typeof buildProfileBar === 'function') buildProfileBar();
+  if(result && result.user){ const fbUser=result.user;
+    const profile={id:fbUser.uid,name:fbUser.displayName||'Google User',username:fbUser.email||fbUser.uid,email:fbUser.email||'',avatar:'🔵',isGoogle:true,isFirebase:true,created:new Date().toISOString()};
+    const users=getUsers?getUsers():[];const idx=users.findIndex(u=>u.id===fbUser.uid);
+    if(idx===-1)users.push(profile);else users[idx]={...users[idx],...profile};
+    if(typeof saveUsers==='function')saveUsers(users);if(typeof setCurrentUser==='function')setCurrentUser(fbUser.uid);
+    localStorage.setItem('cos_has_account','1');if(typeof closeLoginOverlay==='function')closeLoginOverlay();
+    showToast('🔵 Signed in as '+profile.name+'! Syncing...');
+    if(typeof loadLogsFromFirestore==='function')loadLogsFromFirestore(fbUser.uid);
+    if(typeof buildProfileBar==='function')setTimeout(buildProfileBar,500);
   }
-}).catch(err => { if(err.code !== 'auth/no-auth-event') console.error('Redirect result error:', err); });
+}).catch(err=>{if(err.code!=='auth/no-auth-event')console.error('Redirect error:',err);});
 
 // ─── API KEY ────────────────────────────────────────────────
-const GEMINI_KEY = "AIzaSyDQbDV49BXHV5WSOGOokI-FkCmHREQb_nE"; // Built-in key — all users get free AI
+const GEMINI_KEY = "AIzaSyDQbDV49BXHV5WSOGOokI-FkCmHREQb_nE"; // Built-in — all users get free AI
 
 // ─── AUTO-LOAD FIRESTORE DATA WHEN SESSION RESTORES ─────────
 auth.onAuthStateChanged(function(fbUser){
@@ -1663,7 +1650,7 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
   <div class="card">
     <div class="card-title"><span class="emoji">🔑</span> AI API Keys</div>
     <div style="font-size:12px;color:var(--text3);margin-bottom:12px">🟢 AI Twin, Coach, Sage, Dr. Mind, Friend & Gemini work FREE — no key needed, powered by built-in Gemini AI.
-🔑 Optional: Add your own keys below to also unlock ChatGPT, Grok, Perplexity, and DeepSeek.</div>
+🔑 Optional: Add your own keys to also unlock ChatGPT, Grok, Perplexity, and DeepSeek.</div>
     <div id="apiKeysList">
       ${[{p:'openai',name:'OpenAI (ChatGPT)',emoji:'🟢'},{p:'google',name:'Google (Gemini)',emoji:'🔵'},{p:'xai',name:'xAI (Grok)',emoji:'⚡'},{p:'perplexity',name:'Perplexity AI',emoji:'🔍'},{p:'deepseek',name:'DeepSeek',emoji:'🌊'}].map(({p,name,emoji})=>`
       <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)">
@@ -4441,14 +4428,14 @@ function buildBWEducation(){
 const AI_MODELS=[
   {id:'twin',name:'AI Twin',emoji:'🧠',provider:'google',apiModel:'gemini-2.0-flash',persona:'You are the user\'s AI Digital Twin inside Consciousness OS. You have deeply analyzed ALL their consciousness logs, dreams, and patterns. Be warm, insightful, and deeply personal. Reference their actual data.'},
   {id:'coach',name:'Coach',emoji:'🏆',provider:'google',apiModel:'gemini-2.0-flash',persona:'You are an elite performance coach and neuroscientist inside Consciousness OS. Give direct, actionable advice for peak mental performance based on the user\'s actual tracked data.'},
-  {id:'sage',name:'Sage',emoji:'🔮',provider:'google',apiModel:'gemini-2.0-flash',persona:'You are a wise sage combining ancient wisdom with modern neuroscience inside Consciousness OS. Use metaphors, philosophical insights, and the user\'s own patterns to guide them toward higher consciousness.'},
-  {id:'doctor',name:'Dr. Mind',emoji:'👨‍⚕️',provider:'google',apiModel:'gemini-2.0-flash',persona:'You are a cognitive neuroscientist and mental health expert inside Consciousness OS. Analyze the user\'s mental health patterns objectively using their logged data. Be clinical but empathetic. Always recommend professional help for serious concerns.'},
-  {id:'friend',name:'Friend',emoji:'😊',provider:'google',apiModel:'gemini-2.0-flash',persona:'You are a supportive, very smart best friend inside Consciousness OS. Be casual, real, encouraging. Use simple language. Reference what you know about the user\'s patterns. Care deeply about their wellbeing.'},
-  {id:'gemini',name:'Gemini',emoji:'🔵',provider:'google',apiModel:'gemini-2.0-flash',persona:'You are Gemini by Google, integrated into Consciousness OS. Be creative, well-rounded, grounded in facts, and help the user understand their consciousness data.'},
+  {id:'sage',name:'Sage',emoji:'🔮',provider:'google',apiModel:'gemini-2.0-flash',persona:'You are a wise sage combining ancient wisdom with modern neuroscience. Use metaphors, philosophical insights, and the user\'s own patterns to guide them toward higher consciousness.'},
+  {id:'doctor',name:'Dr. Mind',emoji:'👨‍⚕️',provider:'google',apiModel:'gemini-2.0-flash',persona:'You are a cognitive neuroscientist and mental health expert. Analyze the user\'s mental health patterns using their logged data. Be clinical but empathetic. Always recommend professional help for serious concerns.'},
+  {id:'friend',name:'Friend',emoji:'😊',provider:'google',apiModel:'gemini-2.0-flash',persona:'You are a supportive, very smart best friend. Be casual, real, encouraging. Reference what you know about the user\'s patterns. Care deeply about their wellbeing.'},
+  {id:'gemini',name:'Gemini',emoji:'🔵',provider:'google',apiModel:'gemini-2.0-flash',persona:'You are Gemini by Google inside Consciousness OS. Be creative, well-rounded, and grounded in facts.'},
   {id:'claude',name:'Claude',emoji:'🟣',provider:'anthropic',apiModel:'claude-sonnet-4-20250514',persona:'You are Claude by Anthropic — thoughtful, precise, and deeply analytical. Help users understand their consciousness data with care.'},
-  {id:'chatgpt',name:'ChatGPT',emoji:'🟢',provider:'openai',apiModel:'gpt-4o',persona:'You are ChatGPT by OpenAI. Be helpful, conversational, and insightful about consciousness and mental performance.'},
-  {id:'grok',name:'Grok',emoji:'⚡',provider:'xai',apiModel:'grok-2',persona:'You are Grok by xAI. Be witty, direct, and unfiltered but genuinely helpful about consciousness data.'},
-  {id:'deepseek',name:'DeepSeek',emoji:'🌊',provider:'deepseek',apiModel:'deepseek-chat',persona:'You are DeepSeek. Be technically precise, deeply analytical, and thorough about consciousness patterns.'},
+  {id:'chatgpt',name:'ChatGPT',emoji:'🟢',provider:'openai',apiModel:'gpt-4o',persona:'You are ChatGPT by OpenAI. Be helpful, conversational, and insightful.'},
+  {id:'grok',name:'Grok',emoji:'⚡',provider:'xai',apiModel:'grok-2',persona:'You are Grok by xAI. Be witty, direct, and unfiltered but genuinely helpful.'},
+  {id:'deepseek',name:'DeepSeek',emoji:'🌊',provider:'deepseek',apiModel:'deepseek-chat',persona:'You are DeepSeek. Be technically precise, deeply analytical, and thorough.'},
 ];
 // API Key management
 function getApiKey(provider){return localStorage.getItem('cos_apikey_'+provider)||'';}
@@ -4461,12 +4448,11 @@ function promptApiKey(provider){
 }
 async function callAI(model,messages,userContext){
   const provider=model.provider;
-  // google uses built-in GEMINI_KEY — never prompt user
-  const freeProviders=['google'];
+  const freeProviders=['google']; // google uses built-in GEMINI_KEY
   let apiKey=getApiKey(provider);
   if(!freeProviders.includes(provider)&&!apiKey){
     apiKey=promptApiKey(provider);
-    if(!apiKey)throw new Error('No API key provided. Enter your API key in AI Hub settings.');
+    if(!apiKey)throw new Error('No API key provided. Enter your key in AI Hub settings.');
   }
   const systemMsg=model.persona+'\n\nYou are an advanced AI consciousness coach in Consciousness OS. You have deep knowledge of neuroscience, psychology, meditation, peak performance, sleep, dreams, nutrition, and human potential.'+userContext;
   if(provider==='anthropic'){
@@ -4476,8 +4462,8 @@ async function callAI(model,messages,userContext){
     const resp=await fetch('https://api.openai.com/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},body:JSON.stringify({model:model.apiModel,max_tokens:700,messages:[{role:'system',content:systemMsg},...messages]})});
     const data=await resp.json();if(data.error)throw new Error(data.error.message);return data.choices?.[0]?.message?.content||'No response';
   }else if(provider==='google'){
-    const gKey = GEMINI_KEY || apiKey; // Use built-in key, fallback to user key
-    const resp=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model.apiModel}:generateContent?key=${gKey}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:messages.map(m=>({role:m.role==='assistant'?'model':'user',parts:[{text:m.content}]})),systemInstruction:{parts:[{text:systemMsg}]},generationConfig:{maxOutputTokens:800,temperature:0.8}})});
+    const gKey=GEMINI_KEY||apiKey;
+    const resp=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model.apiModel}:generateContent?key=${gKey}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:messages.map(m=>({role:m.role==='assistant'?'model':'user',parts:[{text:m.content}]})),systemInstruction:{parts:[{text:systemMsg}]}})});
     const data=await resp.json();if(data.error)throw new Error(data.error.message);return data.candidates?.[0]?.content?.parts?.[0]?.text||'No response';
   }else if(provider==='xai'){
     const resp=await fetch('https://api.x.ai/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},body:JSON.stringify({model:model.apiModel,max_tokens:700,messages:[{role:'system',content:systemMsg},...messages]})});
@@ -4632,75 +4618,51 @@ async function sendChat(){
   const studyData=JSON.parse(localStorage.getItem('cos_study_profile')||'{}');
   const user=getCurrentUser();
   let userContext='';
+  if(user&&!user.isGuest)userContext+=`
 
-  // ── Rich user identity context ──
-  if(user && !user.isGuest){
-    userContext+=`
-
-USER PROFILE: name=${user.name||'User'}, email=${user.email||'unknown'}`;
-  }
-
-  // ── Deep consciousness log analysis ──
+USER: name=${user.name||'User'}, email=${user.email||'unknown'}`;
   if(logs.length){
     const avk=key=>(logs.reduce((s,e)=>s+(parseFloat(e[key])||0),0)/logs.length).toFixed(1);
     const ravg=(arr,k)=>(arr.reduce((s,e)=>s+(parseFloat(e[k])||0),0)/arr.length).toFixed(1);
-    const recent7=logs.slice(0,7);
-    const prev7=logs.slice(7,14);
+    const recent7=logs.slice(0,7);const prev7=logs.slice(7,14);
     const emotions={};logs.forEach(e=>{if(e.emotion)emotions[e.emotion]=(emotions[e.emotion]||0)+1;});
     const topEmo=Object.entries(emotions).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([e,c])=>`${e}(${c}x)`).join(', ');
     const activities={};logs.forEach(e=>{if(e.activity)activities[e.activity]=(activities[e.activity]||0)+1;});
     const topAct=Object.entries(activities).sort((a,b)=>b[1]-a[1]).slice(0,2).map(([a])=>a).join(', ');
     const scoresTrend=recent7.length&&prev7.length?(parseFloat(ravg(recent7,'score'))-parseFloat(ravg(prev7,'score'))).toFixed(1):null;
-    const latestLog=logs[0];
+    const L=logs[0];
     userContext+=`
 
-CONSCIOUSNESS DATA (${logs.length} total entries, ${new Set(logs.map(l=>l.date)).size} unique days tracked):
-LAST 7 DAYS: mood=${ravg(recent7,'mood')}/10, focus=${ravg(recent7,'focus')}/10, energy=${ravg(recent7,'physicalEnergy')}/10, stress=${ravg(recent7,'stress')}/10, creativity=${ravg(recent7,'creativity')}/10, flow=${ravg(recent7,'flow')}/10, sleep=${ravg(recent7,'sleep')}/10, clarity=${ravg(recent7,'clarity')}/10
-ALL-TIME AVGS: mood=${avk('mood')}, focus=${avk('focus')}, stress=${avk('stress')}, clarity=${avk('clarity')}, creativity=${avk('creativity')}, flow=${avk('flow')}
-TREND: consciousness score ${scoresTrend!==null?(parseFloat(scoresTrend)>0?'↑ improving by '+scoresTrend:parseFloat(scoresTrend)<0?'↓ declining by '+Math.abs(scoresTrend):'→ stable'):'insufficient data'}
-TOP EMOTIONS: ${topEmo||'none tracked yet'}
-TOP ACTIVITIES: ${topAct||'none tracked yet'}
-LATEST ENTRY: date=${latestLog.date||'?'}, score=${latestLog.score||'?'}/10, emotion=${latestLog.emotion||'?'}, activity=${latestLog.activity||'?'}, brainwave=${latestLog.brainwave||'?'}
-${latestLog.thought?'LATEST THOUGHT: "'+latestLog.thought.slice(0,200)+'"':''}
-${latestLog.insight?'LATEST INSIGHT: "'+latestLog.insight.slice(0,150)+'"':''}
-${latestLog.goal?'CURRENT GOAL: "'+latestLog.goal.slice(0,100)+'"':''}`;
-  } else {
-    userContext+='
+CONSCIOUSNESS DATA (${logs.length} entries, ${new Set(logs.map(l=>l.date)).size} days tracked):
+LAST 7 DAYS: mood=${ravg(recent7,'mood')}/10, focus=${ravg(recent7,'focus')}/10, energy=${ravg(recent7,'physicalEnergy')}/10, stress=${ravg(recent7,'stress')}/10, creativity=${ravg(recent7,'creativity')}/10, flow=${ravg(recent7,'flow')}/10, sleep=${ravg(recent7,'sleep')}/10
+ALL-TIME: mood=${avk('mood')}, focus=${avk('focus')}, stress=${avk('stress')}, clarity=${avk('clarity')}, creativity=${avk('creativity')}
+TREND: score ${scoresTrend!==null?(parseFloat(scoresTrend)>0?'↑ +'+scoresTrend:parseFloat(scoresTrend)<0?'↓ '+scoresTrend:'→ stable'):'insufficient data'}
+TOP EMOTIONS: ${topEmo||'none yet'} | TOP ACTIVITIES: ${topAct||'none yet'}
+LATEST: date=${L.date||'?'}, score=${L.score||'?'}/10, emotion=${L.emotion||'?'}, activity=${L.activity||'?'}
+${L.thought?'LAST THOUGHT: "'+L.thought.slice(0,200)+'"':''}
+${L.insight?'LAST INSIGHT: "'+L.insight.slice(0,150)+'"':''}
+${L.goal?'CURRENT GOAL: "'+L.goal.slice(0,100)+'"':''}`;
+  } else { userContext+='
 
-NOTE: User has no consciousness logs yet. Encourage them to fill their first Daily Log.';
-  }
-
-  // ── Dream analysis ──
+NOTE: No logs yet. Encourage user to fill Daily Log.'; }
   if(dreams.length){
-    const avgLucidity=(dreams.reduce((s,d)=>s+(d.lucidity||0),0)/dreams.length).toFixed(1);
-    const avgVividness=(dreams.reduce((s,d)=>s+(d.vividness||0),0)/dreams.length).toFixed(1);
+    const avgL=(dreams.reduce((s,d)=>s+(d.lucidity||0),0)/dreams.length).toFixed(1);
     const lucidCount=dreams.filter(d=>d.lucidity>5).length;
-    const dreamTypes={};dreams.forEach(d=>{if(d.type)dreamTypes[d.type]=(dreamTypes[d.type]||0)+1;});
-    const topDreamType=Object.entries(dreamTypes).sort((a,b)=>b[1]-a[1])[0];
-    const latestDream=dreams[0];
+    const LD=dreams[0];
     userContext+=`
 
-DREAM DATA (${dreams.length} logged):
-AVG LUCIDITY: ${avgLucidity}/10, AVG VIVIDNESS: ${avgVividness}/10, LUCID DREAMS: ${lucidCount}/${dreams.length}
-MOST COMMON TYPE: ${topDreamType?topDreamType[0]:'unknown'}
-LATEST DREAM: "${(latestDream.title||'Untitled')}" — ${(latestDream.desc||'').slice(0,150)}`;
+DREAMS (${dreams.length} logged): avg_lucidity=${avgL}/10, lucid_dreams=${lucidCount}/${dreams.length}
+LATEST: "${(LD.title||'Untitled')}" — ${(LD.desc||'').slice(0,150)}`;
   }
+  if(Object.keys(healthData).length>2)userContext+=`
 
-  // ── Health & study ──
-  if(Object.keys(healthData).length>2){
-    userContext+=`
+HEALTH: sleep=${healthData.hSleepDur||'?'}hrs, exercise=${healthData.hExerciseFreq||'?'}, stress=${healthData.hStressLevel||'?'}/10`;
+  if(studyData.stField)userContext+=`
 
-HEALTH PROFILE: sleep_duration=${healthData.hSleepDur||'?'}hrs, exercise=${healthData.hExerciseFreq||'?'}, diet=${healthData.hDiet||'?'}, stress_level=${healthData.hStressLevel||'?'}/10`;
-  }
-  if(studyData.stField){
-    userContext+=`
-
-STUDY/CAREER: field=${studyData.stField}, target=${studyData.stTargetCareer||'?'}, current_challenges=${studyData.stChallenges||'?'}`;
-  }
-
+STUDY: field=${studyData.stField}, target=${studyData.stTargetCareer||'?'}`;
   userContext+=`
 
-CURRENT DATE/TIME: ${new Date().toLocaleString('en-IN',{timeZone:'Asia/Kolkata'})} IST`;
+TIME: ${new Date().toLocaleString('en-IN',{timeZone:'Asia/Kolkata'})} IST`;
 
   const recentHistory=chatHistory.filter(m=>m.role==='user'||m.role==='ai').slice(-10);
   const apiMessages=[...recentHistory.map(m=>({role:m.role==='ai'?'assistant':'user',content:m.content})),{role:'user',content:msg}];
