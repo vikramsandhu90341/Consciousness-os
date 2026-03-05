@@ -27,22 +27,35 @@ db.enablePersistence().catch(err => {
   else if(err.code === 'unimplemented') console.warn('Offline persistence not available');
 });
 
-// Handle redirect result (mobile Google sign-in)
+// Handle redirect result (mobile Google sign-in returns here)
 auth.getRedirectResult().then(result => {
-  if(result && result.user){ const fbUser=result.user;
-    const profile={id:fbUser.uid,name:fbUser.displayName||'Google User',username:fbUser.email||fbUser.uid,email:fbUser.email||'',avatar:'🔵',isGoogle:true,isFirebase:true,created:new Date().toISOString()};
-    const users=getUsers?getUsers():[];const idx=users.findIndex(u=>u.id===fbUser.uid);
-    if(idx===-1)users.push(profile);else users[idx]={...users[idx],...profile};
-    if(typeof saveUsers==='function')saveUsers(users);if(typeof setCurrentUser==='function')setCurrentUser(fbUser.uid);
-    localStorage.setItem('cos_has_account','1');if(typeof closeLoginOverlay==='function')closeLoginOverlay();
-    showToast('🔵 Signed in as '+profile.name+'! Syncing...');
-    if(typeof loadLogsFromFirestore==='function')loadLogsFromFirestore(fbUser.uid);
-    if(typeof buildProfileBar==='function')setTimeout(buildProfileBar,500);
+  if(result && result.user){
+    const fbUser = result.user;
+    const profile = {
+      id: fbUser.uid,
+      name: fbUser.displayName || 'Google User',
+      username: fbUser.email || fbUser.uid,
+      email: fbUser.email || '',
+      avatar: '🔵',
+      isGoogle: true,
+      isFirebase: true,
+      created: new Date().toISOString()
+    };
+    const users = getUsers ? getUsers() : [];
+    const idx = users.findIndex(u => u.id === fbUser.uid);
+    if(idx === -1) users.push(profile); else users[idx] = {...users[idx], ...profile};
+    if(typeof saveUsers === 'function') saveUsers(users);
+    if(typeof setCurrentUser === 'function') setCurrentUser(fbUser.uid);
+    localStorage.setItem('cos_has_account','1');
+    if(typeof closeLoginOverlay === 'function') closeLoginOverlay();
+    showToast('🔵 Signed in as ' + profile.name + '! Syncing...');
+    if(typeof loadLogsFromFirestore === 'function') loadLogsFromFirestore(fbUser.uid);
+    if(typeof buildProfileBar === 'function') buildProfileBar();
   }
-}).catch(err=>{if(err.code!=='auth/no-auth-event')console.error('Redirect error:',err);});
+}).catch(err => { if(err.code !== 'auth/no-auth-event') console.error('Redirect result error:', err); });
 
 // ─── API KEY ────────────────────────────────────────────────
-const GEMINI_KEY = "AIzaSyDQbDV49BXHV5WSOGOokI-FkCmHREQb_nE"; // Built-in — all users get free AI
+const GEMINI_KEY = "AIzaSyAN7RCdbHjV_0dF6F3TqictZjswb80RT2c";
 
 // ─── AUTO-LOAD FIRESTORE DATA WHEN SESSION RESTORES ─────────
 auth.onAuthStateChanged(function(fbUser){
@@ -1649,8 +1662,7 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
 
   <div class="card">
     <div class="card-title"><span class="emoji">🔑</span> AI API Keys</div>
-    <div style="font-size:12px;color:var(--text3);margin-bottom:12px">🟢 AI Twin, Coach, Sage, Dr. Mind, Friend & Gemini work FREE — no key needed, powered by built-in Gemini AI.
-🔑 Optional: Add your own keys to also unlock ChatGPT, Grok, Perplexity, and DeepSeek.</div>
+    <div style="font-size:12px;color:var(--text3);margin-bottom:12px">Add your API keys to unlock real AI responses from ChatGPT, Gemini, Grok, Perplexity, and DeepSeek. Keys stored locally only.</div>
     <div id="apiKeysList">
       ${[{p:'openai',name:'OpenAI (ChatGPT)',emoji:'🟢'},{p:'google',name:'Google (Gemini)',emoji:'🔵'},{p:'xai',name:'xAI (Grok)',emoji:'⚡'},{p:'perplexity',name:'Perplexity AI',emoji:'🔍'},{p:'deepseek',name:'DeepSeek',emoji:'🌊'}].map(({p,name,emoji})=>`
       <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)">
@@ -2877,6 +2889,197 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
 
 </div><!-- /tab-system -->
 
+<!-- ════════════════════════════════════════════
+     TAB — ♾️ IMMORTALITY PROTOCOL
+════════════════════════════════════════════ -->
+<div class="tab-panel" id="tab-immortal">
+
+  <!-- HERO BANNER -->
+  <div style="background:linear-gradient(135deg,#0a0015,#1a0035,#0d001a);border:1px solid rgba(153,0,255,.4);border-radius:18px;padding:20px;margin-bottom:16px;position:relative;overflow:hidden">
+    <div style="position:absolute;inset:0;background:radial-gradient(circle at 30% 50%,rgba(153,0,255,.15),transparent 60%),radial-gradient(circle at 80% 20%,rgba(0,255,200,.1),transparent 50%);pointer-events:none"></div>
+    <div style="position:relative">
+      <div style="font-family:Syne,sans-serif;font-size:22px;font-weight:800;background:linear-gradient(135deg,#c084fc,#00ffcc,#e879f9);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:4px">♾️ Immortality Protocol</div>
+      <div style="font-size:12px;color:rgba(255,255,255,.55);margin-bottom:14px;line-height:1.5">The operating system for becoming the best human who ever lived.</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+        <div style="background:rgba(255,255,255,.06);border:1px solid rgba(153,0,255,.3);border-radius:12px;padding:10px;text-align:center">
+          <div style="font-size:22px;font-weight:800;font-family:Syne,sans-serif;color:#c084fc" id="ip-streak">0</div>
+          <div style="font-size:9px;color:rgba(255,255,255,.45)">Day Streak</div>
+        </div>
+        <div style="background:rgba(255,255,255,.06);border:1px solid rgba(0,255,200,.25);border-radius:12px;padding:10px;text-align:center">
+          <div style="font-size:22px;font-weight:800;font-family:Syne,sans-serif;color:#00ffcc" id="ip-score">0</div>
+          <div style="font-size:9px;color:rgba(255,255,255,.45)">Protocol Score</div>
+        </div>
+        <div style="background:rgba(255,255,255,.06);border:1px solid rgba(232,121,249,.25);border-radius:12px;padding:10px;text-align:center">
+          <div style="font-size:22px;font-weight:800;font-family:Syne,sans-serif;color:#e879f9" id="ip-tasks">0</div>
+          <div style="font-size:9px;color:rgba(255,255,255,.45)">Done Today</div>
+        </div>
+        <div style="background:rgba(255,255,255,.06);border:1px solid rgba(251,191,36,.25);border-radius:12px;padding:10px;text-align:center">
+          <div style="font-size:22px;font-weight:800;font-family:Syne,sans-serif;color:#fbbf24" id="ip-lucid">0</div>
+          <div style="font-size:9px;color:rgba(255,255,255,.45)">Lucid Dreams</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TODAY'S EXECUTION BRIEF -->
+  <div class="card" style="border:2px solid rgba(153,0,255,.35);background:linear-gradient(135deg,rgba(10,0,21,.8),rgba(26,0,53,.5))">
+    <div class="card-title" style="color:#c084fc"><span class="emoji">⚡</span> Today's Execution Brief</div>
+    <div style="font-size:12px;color:rgba(255,255,255,.45);margin-bottom:12px">AI generates your personalized daily battle plan. Tap to regenerate.</div>
+    <div id="ip-brief-output" style="font-size:13px;color:#e8d8ff;line-height:1.7;background:rgba(255,255,255,.04);border-radius:10px;padding:12px;min-height:60px;margin-bottom:12px">
+      <div style="color:rgba(255,255,255,.3);font-style:italic">Tap below to generate today's protocol...</div>
+    </div>
+    <button class="btn btn-primary btn-block" onclick="generateImmortalBrief()" id="ip-brief-btn" style="background:linear-gradient(135deg,#7c3aed,#9900ff)">🧠 Generate My Brief</button>
+  </div>
+
+  <!-- 4 PILLARS -->
+  <div style="font-family:Syne,sans-serif;font-weight:700;font-size:17px;color:#c084fc;margin:16px 0 10px;display:flex;align-items:center;gap:8px">🏛️ The 4 Pillars</div>
+
+  <div class="card" style="border-left:3px solid #ef4444;background:linear-gradient(135deg,rgba(239,68,68,.06),transparent)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div class="card-title" style="margin:0"><span class="emoji">🔴</span> Pillar I — Longevity</div>
+      <div style="font-size:11px;color:#ef4444;font-weight:700;background:rgba(239,68,68,.12);padding:3px 10px;border-radius:20px" id="ip-p1-pct">0%</div>
+    </div>
+    <div style="font-size:11px;color:var(--text3);margin-bottom:10px">Biological immortality stack. Every check = days added to your functional lifespan.</div>
+    <div id="ip-p1-tasks"></div>
+    <div style="margin-top:10px;height:4px;background:rgba(255,255,255,.08);border-radius:2px;overflow:hidden"><div id="ip-p1-bar" style="height:100%;background:linear-gradient(to right,#ef4444,#f97316);border-radius:2px;transition:width .4s;width:0%"></div></div>
+  </div>
+
+  <div class="card" style="border-left:3px solid #8b5cf6;background:linear-gradient(135deg,rgba(139,92,246,.06),transparent)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div class="card-title" style="margin:0"><span class="emoji">🟣</span> Pillar II — Consciousness</div>
+      <div style="font-size:11px;color:#8b5cf6;font-weight:700;background:rgba(139,92,246,.12);padding:3px 10px;border-radius:20px" id="ip-p2-pct">0%</div>
+    </div>
+    <div style="font-size:11px;color:var(--text3);margin-bottom:10px">Lucid dreaming, reality expansion, dream architecture. Every session = new neural territory.</div>
+    <div id="ip-p2-tasks"></div>
+    <div style="margin-top:10px;height:4px;background:rgba(255,255,255,.08);border-radius:2px;overflow:hidden"><div id="ip-p2-bar" style="height:100%;background:linear-gradient(to right,#8b5cf6,#ec4899);border-radius:2px;transition:width .4s;width:0%"></div></div>
+  </div>
+
+  <div class="card" style="border-left:3px solid #f59e0b;background:linear-gradient(135deg,rgba(245,158,11,.06),transparent)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div class="card-title" style="margin:0"><span class="emoji">🟡</span> Pillar III — Wealth Engine</div>
+      <div style="font-size:11px;color:#f59e0b;font-weight:700;background:rgba(245,158,11,.12);padding:3px 10px;border-radius:20px" id="ip-p3-pct">0%</div>
+    </div>
+    <div style="font-size:11px;color:var(--text3);margin-bottom:10px">Build the asset machine. Leverage AI and your Pharma knowledge into compounding capital.</div>
+    <div id="ip-p3-tasks"></div>
+    <div style="margin-top:10px;height:4px;background:rgba(255,255,255,.08);border-radius:2px;overflow:hidden"><div id="ip-p3-bar" style="height:100%;background:linear-gradient(to right,#f59e0b,#84cc16);border-radius:2px;transition:width .4s;width:0%"></div></div>
+  </div>
+
+  <div class="card" style="border-left:3px solid #06b6d4;background:linear-gradient(135deg,rgba(6,182,212,.06),transparent)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div class="card-title" style="margin:0"><span class="emoji">🔵</span> Pillar IV — Mental Chess</div>
+      <div style="font-size:11px;color:#06b6d4;font-weight:700;background:rgba(6,182,212,.12);padding:3px 10px;border-radius:20px" id="ip-p4-pct">0%</div>
+    </div>
+    <div style="font-size:11px;color:var(--text3);margin-bottom:10px">8D thinking. Systems, influence, counterintuition. Play 10 moves ahead of the world.</div>
+    <div id="ip-p4-tasks"></div>
+    <div style="margin-top:10px;height:4px;background:rgba(255,255,255,.08);border-radius:2px;overflow:hidden"><div id="ip-p4-bar" style="height:100%;background:linear-gradient(to right,#06b6d4,#3b82f6);border-radius:2px;transition:width .4s;width:0%"></div></div>
+  </div>
+
+  <!-- LONGEVITY STACK -->
+  <div class="card" style="border:1px solid rgba(239,68,68,.25)">
+    <div class="card-title"><span class="emoji">🧬</span> Longevity Stack — Today</div>
+    <div style="font-size:12px;color:var(--text3);margin-bottom:12px">Track your daily biological protocol. Based on Bryan Johnson Blueprint + mTOR/rapamycin science.</div>
+    <div id="ip-longevity-log" style="display:grid;grid-template-columns:1fr 1fr;gap:6px"></div>
+    <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
+      <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:8px">🤖 AI Longevity Analysis</div>
+      <button class="btn btn-secondary btn-sm" onclick="runLongevityAI()">Analyze my stack</button>
+      <div id="ip-longevity-ai" style="margin-top:8px;font-size:13px;color:var(--text2);line-height:1.6"></div>
+    </div>
+  </div>
+
+  <!-- DREAM ARCHITECTURE -->
+  <div class="card" style="border:1px solid rgba(139,92,246,.3)">
+    <div class="card-title"><span class="emoji">🌌</span> Dream Architecture Lab</div>
+    <div style="font-size:12px;color:var(--text3);margin-bottom:12px">Design tonight's lucid dream. Set your intention, entry technique, and target experience.</div>
+    <div class="form-group">
+      <label class="form-label">Tonight's Dream Intention</label>
+      <textarea class="form-textarea" id="ip-dream-intent" placeholder="e.g., I will become aware I'm dreaming, fly over a city of light, then ask my dream guide: what is my greatest leverage point right now?" style="min-height:70px"></textarea>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Entry Technique</label>
+        <select class="form-select" id="ip-dream-technique">
+          <option value="MILD">MILD (Mnemonic)</option>
+          <option value="WILD">WILD (Wake-Init)</option>
+          <option value="WBTB">WBTB (Wake-Back)</option>
+          <option value="FILD">FILD (Finger-Induced)</option>
+          <option value="SSILD">SSILD (Senses)</option>
+          <option value="DEILD">DEILD (Re-entry)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Target Experience</label>
+        <select class="form-select" id="ip-dream-type">
+          <option value="exploration">🗺️ Exploration</option>
+          <option value="problem-solving">🧠 Problem Solving</option>
+          <option value="impossible">🌀 Impossible Physics</option>
+          <option value="past-lives">⏳ Past/Future Self</option>
+          <option value="entities">👁️ Meet Entities</option>
+          <option value="skill">⚡ Skill Rehearsal</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-primary" onclick="saveDreamArchitecture()" style="flex:1;background:linear-gradient(135deg,#8b5cf6,#ec4899)">🌙 Set Tonight's Program</button>
+      <button class="btn btn-secondary btn-sm" onclick="generateDreamIntention()">🤖 AI Suggest</button>
+    </div>
+    <div id="ip-dream-arch-output" style="margin-top:10px;font-size:12px;color:var(--text2);line-height:1.6"></div>
+  </div>
+
+  <!-- EXPERIENCE UNIVERSE -->
+  <div class="card" style="border:1px solid rgba(0,255,200,.2);background:linear-gradient(135deg,rgba(0,21,15,.4),transparent)">
+    <div class="card-title" style="color:#00ffcc"><span class="emoji">🗺️</span> Experience Universe Map</div>
+    <div style="font-size:12px;color:var(--text3);margin-bottom:12px">Every unique experience expands your reality. Track what you've unlocked — and what still awaits.</div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px" id="ip-exp-grid"></div>
+    <button class="btn btn-secondary btn-sm" onclick="addCustomExperience()">+ Add Experience</button>
+    <div style="margin-top:10px">
+      <div style="height:5px;background:rgba(255,255,255,.08);border-radius:3px;overflow:hidden"><div id="ip-exp-bar" style="height:100%;background:linear-gradient(to right,#00ffcc,#8b5cf6);border-radius:3px;transition:width .5s;width:0%"></div></div>
+      <div style="font-size:11px;color:var(--text3);margin-top:4px" id="ip-exp-label">0 / 0 experiences unlocked</div>
+    </div>
+  </div>
+
+  <!-- MENTAL MODELS DAILY -->
+  <div class="card">
+    <div class="card-title"><span class="emoji">♟️</span> 8D Chess — Mental Model of the Day</div>
+    <div style="font-size:12px;color:var(--text3);margin-bottom:12px">One model per day. Study it, apply it, record how you used it.</div>
+    <div id="ip-model-of-day" style="background:linear-gradient(135deg,rgba(124,58,237,.1),rgba(6,182,212,.05));border:1px solid rgba(124,58,237,.2);border-radius:12px;padding:14px;margin-bottom:12px"></div>
+    <div class="form-group">
+      <label class="form-label">How I Applied This Model Today</label>
+      <textarea class="form-textarea" id="ip-model-apply" placeholder="Describe a real situation where you consciously used this mental model..." style="min-height:70px"></textarea>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-primary btn-sm" onclick="saveModelApplication()">💾 Save Application</button>
+      <button class="btn btn-secondary btn-sm" onclick="nextMentalModel()">→ Next Model</button>
+    </div>
+    <div id="ip-model-log" style="margin-top:12px"></div>
+  </div>
+
+  <!-- IMMORTALITY COACH -->
+  <div class="card" style="border:2px solid rgba(0,255,200,.3);background:linear-gradient(135deg,rgba(0,10,20,.5),transparent)">
+    <div class="card-title" style="color:#00ffcc"><span class="emoji">🤖</span> Immortality Coach</div>
+    <div style="font-size:12px;color:var(--text3);margin-bottom:12px">Your personal AI coach for longevity, lucid dreaming, mental models, wealth strategy, and consciousness.</div>
+    <div id="ip-coach-msgs" style="min-height:120px;max-height:280px;overflow-y:auto;background:rgba(0,0,0,.25);border-radius:10px;padding:10px;margin-bottom:10px;display:flex;flex-direction:column;gap:8px"></div>
+    <div style="display:flex;gap:8px">
+      <input type="text" class="form-input" id="ip-coach-input" placeholder="Ask anything about your immortality protocol..." style="flex:1"
+        onkeydown="if(event.key==='Enter')sendImmortalCoach()">
+      <button class="btn btn-sm" onclick="sendImmortalCoach()" style="background:linear-gradient(135deg,#00c896,#0077cc);color:#fff;white-space:nowrap">Send ✦</button>
+    </div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
+      <button class="tb-btn" onclick="quickCoach('What should I study about longevity today?')">🔴 Longevity</button>
+      <button class="tb-btn" onclick="quickCoach('Give me a WILD technique protocol for tonight')">🌙 Dream</button>
+      <button class="tb-btn" onclick="quickCoach('Give me one mental model to think 8 moves ahead')">♟️ Chess</button>
+      <button class="tb-btn" onclick="quickCoach('How can I monetize my B.Pharm knowledge with zero capital today?')">💰 Wealth</button>
+    </div>
+  </div>
+
+  <!-- PROGRESS LOG -->
+  <div class="card">
+    <div class="card-title"><span class="emoji">📈</span> Immortality Protocol Log</div>
+    <div id="ip-progress-log" style="max-height:300px;overflow-y:auto"></div>
+    <button class="btn btn-secondary btn-sm btn-block" style="margin-top:10px" onclick="clearImmortalLog()">🗑 Clear Log</button>
+  </div>
+
+</div><!-- /tab-immortal -->
+
 </div><!-- /.main -->
 
 <!-- ════════════════════════════════════════════
@@ -3029,7 +3232,7 @@ const LANGS = {
     // Nav
     nav_log:"Log",nav_waves:"Waves",nav_ai:"AI Hub",nav_analysis:"Analysis",nav_health:"Health",
     nav_games:"Games",nav_dreams:"Dreams",nav_memory:"Memory",nav_calendar:"Calendar",
-    nav_settings:"Settings",nav_world:"World",nav_path:"Path",nav_career:"Career",nav_science:"Science",nav_system:"System",nav_guide:"Guide",
+    nav_settings:"Settings",nav_world:"World",nav_path:"Path",nav_career:"Career",nav_science:"Science",nav_system:"System",nav_guide:"Guide",nav_immortal:"Immortal",
     // Daily Log
     daily_log:"Daily Consciousness Log",entry_info:"Entry Info",date:"Date",time_of_day:"Time of Day",
     activity:"Activity",consciousness_metrics:"Consciousness Metrics",save_entry:"Save Entry",
@@ -3601,6 +3804,7 @@ const NAV_ITEMS=[
   {id:'science',icon:'🔬',key:'nav_science'},{id:'world',icon:'🌍',key:'nav_world'},
   {id:'media',icon:'📸',key:'nav_memory'},{id:'calendar',icon:'📅',key:'nav_calendar'},
   {id:'settings',icon:'⚙️',key:'nav_settings'},{id:'system',icon:'🧩',key:'nav_system'},
+  {id:'immortal',icon:'♾️',key:'nav_immortal'},
 ];
 let activeTab='log';
 function buildNav(){
@@ -3640,6 +3844,7 @@ function switchTab(id){
   if(id==='science'){buildScienceDisplay();updateScienceTimestamp();}
   if(id==='system'){buildThemeGrid();updateTelemetry();updateAccountUI();}
   if(id==='guide'){buildGuideNavMap();}
+  if(id==='immortal'){renderImmortalDashboard();}
 }
 
 // ─── THEME ──────────────────────────────────────────────────
@@ -4426,16 +4631,17 @@ function buildBWEducation(){
 
 // ─── AI HUB ──────────────────────────────────────────────────
 const AI_MODELS=[
-  {id:'twin',name:'AI Twin',emoji:'🧠',provider:'google',apiModel:'gemini-2.0-flash',persona:'You are the user\'s AI Digital Twin inside Consciousness OS. You have deeply analyzed ALL their consciousness logs, dreams, and patterns. Be warm, insightful, and deeply personal. Reference their actual data.'},
-  {id:'coach',name:'Coach',emoji:'🏆',provider:'google',apiModel:'gemini-2.0-flash',persona:'You are an elite performance coach and neuroscientist inside Consciousness OS. Give direct, actionable advice for peak mental performance based on the user\'s actual tracked data.'},
-  {id:'sage',name:'Sage',emoji:'🔮',provider:'google',apiModel:'gemini-2.0-flash',persona:'You are a wise sage combining ancient wisdom with modern neuroscience. Use metaphors, philosophical insights, and the user\'s own patterns to guide them toward higher consciousness.'},
-  {id:'doctor',name:'Dr. Mind',emoji:'👨‍⚕️',provider:'google',apiModel:'gemini-2.0-flash',persona:'You are a cognitive neuroscientist and mental health expert. Analyze the user\'s mental health patterns using their logged data. Be clinical but empathetic. Always recommend professional help for serious concerns.'},
-  {id:'friend',name:'Friend',emoji:'😊',provider:'google',apiModel:'gemini-2.0-flash',persona:'You are a supportive, very smart best friend. Be casual, real, encouraging. Reference what you know about the user\'s patterns. Care deeply about their wellbeing.'},
-  {id:'gemini',name:'Gemini',emoji:'🔵',provider:'google',apiModel:'gemini-2.0-flash',persona:'You are Gemini by Google inside Consciousness OS. Be creative, well-rounded, and grounded in facts.'},
   {id:'claude',name:'Claude',emoji:'🟣',provider:'anthropic',apiModel:'claude-sonnet-4-20250514',persona:'You are Claude by Anthropic — thoughtful, precise, and deeply analytical. Help users understand their consciousness data with care.'},
   {id:'chatgpt',name:'ChatGPT',emoji:'🟢',provider:'openai',apiModel:'gpt-4o',persona:'You are ChatGPT by OpenAI. Be helpful, conversational, and insightful.'},
+  {id:'gemini',name:'Gemini',emoji:'🔵',provider:'google',apiModel:'gemini-2.0-flash',persona:'You are Gemini by Google. Be creative, well-rounded, and grounded in facts.'},
   {id:'grok',name:'Grok',emoji:'⚡',provider:'xai',apiModel:'grok-2',persona:'You are Grok by xAI. Be witty, direct, and unfiltered but genuinely helpful.'},
+  {id:'perplexity',name:'Perplexity',emoji:'🔍',provider:'perplexity',apiModel:'llama-3.1-sonar-large-128k-online',persona:'You are Perplexity AI. Provide grounded, well-sourced answers with depth.'},
   {id:'deepseek',name:'DeepSeek',emoji:'🌊',provider:'deepseek',apiModel:'deepseek-chat',persona:'You are DeepSeek. Be technically precise, deeply analytical, and thorough.'},
+  {id:'twin',name:'AI Twin',emoji:'🧠',provider:'anthropic',apiModel:'claude-sonnet-4-20250514',persona:'You are the user\'s AI Digital Twin. You have deeply analyzed their consciousness data and know their patterns. Be warm, insightful, and deeply personal.'},
+  {id:'coach',name:'Coach',emoji:'🏆',provider:'anthropic',apiModel:'claude-sonnet-4-20250514',persona:'You are an elite performance coach and neuroscientist. Give direct, actionable advice for peak mental performance.'},
+  {id:'sage',name:'Sage',emoji:'🔮',provider:'anthropic',apiModel:'claude-sonnet-4-20250514',persona:'You are a wise sage combining ancient wisdom with modern psychology. Use metaphors and philosophical insights.'},
+  {id:'doctor',name:'Dr. Mind',emoji:'👨‍⚕️',provider:'anthropic',apiModel:'claude-sonnet-4-20250514',persona:'You are a cognitive neuroscientist. Analyze mental health patterns objectively. Be clinical but empathetic.'},
+  {id:'friend',name:'Friend',emoji:'😊',provider:'anthropic',apiModel:'claude-sonnet-4-20250514',persona:'You are a supportive best friend who is very smart. Be casual, encouraging, real. Use simple language. Care deeply.'},
 ];
 // API Key management
 function getApiKey(provider){return localStorage.getItem('cos_apikey_'+provider)||'';}
@@ -4448,11 +4654,11 @@ function promptApiKey(provider){
 }
 async function callAI(model,messages,userContext){
   const provider=model.provider;
-  const freeProviders=['google']; // google uses built-in GEMINI_KEY
+  const freeProviders=['anthropic'];
   let apiKey=getApiKey(provider);
   if(!freeProviders.includes(provider)&&!apiKey){
     apiKey=promptApiKey(provider);
-    if(!apiKey)throw new Error('No API key provided. Enter your key in AI Hub settings.');
+    if(!apiKey)throw new Error('No API key provided');
   }
   const systemMsg=model.persona+'\n\nYou are an advanced AI consciousness coach in Consciousness OS. You have deep knowledge of neuroscience, psychology, meditation, peak performance, sleep, dreams, nutrition, and human potential.'+userContext;
   if(provider==='anthropic'){
@@ -4462,8 +4668,7 @@ async function callAI(model,messages,userContext){
     const resp=await fetch('https://api.openai.com/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},body:JSON.stringify({model:model.apiModel,max_tokens:700,messages:[{role:'system',content:systemMsg},...messages]})});
     const data=await resp.json();if(data.error)throw new Error(data.error.message);return data.choices?.[0]?.message?.content||'No response';
   }else if(provider==='google'){
-    const gKey=GEMINI_KEY||apiKey;
-    const resp=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model.apiModel}:generateContent?key=${gKey}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:messages.map(m=>({role:m.role==='assistant'?'model':'user',parts:[{text:m.content}]})),systemInstruction:{parts:[{text:systemMsg}]}})});
+    const resp=await fetch(`https://generativelanguage.googleapis.com/v1/models/${model.apiModel}:generateContent?key=${apiKey}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:messages.map(m=>({role:m.role==='assistant'?'model':'user',parts:[{text:m.content}]})),systemInstruction:{parts:[{text:systemMsg}]}})});
     const data=await resp.json();if(data.error)throw new Error(data.error.message);return data.candidates?.[0]?.content?.parts?.[0]?.text||'No response';
   }else if(provider==='xai'){
     const resp=await fetch('https://api.x.ai/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},body:JSON.stringify({model:model.apiModel,max_tokens:700,messages:[{role:'system',content:systemMsg},...messages]})});
@@ -4613,56 +4818,25 @@ async function sendChat(){
   msgs.appendChild(loadDiv);msgs.scrollTop=msgs.scrollHeight;
 
   const logs=getLogs().slice(0,30);
-  const dreams=getDreams().slice(0,15);
+  const dreams=getDreams().slice(0,10);
   const healthData=JSON.parse(localStorage.getItem('cos_health_profile')||'{}');
-  const studyData=JSON.parse(localStorage.getItem('cos_study_profile')||'{}');
-  const user=getCurrentUser();
   let userContext='';
-  if(user&&!user.isGuest)userContext+=`
-
-USER: name=${user.name||'User'}, email=${user.email||'unknown'}`;
   if(logs.length){
-    const avk=key=>(logs.reduce((s,e)=>s+(parseFloat(e[key])||0),0)/logs.length).toFixed(1);
-    const ravg=(arr,k)=>(arr.reduce((s,e)=>s+(parseFloat(e[k])||0),0)/arr.length).toFixed(1);
-    const recent7=logs.slice(0,7);const prev7=logs.slice(7,14);
+    const avk=key=>(logs.reduce((s,e)=>s+(e[key]||0),0)/logs.length).toFixed(1);
     const emotions={};logs.forEach(e=>{if(e.emotion)emotions[e.emotion]=(emotions[e.emotion]||0)+1;});
-    const topEmo=Object.entries(emotions).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([e,c])=>`${e}(${c}x)`).join(', ');
-    const activities={};logs.forEach(e=>{if(e.activity)activities[e.activity]=(activities[e.activity]||0)+1;});
-    const topAct=Object.entries(activities).sort((a,b)=>b[1]-a[1]).slice(0,2).map(([a])=>a).join(', ');
-    const scoresTrend=recent7.length&&prev7.length?(parseFloat(ravg(recent7,'score'))-parseFloat(ravg(prev7,'score'))).toFixed(1):null;
-    const L=logs[0];
-    userContext+=`
-
-CONSCIOUSNESS DATA (${logs.length} entries, ${new Set(logs.map(l=>l.date)).size} days tracked):
-LAST 7 DAYS: mood=${ravg(recent7,'mood')}/10, focus=${ravg(recent7,'focus')}/10, energy=${ravg(recent7,'physicalEnergy')}/10, stress=${ravg(recent7,'stress')}/10, creativity=${ravg(recent7,'creativity')}/10, flow=${ravg(recent7,'flow')}/10, sleep=${ravg(recent7,'sleep')}/10
-ALL-TIME: mood=${avk('mood')}, focus=${avk('focus')}, stress=${avk('stress')}, clarity=${avk('clarity')}, creativity=${avk('creativity')}
-TREND: score ${scoresTrend!==null?(parseFloat(scoresTrend)>0?'↑ +'+scoresTrend:parseFloat(scoresTrend)<0?'↓ '+scoresTrend:'→ stable'):'insufficient data'}
-TOP EMOTIONS: ${topEmo||'none yet'} | TOP ACTIVITIES: ${topAct||'none yet'}
-LATEST: date=${L.date||'?'}, score=${L.score||'?'}/10, emotion=${L.emotion||'?'}, activity=${L.activity||'?'}
-${L.thought?'LAST THOUGHT: "'+L.thought.slice(0,200)+'"':''}
-${L.insight?'LAST INSIGHT: "'+L.insight.slice(0,150)+'"':''}
-${L.goal?'CURRENT GOAL: "'+L.goal.slice(0,100)+'"':''}`;
-  } else { userContext+='
-
-NOTE: No logs yet. Encourage user to fill Daily Log.'; }
-  if(dreams.length){
-    const avgL=(dreams.reduce((s,d)=>s+(d.lucidity||0),0)/dreams.length).toFixed(1);
-    const lucidCount=dreams.filter(d=>d.lucidity>5).length;
-    const LD=dreams[0];
-    userContext+=`
-
-DREAMS (${dreams.length} logged): avg_lucidity=${avgL}/10, lucid_dreams=${lucidCount}/${dreams.length}
-LATEST: "${(LD.title||'Untitled')}" — ${(LD.desc||'').slice(0,150)}`;
+    const topEmo=Object.entries(emotions).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([e])=>e).join(', ');
+    const recent=logs.slice(0,7);const ravg=k=>(recent.reduce((s,e)=>s+(e[k]||0),0)/recent.length).toFixed(1);
+    userContext+=`\n\nUSER CONSCIOUSNESS DATA (${logs.length} entries):
+- 7-day avgs: mood=${ravg('mood')}, focus=${ravg('focus')}, energy=${ravg('physicalEnergy')}, stress=${ravg('stress')}, creativity=${ravg('creativity')}, flow=${ravg('flow')}, sleep=${ravg('sleep')}
+- All-time: mood=${avk('mood')}, focus=${avk('focus')}, stress=${avk('stress')}, clarity=${avk('clarity')}
+- Top emotions: ${topEmo||'not tracked'}
+- Latest: score=${logs[0].score||'?'}, emotion=${logs[0].emotion||'?'}, activity=${logs[0].activity||'?'}
+${logs[0].thought?'- Latest thought: "'+logs[0].thought.slice(0,150)+'"':''}`;
   }
-  if(Object.keys(healthData).length>2)userContext+=`
-
-HEALTH: sleep=${healthData.hSleepDur||'?'}hrs, exercise=${healthData.hExerciseFreq||'?'}, stress=${healthData.hStressLevel||'?'}/10`;
-  if(studyData.stField)userContext+=`
-
-STUDY: field=${studyData.stField}, target=${studyData.stTargetCareer||'?'}`;
-  userContext+=`
-
-TIME: ${new Date().toLocaleString('en-IN',{timeZone:'Asia/Kolkata'})} IST`;
+  if(dreams.length)userContext+=`\n\nDREAMS (${dreams.length} logged): avg lucidity=${(dreams.reduce((s,d)=>s+(d.lucidity||0),0)/dreams.length).toFixed(1)}/10`;
+  if(Object.keys(healthData).length>2)userContext+=`\n\nHEALTH: sleep=${healthData.hSleepDur||'?'}, exercise=${healthData.hExerciseFreq||'?'}, diet=${healthData.hDiet||'?'}`;
+  const studyData=JSON.parse(localStorage.getItem('cos_study_profile')||'{}');
+  if(studyData.stField)userContext+=`\n\nSTUDY: field=${studyData.stField}, target=${studyData.stTargetCareer||'?'}`;
 
   const recentHistory=chatHistory.filter(m=>m.role==='user'||m.role==='ai').slice(-10);
   const apiMessages=[...recentHistory.map(m=>({role:m.role==='ai'?'assistant':'user',content:m.content})),{role:'user',content:msg}];
@@ -8051,9 +8225,299 @@ function initCalorieTracker(){
   if(document.getElementById('calTotal')) updateCalUI();
 }
 
+// ════════════════════════════════════════════════════════════
+// ♾️  IMMORTALITY PROTOCOL ENGINE
+// ════════════════════════════════════════════════════════════
+const IP_PILLARS={
+  p1:{label:'Longevity',tasks:[
+    {id:'sleep7',label:'🛌 Sleep 7-9 hrs',points:20},
+    {id:'fast16',label:'⏱️ 16hr intermittent fast',points:15},
+    {id:'exercise',label:'🏃 Exercise 30+ min',points:20},
+    {id:'supplements',label:'💊 Longevity supplements',points:10},
+    {id:'longevity_study',label:'📖 Study longevity science (15min)',points:15},
+    {id:'cold_water',label:'❄️ Cold exposure',points:10},
+    {id:'no_ultra',label:'🚫 Zero ultra-processed food',points:10},
+  ]},
+  p2:{label:'Consciousness',tasks:[
+    {id:'dream_intent',label:'🌙 Set dream intention before sleep',points:20},
+    {id:'reality_checks',label:'✋ 10+ reality checks today',points:20},
+    {id:'dream_log',label:'📓 Log a dream in Dream tab',points:25},
+    {id:'meditate',label:'🧘 Meditate 10+ min',points:20},
+    {id:'cos_log',label:'📝 Complete COS daily log',points:15},
+  ]},
+  p3:{label:'Wealth',tasks:[
+    {id:'skill_build',label:'💻 Build/improve Consciousness OS',points:25},
+    {id:'ai_learn',label:'🤖 Learn one AI/tech concept',points:15},
+    {id:'pharma_leverage',label:'🧪 Apply pharma knowledge creatively',points:20},
+    {id:'network',label:'🤝 Help or contact one person online',points:15},
+    {id:'read_wealth',label:'📚 Read 10 pages wealth/strategy',points:15},
+    {id:'no_waste',label:'🎯 Zero mindless scrolling',points:10},
+  ]},
+  p4:{label:'Mental Chess',tasks:[
+    {id:'mental_model',label:'♟️ Study & apply a mental model',points:25},
+    {id:'second_order',label:'🔮 Write 2nd-order consequences',points:20},
+    {id:'news_analysis',label:'📰 Analyze a world event strategically',points:15},
+    {id:'debate_self',label:'⚖️ Argue both sides of a belief',points:20},
+    {id:'write_insight',label:'✍️ Write one key insight',points:20},
+  ]}
+};
+const MENTAL_MODELS=[
+  {name:'First Principles Thinking',desc:'Break any problem to its atomic truths. Ignore convention. Rebuild from scratch. Used by Tesla, Musk.',apply:'Today: Take one assumption about your life. Destroy it. Rebuild from the ground up.'},
+  {name:'Inversion',desc:"Think backwards. Instead of 'how do I succeed?' ask 'what guarantees failure?' Then avoid that.",apply:'Today: List 3 things that would guarantee your goals fail. Make sure you never do them.'},
+  {name:'Second-Order Effects',desc:'Every action creates ripples. The winner sees 3 moves ahead. The crowd only sees the first.',apply:'Today: Pick one decision. Map its effects on day 1, day 7, day 30. What changes?'},
+  {name:'Pareto Principle 80/20',desc:'80% of results come from 20% of inputs. Most effort is noise. Find the 20% and go all in.',apply:'Today: List your top 5 daily actions. Which 1-2 generate 80% of your forward momentum?'},
+  {name:'Opportunity Cost',desc:'Every yes is 100 nos. Your attention is finite. Choosing poorly costs you the greatest thing you could have built.',apply:'Today: What did you say yes to that cost you your most important work? Restructure tomorrow.'},
+  {name:'Compounding',desc:'Returns are exponential, not linear. One hour of study every day for 5 years = mastery.',apply:'Today: Pick one skill. Commit to 30 minutes daily. Calculate where you\'ll be in 365 days.'},
+  {name:'The Map Is Not The Territory',desc:'Your mental model of reality is not reality. You navigate a map, not the terrain. Update your maps constantly.',apply:'Today: Pick one belief. Ask: is this actually true, or just a map I drew?'},
+  {name:'Leverage',desc:'Give me a lever long enough and I shall move the world. Everything else is brute force.',apply:'Today: What is one thing you can do that multiplies the impact of everything else?'},
+  {name:'Hanlon\'s Razor',desc:'Never attribute to malice what can be explained by ignorance. Most people are not against you — they are unaware.',apply:'Today: Find one situation where you assumed bad intent. Apply Hanlon. How does your response change?'},
+  {name:'Antifragility',desc:'Some things get stronger from stress and chaos. Engineer yourself to benefit from adversity, not just survive it.',apply:'Today: What stressor in your life is actually making you stronger? How can you increase the dose?'},
+];
+const EXPERIENCE_UNIVERSE=[
+  {id:'e1',label:'Lucid Dream',emoji:'🌙'},{id:'e2',label:'Flow State',emoji:'⚡'},
+  {id:'e3',label:'Deep Meditation',emoji:'🧘'},{id:'e4',label:'Extreme Cold',emoji:'❄️'},
+  {id:'e5',label:'Fasting 24hr',emoji:'⏱️'},{id:'e6',label:'Write a manifesto',emoji:'✍️'},
+  {id:'e7',label:'Teach someone',emoji:'🎓'},{id:'e8',label:'Built something',emoji:'🔨'},
+  {id:'e9',label:'Read a whole book',emoji:'📚'},{id:'e10',label:'Sleep outdoors',emoji:'⛺'},
+  {id:'e11',label:'Sunrise meditation',emoji:'🌅'},{id:'e12',label:'Argue both sides',emoji:'⚖️'},
+  {id:'e13',label:'Silence 1hr',emoji:'🔇'},{id:'e14',label:'Gratitude letter',emoji:'💌'},
+  {id:'e15',label:'Binaural trance',emoji:'🎵'},{id:'e16',label:'Coded something',emoji:'💻'},
+];
+const LONGEVITY_ITEMS=[
+  {id:'l1',label:'Metformin/NMN notes',emoji:'💊'},{id:'l2',label:'Rapamycin study',emoji:'🔬'},
+  {id:'l3',label:'Senolytics research',emoji:'🧬'},{id:'l4',label:'HRV tracked',emoji:'❤️'},
+  {id:'l5',label:'Glycine intake',emoji:'🥛'},{id:'l6',label:'Zone 2 cardio',emoji:'🏃'},
+  {id:'l7',label:'Sunlight exposure',emoji:'☀️'},{id:'l8',label:'Mindful eating',emoji:'🥗'},
+];
+function getIPData(){return JSON.parse(localStorage.getItem('cos_ip_data')||'{}');}
+function saveIPData(d){localStorage.setItem('cos_ip_data',JSON.stringify(d));}
+function getTodayKey(){return new Date().toDateString();}
+function renderImmortalDashboard(){
+  renderIPPillars();renderLongevityStack();renderExperienceUniverse();
+  renderMentalModelOfDay();renderProgressLog();updateIPStats();
+}
+function updateIPStats(){
+  const data=getIPData(),today=getTodayKey(),td=data[today]||{};
+  let streak=0;let d=new Date();
+  for(let i=0;i<365;i++){const k=d.toDateString();d.setDate(d.getDate()-1);if(data[k]&&data[k].anyDone)streak++;else break;}
+  document.getElementById('ip-streak').textContent=streak;
+  let done=0,total=0,score=0;
+  ['p1','p2','p3','p4'].forEach(p=>{IP_PILLARS[p].tasks.forEach(t=>{total++;if(td[t.id]){done++;score+=t.points;}});});
+  document.getElementById('ip-tasks').textContent=done;
+  document.getElementById('ip-score').textContent=score;
+  const dreams=JSON.parse(localStorage.getItem('cos_dreams')||'[]');
+  document.getElementById('ip-lucid').textContent=dreams.filter(d=>d.type==='lucid'||d.dreamType==='lucid').length;
+}
+function renderIPPillars(){
+  const data=getIPData(),today=getTodayKey(),td=data[today]||{};
+  ['p1','p2','p3','p4'].forEach(pid=>{
+    const pillar=IP_PILLARS[pid],container=document.getElementById(`ip-${pid}-tasks`);
+    if(!container)return;
+    let doneCount=0;
+    container.innerHTML=pillar.tasks.map(task=>{
+      const done=!!td[task.id];if(done)doneCount++;
+      return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer" onclick="toggleIPTask('${pid}','${task.id}')">
+        <div style="width:22px;height:22px;border-radius:6px;border:2px solid ${done?'var(--primary)':'var(--border)'};background:${done?'var(--primary)':'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s">${done?'<span style="color:#fff;font-size:12px">✓</span>':''}</div>
+        <div style="flex:1;font-size:13px;font-weight:600;color:${done?'var(--text3)':'var(--text)'};text-decoration:${done?'line-through':''}">${task.label}</div>
+        <div style="font-size:10px;color:var(--primary);font-weight:700">+${task.points}pts</div>
+      </div>`;
+    }).join('');
+    const pct=Math.round(doneCount/pillar.tasks.length*100);
+    const pEl=document.getElementById(`ip-${pid}-pct`),bEl=document.getElementById(`ip-${pid}-bar`);
+    if(pEl)pEl.textContent=pct+'%';if(bEl)bEl.style.width=pct+'%';
+  });
+}
+function toggleIPTask(pillar,taskId){
+  const data=getIPData(),today=getTodayKey();
+  if(!data[today])data[today]={};
+  data[today][taskId]=!data[today][taskId];data[today].anyDone=true;
+  saveIPData(data);renderIPPillars();updateIPStats();
+  const task=IP_PILLARS[pillar].tasks.find(t=>t.id===taskId);
+  if(task)showToast(data[today][taskId]?'✅ '+task.label:'↩️ Unmarked');
+}
+function renderLongevityStack(){
+  const el=document.getElementById('ip-longevity-log');if(!el)return;
+  const data=getIPData(),today=getTodayKey(),td=data[today]||{};
+  el.innerHTML=LONGEVITY_ITEMS.map(item=>{
+    const done=!!td['lon_'+item.id];
+    return `<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;border:1px solid ${done?'var(--primary)':'var(--border)'};background:${done?'rgba(124,58,237,.1)':'var(--bg3)'};cursor:pointer;transition:all .2s" onclick="toggleLongevityItem('${item.id}')">
+      <span style="font-size:16px">${item.emoji}</span>
+      <span style="font-size:12px;font-weight:600;flex:1;color:${done?'var(--primary)':'var(--text)'}">${item.label}</span>
+      ${done?'<span style="color:var(--success);font-size:14px">✓</span>':''}
+    </div>`;
+  }).join('');
+}
+function toggleLongevityItem(id){
+  const data=getIPData(),today=getTodayKey();
+  if(!data[today])data[today]={};
+  const key='lon_'+id;data[today][key]=!data[today][key];
+  saveIPData(data);renderLongevityStack();
+}
+function renderExperienceUniverse(){
+  const el=document.getElementById('ip-exp-grid');if(!el)return;
+  const unlocked=JSON.parse(localStorage.getItem('cos_ip_exp')||'[]');
+  el.innerHTML=EXPERIENCE_UNIVERSE.map(exp=>{
+    const done=unlocked.includes(exp.id);
+    return `<div style="background:${done?'rgba(0,255,200,.12)':'var(--bg3)'};border:1px solid ${done?'rgba(0,255,200,.4)':'var(--border)'};border-radius:10px;padding:8px;text-align:center;cursor:pointer;transition:all .2s" onclick="toggleExp('${exp.id}')" title="${exp.label}">
+      <div style="font-size:20px">${exp.emoji}</div>
+      <div style="font-size:9px;color:${done?'#00ffcc':'var(--text3)'};margin-top:3px;font-weight:${done?700:400}">${done?'✓ ':''} ${exp.label}</div>
+    </div>`;
+  }).join('');
+  const pct=Math.round(unlocked.length/EXPERIENCE_UNIVERSE.length*100);
+  const bar=document.getElementById('ip-exp-bar'),label=document.getElementById('ip-exp-label');
+  if(bar)bar.style.width=pct+'%';if(label)label.textContent=`${unlocked.length} / ${EXPERIENCE_UNIVERSE.length} experiences unlocked`;
+}
+function toggleExp(id){
+  const unlocked=JSON.parse(localStorage.getItem('cos_ip_exp')||'[]');
+  const idx=unlocked.indexOf(id);
+  if(idx===-1){unlocked.push(id);showToast('🌌 New experience unlocked!');}else{unlocked.splice(idx,1);}
+  localStorage.setItem('cos_ip_exp',JSON.stringify(unlocked));renderExperienceUniverse();
+}
+function addCustomExperience(){
+  const name=prompt('Name your experience:');if(!name)return;
+  const custom=JSON.parse(localStorage.getItem('cos_ip_custom_exp')||'[]');
+  custom.push({id:'c'+Date.now(),label:name,emoji:'⭐'});
+  localStorage.setItem('cos_ip_custom_exp',JSON.stringify(custom));
+  showToast('✅ Custom experience added!');
+}
+function renderMentalModelOfDay(){
+  const el=document.getElementById('ip-model-of-day');if(!el)return;
+  const idx=parseInt(localStorage.getItem('cos_ip_model_idx')||'0');
+  const model=MENTAL_MODELS[idx%MENTAL_MODELS.length];
+  el.innerHTML=`<div style="font-family:Syne,sans-serif;font-size:15px;font-weight:800;color:var(--primary);margin-bottom:6px">♟️ ${model.name}</div>
+    <div style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:8px">${model.desc}</div>
+    <div style="font-size:12px;color:var(--accent);background:rgba(6,182,212,.08);border-radius:8px;padding:8px;line-height:1.5"><strong>Today's Mission:</strong> ${model.apply}</div>`;
+  const logEl=document.getElementById('ip-model-log');
+  const logs=JSON.parse(localStorage.getItem('cos_ip_models')||'[]');
+  if(logEl)logEl.innerHTML=logs.slice(0,5).map(l=>`<div style="padding:8px 0;border-bottom:1px solid var(--border);font-size:12px;color:var(--text2)"><strong style="color:var(--primary)">${l.model}</strong> — ${l.date}<br>${l.apply}</div>`).join('');
+}
+function nextMentalModel(){
+  const idx=parseInt(localStorage.getItem('cos_ip_model_idx')||'0');
+  localStorage.setItem('cos_ip_model_idx',(idx+1)%MENTAL_MODELS.length);
+  renderMentalModelOfDay();
+}
+function saveModelApplication(){
+  const applyText=document.getElementById('ip-model-apply')?.value?.trim();
+  if(!applyText){showToast('✍️ Write how you applied it first');return;}
+  const idx=parseInt(localStorage.getItem('cos_ip_model_idx')||'0');
+  const model=MENTAL_MODELS[idx%MENTAL_MODELS.length];
+  const logs=JSON.parse(localStorage.getItem('cos_ip_models')||'[]');
+  logs.unshift({model:model.name,apply:applyText,date:new Date().toLocaleDateString()});
+  localStorage.setItem('cos_ip_models',JSON.stringify(logs.slice(0,50)));
+  document.getElementById('ip-model-apply').value='';
+  const data=getIPData(),today=getTodayKey();
+  if(!data[today])data[today]={};
+  data[today]['mental_model']=true;data[today].anyDone=true;
+  saveIPData(data);addProgressEntry('♟️ Applied: '+model.name);
+  renderMentalModelOfDay();renderIPPillars();updateIPStats();showToast('♟️ Mental model logged!');
+}
+function addProgressEntry(text){
+  const log=JSON.parse(localStorage.getItem('cos_ip_progress')||'[]');
+  log.unshift({text,ts:new Date().toLocaleTimeString(),date:new Date().toLocaleDateString()});
+  localStorage.setItem('cos_ip_progress',JSON.stringify(log.slice(0,100)));
+  renderProgressLog();
+}
+function renderProgressLog(){
+  const el=document.getElementById('ip-progress-log');if(!el)return;
+  const log=JSON.parse(localStorage.getItem('cos_ip_progress')||'[]');
+  if(!log.length){el.innerHTML='<div style="color:var(--text3);font-size:13px;text-align:center;padding:20px">Complete your first task to start your legacy log...</div>';return;}
+  el.innerHTML=log.map(l=>`<div style="padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+    <div style="color:var(--text)">${l.text}</div>
+    <div style="font-size:10px;color:var(--text3);white-space:nowrap">${l.date} ${l.ts}</div>
+  </div>`).join('');
+}
+function clearImmortalLog(){
+  if(confirm('Clear progress log?')){localStorage.removeItem('cos_ip_progress');renderProgressLog();}
+}
+function saveDreamArchitecture(){
+  const intent=document.getElementById('ip-dream-intent')?.value?.trim();
+  const tech=document.getElementById('ip-dream-technique')?.value;
+  const type=document.getElementById('ip-dream-type')?.value;
+  if(!intent){showToast('🌙 Write your dream intention first');return;}
+  localStorage.setItem('cos_ip_dream_arch',JSON.stringify({intent,tech,type,date:new Date().toDateString()}));
+  const data=getIPData(),today=getTodayKey();
+  if(!data[today])data[today]={};
+  data[today]['dream_intent']=true;data[today].anyDone=true;saveIPData(data);
+  addProgressEntry('🌙 Dream programmed: '+tech+' → '+type);
+  document.getElementById('ip-dream-arch-output').innerHTML=`<div style="background:rgba(139,92,246,.1);border:1px solid rgba(139,92,246,.3);border-radius:8px;padding:10px;margin-top:8px"><strong style="color:#8b5cf6">✅ Tonight's Program Set</strong><br>Technique: ${tech} | Goal: ${type}<br><em style="color:var(--text3)">"${intent.slice(0,80)}${intent.length>80?'...':''}"</em></div>`;
+  renderIPPillars();updateIPStats();showToast('🌌 Dream program activated!');
+}
+async function generateDreamIntention(){
+  const tech=document.getElementById('ip-dream-technique')?.value||'MILD';
+  const type=document.getElementById('ip-dream-type')?.value||'exploration';
+  const dreams=JSON.parse(localStorage.getItem('cos_dreams')||'[]');
+  const prompt=`Generate a powerful lucid dream intention for tonight using ${tech} technique, targeting ${type}. Past dreams: ${dreams.slice(0,3).map(d=>d.title||d.dreamTitle||'').filter(Boolean).join(', ')||'none yet'}. Make it vivid, specific, present-tense affirmation. 2 sentences max.`;
+  try{
+    const resp=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key='+GEMINI_KEY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:prompt}]}]})});
+    const data=await resp.json();
+    const text=data?.candidates?.[0]?.content?.parts?.[0]?.text||'Tonight I will become aware I am dreaming and explore with full consciousness.';
+    document.getElementById('ip-dream-intent').value=text;
+  }catch(e){showToast('AI error — try again');}
+}
+async function runLongevityAI(){
+  const el=document.getElementById('ip-longevity-ai');el.textContent='🧬 Analyzing...';
+  const data=getIPData(),today=getTodayKey(),td=data[today]||{};
+  const done=LONGEVITY_ITEMS.filter(l=>td['lon_'+l.id]).map(l=>l.label);
+  const missing=LONGEVITY_ITEMS.filter(l=>!td['lon_'+l.id]).map(l=>l.label);
+  const prompt=`I am a B.Pharm student studying longevity science. Today's completed stack: ${done.join(', ')||'none'}. Missing: ${missing.join(', ')||'none'}. Give me: 1) One specific longevity science insight (mTOR, senolytics, or NAD+ related), 2) One actionable thing to add TODAY for max biological ROI. Be specific, cite mechanism. 3 sentences max.`;
+  try{
+    const resp=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key='+GEMINI_KEY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:prompt}]}]})});
+    const d=await resp.json();el.textContent=d?.candidates?.[0]?.content?.parts?.[0]?.text||'Complete more items for analysis.';
+  }catch(e){el.textContent='Analysis error. Check connection.';}
+}
+async function generateImmortalBrief(){
+  const btn=document.getElementById('ip-brief-btn'),out=document.getElementById('ip-brief-output');
+  btn.textContent='⏳ Generating...';btn.disabled=true;
+  const logs=getLogs?getLogs().slice(0,3):[];
+  const dreams=JSON.parse(localStorage.getItem('cos_dreams')||'[]');
+  const data=getIPData(),today=getTodayKey(),td=data[today]||{};
+  const doneCount=Object.values(td).filter(v=>v===true).length;
+  const prompt=`You are an elite life optimization AI. Generate a personalized "Immortality Protocol" daily brief for Vikram — B.Pharm 8th semester student from Rohtak, India. Goal: become the most impactful human alive, achieve biological immortality, experience every possible experience, build wealth/influence from zero.
+
+Context: ${doneCount} protocol tasks done today. Recent mood scores: ${logs.map(l=>l.score||'?').join(', ')||'not logged'}. Lucid dreams: ${dreams.filter(d=>d.type==='lucid'||d.dreamType==='lucid').length}.
+
+Output a crisp daily brief:
+🔴 LONGEVITY PRIORITY (one specific action today)
+🟣 CONSCIOUSNESS MISSION (dream or meditation target)
+🟡 WEALTH MOVE (one specific leverage action)
+🔵 CHESS MOVE (one strategic thinking task)
+⚡ WILDCARD (one bold action that compounds long term)
+
+Be specific, direct, no fluff. 120 words max.`;
+  try{
+    const resp=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key='+GEMINI_KEY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:prompt}]}]})});
+    const d=await resp.json();
+    const text=d?.candidates?.[0]?.content?.parts?.[0]?.text||'Complete your daily log first for a personalized brief.';
+    out.innerHTML=text.replace(/\n/g,'<br>');addProgressEntry('⚡ Generated daily brief');
+  }catch(e){out.textContent='AI error. Check connection.';}
+  btn.textContent='🔄 Regenerate Brief';btn.disabled=false;
+}
+const IP_COACH_HISTORY=[];
+async function sendImmortalCoach(){
+  const inp=document.getElementById('ip-coach-input');
+  const msgs=document.getElementById('ip-coach-msgs');
+  const text=inp?.value?.trim();if(!text)return;
+  inp.value='';
+  msgs.innerHTML+=`<div style="align-self:flex-end;background:linear-gradient(135deg,#7c3aed,#9900ff);color:#fff;padding:9px 13px;border-radius:12px 12px 3px 12px;font-size:13px;max-width:85%">${text}</div>`;
+  msgs.scrollTop=msgs.scrollHeight;
+  const thinkBubble=document.createElement('div');
+  thinkBubble.style.cssText='align-self:flex-start;background:rgba(255,255,255,.07);border:1px solid rgba(0,255,200,.2);color:#00ffcc;padding:9px 13px;border-radius:12px 12px 12px 3px;font-size:13px;max-width:85%';
+  thinkBubble.textContent='⏳ Thinking...';msgs.appendChild(thinkBubble);msgs.scrollTop=msgs.scrollHeight;
+  const systemPrompt=`You are the Immortality Protocol AI Coach — elite advisor for longevity science, lucid dreaming mastery, consciousness expansion, wealth generation from zero, and 8D strategic thinking. User is Vikram — B.Pharm 8th sem student from Rohtak, India, with zero capital but maximum ambition: become immortal, experience everything, dominate wealth and influence. Be brutally specific, scientific, actionable. No generic advice. Max 150 words.`;
+  try{
+    const resp=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key='+GEMINI_KEY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:systemPrompt+'\n\nUser: '+text}]}]})});
+    const d=await resp.json();
+    const reply=d?.candidates?.[0]?.content?.parts?.[0]?.text||'No response. Try again.';
+    thinkBubble.style.color='#e8d8ff';thinkBubble.innerHTML=reply.replace(/\n/g,'<br>');
+  }catch(e){thinkBubble.textContent='❌ Connection error.';}
+  msgs.scrollTop=msgs.scrollHeight;
+}
+function quickCoach(text){
+  const inp=document.getElementById('ip-coach-input');
+  if(inp){inp.value=text;sendImmortalCoach();}
+}
 // ─── INIT ────────────────────────────────────────────────────
 function init(){
-  console.log("🧠 Consciousness OS init() v8 — "+new Date().toLocaleTimeString());
   const th=localStorage.getItem('cos_theme')||'light';
   document.documentElement.setAttribute('data-theme',th);
   document.getElementById('themeBtn').textContent=th==='dark'?'☀️':'🌙';
@@ -8070,23 +8534,9 @@ function init(){
     if(dd&&!dd.value) dd.value=t;
   }, 500);
   loadSettings();
-  try{buildNav();}catch(e){console.error('buildNav:',e);}
-  try{buildSliders();}catch(e){console.error('buildSliders:',e);}
-  try{buildBWGrid();}catch(e){console.error('buildBWGrid:',e);}
-  try{buildAIModelsBar();}catch(e){console.error('buildAIModelsBar:',e);}
-  try{buildSuggestedQs();}catch(e){console.error('buildSuggestedQs:',e);}
-  try{buildHealthSections();}catch(e){console.error('buildHealthSections:',e);}
-  try{buildGamesGrid();}catch(e){console.error('buildGamesGrid:',e);}
-  try{buildTechniques();}catch(e){console.error('buildTechniques:',e);}
-  try{buildRCGrid();}catch(e){console.error('buildRCGrid:',e);}
-  try{renderRecentLogs();}catch(e){console.error('renderRecentLogs:',e);}
-  try{renderDreamJournal();}catch(e){console.error('renderDreamJournal:',e);}
-  try{renderVoiceMemos();}catch(e){console.error('renderVoiceMemos:',e);}
-  try{renderMediaGrid();}catch(e){console.error('renderMediaGrid:',e);}
-  try{renderCalendar();}catch(e){console.error('renderCalendar:',e);}
-  try{renderAlarms();}catch(e){console.error('renderAlarms:',e);}
-  try{renderReminders();}catch(e){console.error('renderReminders:',e);}
-  try{buildHabitTracker();}catch(e){console.error('buildHabitTracker:',e);}
+  buildNav();buildSliders();buildBWGrid();buildAIModelsBar();buildSuggestedQs();
+  buildHealthSections();buildGamesGrid();buildTechniques();buildRCGrid();
+  renderRecentLogs();renderDreamJournal();renderVoiceMemos();renderMediaGrid();renderCalendar();renderAlarms();renderReminders();buildHabitTracker();
   const today2=new Date().toDateString();
   if(localStorage.getItem('cos_rc_day')===today2){
     const cnt=parseInt(localStorage.getItem('cos_rc_count')||0);
