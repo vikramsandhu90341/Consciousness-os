@@ -1036,9 +1036,8 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
         <input type="password" id="loginPass" class="form-input" placeholder="Enter password" style="background:#f8f6ff;border:1.5px solid #e2d9f3" onkeydown="if(event.key==='Enter')doLogin()">
       </div>
       <button class="btn btn-primary btn-block" onclick="doLogin()" style="margin-bottom:10px">🔐 Sign In</button>
-      <div style="text-align:center;font-size:12px;color:#888;margin-bottom:12px">— or —</div>
-      <button class="btn btn-block" onclick="doGoogleLogin()" style="background:#fff;border:1.5px solid #ddd;color:#333;margin-bottom:8px">🔵 Continue with Google</button>
-      <button class="btn btn-block" onclick="doPhoneLogin()" style="background:#fff;border:1.5px solid #ddd;color:#333">📱 Sign in with Phone</button>
+      <div style="text-align:center;font-size:11px;color:#aaa;margin:8px 0">— or sign in with —</div>
+      <button class="btn btn-block" onclick="doGoogleLogin()" style="background:#fff;border:1.5px solid #ddd;color:#333;margin-bottom:6px">🔵 Continue with Google <span style="font-size:10px;color:#aaa">(desktop recommended)</span></button>
     </div>
 
     <!-- REGISTER -->
@@ -1052,8 +1051,8 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
         <input type="text" id="regUser" class="form-input" placeholder="Choose a username" style="background:#f8f6ff;border:1.5px solid #e2d9f3">
       </div>
       <div style="margin-bottom:10px">
-        <label style="font-size:12px;font-weight:700;color:#666;display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Email (optional)</label>
-        <input type="email" id="regEmail" class="form-input" placeholder="your@email.com" style="background:#f8f6ff;border:1.5px solid #e2d9f3">
+        <label style="font-size:12px;font-weight:700;color:#666;display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Email ✳️ Required for sync</label>
+        <input type="email" id="regEmail" class="form-input" placeholder="your@email.com" style="background:#f8f6ff;border:1.5px solid #7c3aed">
       </div>
       <div style="margin-bottom:10px">
         <label style="font-size:12px;font-weight:700;color:#666;display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Phone (optional)</label>
@@ -1417,10 +1416,10 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
       <div class="score-ring">
         <svg width="80" height="80" viewBox="0 0 80 80">
           <circle cx="40" cy="40" r="34" fill="none" stroke="var(--border)" stroke-width="7"/>
-          <circle id="scoreCircle" cx="40" cy="40" r="34" fill="none" stroke="var(--primary)" stroke-width="7"
+          <circle id="scoreCircle" cx="40" cy="40" r="34" fill="none" stroke="hsl(120,70%,50%)" stroke-width="7" style="stroke-dashoffset:106.8"
             stroke-dasharray="213.6" stroke-dashoffset="213.6" stroke-linecap="round"/>
         </svg>
-        <div class="ring-text"><span id="scoreValue">0.0</span><span class="ring-sub">/ 10</span></div>
+        <div class="ring-text"><span id="scoreValue">5.0</span><span class="ring-sub">/ 10</span></div>
       </div>
     </div>
   </div>
@@ -2230,7 +2229,7 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
     <div style="text-align:center">
       <div style="font-size:32px;margin-bottom:8px">🧠</div>
       <div style="font-family:Syne,sans-serif;font-weight:800;font-size:18px;margin-bottom:4px">Consciousness OS</div>
-      <div style="font-size:13px;color:var(--text3);margin-bottom:12px">Version 6.0 · Local-first · Privacy-first</div>
+      <div style="font-size:13px;color:var(--text3);margin-bottom:12px">Version 7.0 · Cloud-synced · Firebase</div>
       <div style="font-size:12px;color:var(--text2);line-height:1.6">Your personal mind enhancement and consciousness tracking system. All data stays on your device.</div>
     </div>
   </div>
@@ -3755,6 +3754,7 @@ function buildSliders(){
       <div class="slider-anchor-text" id="anchor_${s.id}"></div>
     </div>`).join('');
   SLIDERS.forEach(s=>onSliderMove(s.id,5));
+  setTimeout(()=>{ if(typeof updateScore==='function') updateScore(); }, 300);
 }
 function onSliderMove(id,val){
   val=parseInt(val);
@@ -7318,6 +7318,9 @@ async function doRegister(){
     loadUserProfile(profile);
     buildProfileBar();
     switchTab('log');
+  }catch(e){
+    document.getElementById('loginMsg').textContent='❌ '+e.message;
+  }
 }
 
 function guestMode(){
@@ -8038,6 +8041,14 @@ function init(){
   const today=new Date().toISOString().split('T')[0];
   if(document.getElementById('logDate'))document.getElementById('logDate').value=today;
   if(document.getElementById('dreamDate'))document.getElementById('dreamDate').value=today;
+  // Re-set dates after a short delay in case elements weren't ready
+  setTimeout(()=>{
+    const t=new Date().toISOString().split('T')[0];
+    const ld=document.getElementById('logDate');
+    const dd=document.getElementById('dreamDate');
+    if(ld&&!ld.value) ld.value=t;
+    if(dd&&!dd.value) dd.value=t;
+  }, 500);
   loadSettings();
   buildNav();buildSliders();buildBWGrid();buildAIModelsBar();buildSuggestedQs();
   buildHealthSections();buildGamesGrid();buildTechniques();buildRCGrid();
