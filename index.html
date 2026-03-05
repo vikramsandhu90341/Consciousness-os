@@ -7266,38 +7266,58 @@ async function doLogin(){
     loadUserProfile(profile);
     buildProfileBar();
     switchTab('log');
-    loadLogsFromFirestore(fbUser.uid); // 🔥 pull cloud logs
+    loadLogsFromFirestore(fbUser.uid);
+    loadDreamsFromFirestore(fbUser.uid);
   }catch(e){
     msgEl.textContent='❌ '+e.message;
   }
 }
 
-function doRegister(){
+async function doRegister(){
   const name=document.getElementById('regName').value.trim();
   const username=document.getElementById('regUser').value.trim();
   const email=document.getElementById('regEmail').value.trim();
   const pass=document.getElementById('regPass').value;
-  if(!name||!username||!pass){document.getElementById('loginMsg').textContent='Name, username and password required.';return;}
-  const users=getUsers();
-  if(users.find(u=>u.username===username)){document.getElementById('loginMsg').textContent='Username already exists.';return;}
-  const newUser={
-    id:'u_'+Date.now(),
-    name,username,email,
-    phone:document.getElementById('regPhone').value||'',
-    password:btoa(pass),
-    avatar:selectedAvatar||'🧠',
-    created:new Date().toISOString(),
-    theme:'light'
-  };
-  users.push(newUser);
-  saveUsers(users);
-  setCurrentUser(newUser.id);
-  localStorage.setItem('cos_has_account','1');
-  closeLoginOverlay();
-  showToast(`🎉 Welcome to Consciousness OS, ${name}!`);
-  loadUserProfile(newUser);
-  buildProfileBar();
-  switchTab('log');
+  const msgEl=document.getElementById('loginMsg');
+  if(!name||!pass){msgEl.textContent='Name and password required.';return;}
+  if(!email){msgEl.textContent='Email is required to sync across devices.';return;}
+  if(pass.length<6){msgEl.textContent='Password must be at least 6 characters.';return;}
+  msgEl.textContent='Creating account...';
+  try{
+    // Create Firebase Auth account
+    const cred = await auth.createUserWithEmailAndPassword(email, pass);
+    const fbUser = cred.user;
+    // Update display name
+    await fbUser.updateProfile({ displayName: name });
+    const profile={
+      id:fbUser.uid,
+      name,
+      username:username||email.split('@')[0],
+      email:fbUser.email,
+      phone:document.getElementById('regPhone')?.value||'',
+      avatar:selectedAvatar||'🧠',
+      isFirebase:true,
+      created:new Date().toISOString()
+    };
+    const users=getUsers();
+    users.push(profile);
+    saveUsers(users);
+    setCurrentUser(fbUser.uid);
+    localStorage.setItem('cos_has_account','1');
+    // Save to Firestore
+    try{
+      await db.collection('users').doc(fbUser.uid).set({
+        name:profile.name, email:profile.email, avatar:profile.avatar,
+        username:profile.username,
+        created:profile.created,
+        lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+      });
+    }catch(e){ console.warn('Firestore profile:', e.message); }
+    closeLoginOverlay();
+    showToast('🎉 Welcome, '+name+'! Account created & synced ☁️');
+    loadUserProfile(profile);
+    buildProfileBar();
+    switchTab('log');
 }
 
 function guestMode(){
@@ -7357,9 +7377,8 @@ async function doGoogleLogin(){
   provider.addScope('profile');
   provider.setCustomParameters({ prompt: 'select_account' });
   try {
-    showToast('🔵 Opening Google sign-in...');
-    let result;
-    result = await auth.signInWithPopup(provider);
+    showToast('🔵 Opening Google sign-in popup...');
+    const result = await auth.signInWithPopup(provider);
     const fbUser = result.user;
     const profile = {
       id: fbUser.uid,
