@@ -8053,6 +8053,7 @@ function initCalorieTracker(){
 
 // ─── INIT ────────────────────────────────────────────────────
 function init(){
+  console.log("🧠 Consciousness OS init() v8 — "+new Date().toLocaleTimeString());
   const th=localStorage.getItem('cos_theme')||'light';
   document.documentElement.setAttribute('data-theme',th);
   document.getElementById('themeBtn').textContent=th==='dark'?'☀️':'🌙';
@@ -8069,9 +8070,23 @@ function init(){
     if(dd&&!dd.value) dd.value=t;
   }, 500);
   loadSettings();
-  buildNav();buildSliders();buildBWGrid();buildAIModelsBar();buildSuggestedQs();
-  buildHealthSections();buildGamesGrid();buildTechniques();buildRCGrid();
-  renderRecentLogs();renderDreamJournal();renderVoiceMemos();renderMediaGrid();renderCalendar();renderAlarms();renderReminders();buildHabitTracker();
+  try{buildNav();}catch(e){console.error('buildNav:',e);}
+  try{buildSliders();}catch(e){console.error('buildSliders:',e);}
+  try{buildBWGrid();}catch(e){console.error('buildBWGrid:',e);}
+  try{buildAIModelsBar();}catch(e){console.error('buildAIModelsBar:',e);}
+  try{buildSuggestedQs();}catch(e){console.error('buildSuggestedQs:',e);}
+  try{buildHealthSections();}catch(e){console.error('buildHealthSections:',e);}
+  try{buildGamesGrid();}catch(e){console.error('buildGamesGrid:',e);}
+  try{buildTechniques();}catch(e){console.error('buildTechniques:',e);}
+  try{buildRCGrid();}catch(e){console.error('buildRCGrid:',e);}
+  try{renderRecentLogs();}catch(e){console.error('renderRecentLogs:',e);}
+  try{renderDreamJournal();}catch(e){console.error('renderDreamJournal:',e);}
+  try{renderVoiceMemos();}catch(e){console.error('renderVoiceMemos:',e);}
+  try{renderMediaGrid();}catch(e){console.error('renderMediaGrid:',e);}
+  try{renderCalendar();}catch(e){console.error('renderCalendar:',e);}
+  try{renderAlarms();}catch(e){console.error('renderAlarms:',e);}
+  try{renderReminders();}catch(e){console.error('renderReminders:',e);}
+  try{buildHabitTracker();}catch(e){console.error('buildHabitTracker:',e);}
   const today2=new Date().toDateString();
   if(localStorage.getItem('cos_rc_day')===today2){
     const cnt=parseInt(localStorage.getItem('cos_rc_count')||0);
