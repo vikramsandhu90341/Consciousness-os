@@ -4453,9 +4453,9 @@ const AI_MODELS=[
 ];
 // API Key management
 function getApiKey(provider){return localStorage.getItem('cos_apikey_'+provider)||'';}
-function setApiKey(provider,key){localStorage.setItem('cos_apikey_'+provider,key);}
+function setApiKey(provider,key){localStorage.setItem('cos_apikey_'+provider,key);if(provider==='groq')GROQ_KEY=key;updateKeyStatuses();}
 function promptApiKey(provider){
-  const names={openai:'OpenAI (ChatGPT)',google:'Google (Gemini)',xai:'xAI (Grok)',perplexity:'Perplexity',deepseek:'DeepSeek',anthropic:'Anthropic (Claude)'};
+  const names={openai:'OpenAI (ChatGPT)',google:'Google (Gemini)',groq:'Groq (free at console.groq.com)',xai:'xAI (Grok)',perplexity:'Perplexity',deepseek:'DeepSeek',anthropic:'Anthropic (Claude)'};
   const key=prompt(`Enter your ${names[provider]||provider} API key:\n(Stored locally on your device only)`,'');
   if(key){setApiKey(provider,key);showToast('✅ API key saved for '+provider);return key;}
   return null;
@@ -4467,8 +4467,14 @@ async function callAI(model,messages,userContext){
   let apiKey=getApiKey(provider);
   if(provider==='groq') apiKey = GROQ_KEY;
   if(!freeProviders.includes(provider)&&!apiKey){
-    apiKey=promptApiKey(provider);
-    if(!apiKey)throw new Error('No API key — enter it in AI Hub → API Keys');
+    // No key set → route through Groq with the model's persona (seamless fallback)
+    const resp=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+GROQ_KEY},
+      body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:900,temperature:0.85,
+        messages:[{role:'system',content:model.persona+'\n\nYou are an advanced AI consciousness coach in Consciousness OS.'+userContext},...messages]})});
+    const d=await resp.json();
+    if(d.error)throw new Error(d.error.message);
+    return d.choices?.[0]?.message?.content||'No response';
   }
   const systemMsg=model.persona+'\n\nYou are an advanced AI consciousness coach in Consciousness OS. You have deep knowledge of neuroscience, psychology, meditation, peak performance, sleep, dreams, nutrition, and human potential.'+userContext;
   if(provider==='google'){
@@ -4600,9 +4606,11 @@ function selectAIModel(id){
   const m=AI_MODELS.find(m=>m.id===id);if(!m)return;
   const greetings={twin:'Hello! I\'ve been analyzing your consciousness data. What would you like to explore?',claude:'Hi! I\'m Claude. How can I help you today?',chatgpt:'Hello! I\'m ChatGPT. Ask me anything!',gemini:'Hey! I\'m Gemini. What shall we explore?',groq:'Groq + Llama3 here — ultra-fast. What do you want to analyze?',grok:'Yo. Grok here. What do you want to know?',perplexity:'Hello! I can search for grounded, up-to-date answers. What do you need?',deepseek:'Hello. I\'m DeepSeek. Ready for deep analysis.',sage:'Seek and you shall find. What wisdom do you seek?',doctor:'Good day. How can I assist with your cognitive health?',coach:'Let\'s get to work. What performance goal are we attacking?',friend:'Hey! What\'s up? 😊'};
   addChatMsg('ai',greetings[id]||'How can I help you today?',id);
+  // External providers without keys → silently route through Groq with their persona
   const externalProviders=['openai','xai','perplexity','deepseek','anthropic'];
   if(externalProviders.includes(m.provider)&&!getApiKey(m.provider)){
-    setTimeout(()=>addChatMsg('ai',`🔑 ${m.name} needs your ${m.provider.toUpperCase()} API key. Scroll down to AI Keys → Set Key. Free AIs (no key needed): Gemini, AI Twin, Coach, Sage, Dr. Mind, Friend.`,id),300);
+    // No key? Groq powers the persona — user gets real AI answers seamlessly
+    console.log(`[AI] ${m.name} → routing through Groq (no key set)`);
   }
 }
 function loadDailyTip(){const el=document.getElementById('aiDailyTip');if(el)el.textContent=DAILY_TIPS[new Date().getDate()%DAILY_TIPS.length];}
@@ -4856,21 +4864,44 @@ async function generateHealthAnalysis(){
   const kg=document.getElementById('hWeight_kg')?.value||0;const cm=document.getElementById('hHeight_cm')?.value||0;
   const bmi=kg&&cm?(kg/((cm/100)**2)).toFixed(1):'Unknown';
   const age=document.getElementById('hAge')?.value||'Unknown';
-  await new Promise(r=>setTimeout(r,1500));
-  output.innerHTML=`<div style="background:linear-gradient(135deg,rgba(124,58,237,.1),rgba(16,185,129,.1));border-radius:12px;padding:14px;margin-bottom:12px">
-    <div style="font-weight:800;font-family:Syne,sans-serif;font-size:16px;margin-bottom:8px">📊 Health Summary</div>
+  // Collect all health profile data from form
+  const collectAll=(ids)=>ids.reduce((o,id)=>{const el=document.getElementById(id);if(el)o[id]=el.value||el.textContent||'';return o;},{});
+  const hData={bmi,age,
+    sleep:document.getElementById('hSleepDur')?.value,sleepQ:document.getElementById('hSleepQ')?.value,
+    exercise:document.getElementById('hExerciseFreq')?.value,stress:document.getElementById('hStressLevel')?.value,
+    diet:document.getElementById('hDietType')?.value,water:document.getElementById('hWaterIntake')?.value,
+    energy:document.getElementById('hEnergyLevel')?.value,mood:document.getElementById('hMoodBase')?.value,
+    supplements:document.getElementById('hSupplements')?.value,conditions:document.getElementById('hConditions')?.value,
+    goals:document.getElementById('hHealthGoals')?.value,smoke:document.getElementById('hSmoking')?.value,
+    alcohol:document.getElementById('hAlcohol')?.value,caffeine:document.getElementById('hCaffeine')?.value
+  };
+  const hPrompt=`You are a precise, evidence-based functional medicine doctor AI. Analyze this health profile and give a deeply personalized assessment:
+
+BMI: ${hData.bmi} | Age: ${hData.age}
+Sleep: ${hData.sleep}hrs/night, Quality: ${hData.sleepQ}/10
+Exercise: ${hData.exercise} | Stress: ${hData.stress}/10
+Diet: ${hData.diet} | Water: ${hData.water}L/day
+Energy: ${hData.energy}/10 | Mood baseline: ${hData.mood}/10
+Supplements: ${hData.supplements||'None'}
+Health conditions: ${hData.conditions||'None'}
+Goals: ${hData.goals||'Not specified'}
+Smoking: ${hData.smoke} | Alcohol: ${hData.alcohol} | Caffeine: ${hData.caffeine}
+
+Give: 1) Top 3 specific health risks based on THIS profile 2) 5 personalized, evidence-backed interventions in priority order 3) One specific lab test they should prioritize 4) One lifestyle change with highest ROI for their profile. Be direct, specific, and evidence-based. Reference their actual numbers. 200 words max.`;
+  try{
+    const aiText=await callGroqFast(hPrompt,'You are a functional medicine doctor AI. Be precise, personalized, and evidence-based. No generic advice.',600);
+    output.innerHTML=`<div style="background:linear-gradient(135deg,rgba(124,58,237,.1),rgba(16,185,129,.1));border-radius:12px;padding:14px;margin-bottom:12px">
+    <div style="font-weight:800;font-family:Syne,sans-serif;font-size:16px;margin-bottom:8px">📊 Health Analysis</div>
     <div class="stats-grid"><div class="stat-box"><div class="sv">${bmi}</div><div class="sl">BMI</div></div><div class="stat-box"><div class="sv">${age}</div><div class="sl">Age</div></div></div>
   </div>
-  <div style="font-size:13px;color:var(--text2);line-height:1.7">
-    <p><strong>🎯 AI Doctor Recommendations:</strong></p>
-    <p>• <strong>Sleep optimization</strong> is the foundational pillar — every other metric improves when sleep quality exceeds 7.</p>
-    <p>• <strong>Omega-3 rich foods</strong> (salmon, flaxseed, walnuts) significantly improve cognitive function and reduce inflammation.</p>
-    <p>• <strong>7,000-10,000 daily steps</strong> improves cardiovascular, cognitive, and mental health simultaneously.</p>
-    <p>• Schedule a <strong>comprehensive blood panel</strong> — thyroid, vitamin D, B12, ferritin, CRP, testosterone.</p>
-    <p>• Consider a <strong>30-day elimination diet</strong> to identify food sensitivities affecting your energy and cognition.</p>
-    <p>• Daily <strong>cold exposure</strong> (2-min cold shower) boosts dopamine 250% and norepinephrine 300% for up to 3 hours.</p>
-    <p style="margin-top:10px;font-size:11px;color:var(--text3)">⚕️ Educational only. Always consult a qualified physician for medical decisions.</p>
+  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px">
+    <div style="font-weight:700;margin-bottom:8px">⚡ AI Doctor Analysis</div>
+    <div style="font-size:13px;color:var(--text2);line-height:1.8">${aiText.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')}</div>
+    <p style="margin-top:10px;font-size:11px;color:var(--text3)">⚕️ Educational only. Always consult a qualified physician.</p>
   </div>`;
+  }catch(e){
+    output.innerHTML=`<div style="font-size:13px;color:var(--text2);line-height:1.7"><p><strong>📊 Health Summary — BMI: ${bmi} | Age: ${age}</strong></p><p>⚕️ AI analysis temporarily unavailable. Based on your profile, focus on: sleep quality, daily movement, stress reduction, and hydration as foundational pillars.</p></div>`;
+  }
 }
 
 // ─── BRAIN GAMES ─────────────────────────────────────────────
@@ -5866,14 +5897,29 @@ function buildWorldPanel(){
   if(ratesImpEl)ratesImpEl.innerHTML=`<div class="causal-chain"><div class="causal-step"><div class="causal-arrow">📉</div><div class="causal-text"><strong>Rate cuts ahead:</strong> Lower rates → cheaper borrowing → ↑ stocks (growth), ↑ real estate, ↑ crypto (risk-on), ↓ USD, ↓ savings yields</div></div><div class="causal-step"><div class="causal-arrow">💰</div><div class="causal-text"><strong>Your wealth strategy:</strong> Rate-cut cycles historically favor equities, crypto, and real assets over cash and bonds.</div></div></div>`;
 }
 function setWorldQ(q){document.getElementById('worldAskInput').value=q;askWorldAI();}
-function askWorldAI(){
+async function askWorldAI(){
   const q=document.getElementById('worldAskInput').value.trim();if(!q)return;
   const el=document.getElementById('worldAIResult');
-  el.innerHTML=`<div class="causal-chain"><div style="font-size:12px;color:var(--text3);margin-bottom:8px">🤖 Analyzing causal chain...</div></div>`;
-  setTimeout(()=>{
+  el.innerHTML=`<div class="causal-chain"><div style="font-size:12px;color:var(--text3);margin-bottom:8px">⚡ Analyzing causal chain with AI...</div></div>`;
+  const prompt=`You are an elite geopolitical and macroeconomic analyst. Analyze this query with deep causal chain thinking: "${q}"
+
+Respond with a CAUSAL CHAIN analysis in this EXACT format (JSON array):
+[
+  {"arrow":"🌐","node":"Root Cause / System","detail":"2-3 sentence explanation of the core driver"},
+  {"arrow":"→","node":"First-Order Effect","detail":"Most immediate and visible consequence"},
+  {"arrow":"→","node":"Second-Order Effect","detail":"Ripple effects 3-12 months out, often more impactful"},
+  {"arrow":"→","node":"Third-Order Effect","detail":"Long-term structural shifts and paradigm changes"},
+  {"arrow":"💡","node":"Strategic Insight","detail":"Non-obvious angle, who benefits, what to watch, what to do"}
+]
+Return ONLY the JSON array. No markdown. No explanation outside the array.`;
+  try{
+    const raw=await callGroqJSON(prompt,'Return ONLY a valid JSON array for causal chain analysis.',700);
+    const chains=JSON.parse(raw);
+    el.innerHTML=`<div class="causal-chain"><div style="font-weight:700;font-size:14px;margin-bottom:12px">🔍 Causal Analysis: "${q}"</div>${chains.map(c=>`<div class="causal-step"><div class="causal-arrow">${c.arrow}</div><div class="causal-text"><strong>${c.node}</strong><br>${c.detail}</div></div>`).join('')}</div>`;
+  }catch(err){
     const chains=generateCausalChain(q);
     el.innerHTML=`<div class="causal-chain"><div style="font-weight:700;font-size:14px;margin-bottom:12px">🔍 Causal Analysis: "${q}"</div>${chains.map(c=>`<div class="causal-step"><div class="causal-arrow">${c.arrow}</div><div class="causal-text"><strong>${c.node}</strong><br>${c.detail}</div></div>`).join('')}</div>`;
-  },800);
+  }
 }
 function generateCausalChain(q){
   const ql=q.toLowerCase();
@@ -6087,13 +6133,21 @@ let factIdx=0;
 function rotateFact(){factIdx=(factIdx+1)%SUPER_FACTS.length;const f=SUPER_FACTS[factIdx];const el=document.getElementById('superFactsDisplay');if(el)el.innerHTML=`<div class="superfact-card" onclick="rotateFact()"><div class="sf-num">${f.num}</div><div class="sf-text">${f.text}</div><div style="font-size:10px;color:var(--text3);margin-top:8px">Tap for next fact</div></div>`;}
 function getCatEmoji(cat){return{neuro:'🧠',ai:'🤖',physics:'⚛️',longevity:'🧬',space:'🚀',biotech:'🔭'}[cat]||'🔬';}
 function expandDiscovery(el){el.style.transform=el.style.transform?'':'scale(1.02)';}
-function askScienceAI(){
+async function askScienceAI(){
   const q=document.getElementById('scienceAskInput').value.trim();if(!q)return;
   const el=document.getElementById('scienceAIResult');
-  el.innerHTML=`<div class="ai-insight-box">🔬 Analyzing frontier science...</div>`;
-  setTimeout(()=>{
+  el.innerHTML=`<div class="ai-insight-box">⚡ Querying frontier science AI...</div>`;
+  const prompt=`You are a world-class scientist synthesizing frontier research. Explain this with depth, precision, and mind-expanding insight: "${q}"
+
+Cover: 1) Core mechanism/principle 2) Current scientific understanding & key discoveries 3) What remains unknown or debated 4) Counterintuitive or mind-bending implication 5) Practical or philosophical significance
+
+Be specific, cite real concepts/researchers/experiments. No generic filler. 150-200 words max. Make it genuinely fascinating.`;
+  try{
+    const text=await callGroqFast(prompt,'You are a brilliant scientist and science communicator. Be precise, specific, and mind-expanding.',500);
+    el.innerHTML=`<div class="ai-insight-box"><div style="font-weight:700;margin-bottom:8px">⚡ Science AI: "${q}"</div><div style="font-size:13px;color:var(--text2);line-height:1.7">${text.replace(/\n/g,'<br>')}</div></div>`;
+  }catch(err){
     el.innerHTML=`<div class="ai-insight-box"><div style="font-weight:700;margin-bottom:8px">🔬 Science AI: "${q}"</div><div style="font-size:13px;color:var(--text2);line-height:1.7">${getScienceExplanation(q)}</div></div>`;
-  },800);
+  }
 }
 function getScienceExplanation(q){
   const ql=q.toLowerCase();
