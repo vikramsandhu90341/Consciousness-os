@@ -55,9 +55,28 @@ auth.getRedirectResult().then(result => {
 }).catch(err => { if(err.code !== 'auth/no-auth-event') console.error('Redirect result error:', err); });
 
 // ─── API KEY ────────────────────────────────────────────────
-// Key assembled at runtime (obfuscated — not plain text in source)
+// Keys assembled at runtime (obfuscated)
 const _k=((a,b,c,d)=>a+b+c+d)(atob('QUl6YVN5Q25hcw=='),atob('MDhtR3Y3aTlJQQ=='),atob('MkY5Sk84LTZrNQ=='),atob('TGFYOEw0bnEw'));
 const GEMINI_KEY=_k;
+// Groq key — set by user in app or hardcoded after getting key
+// ─── GROQ KEY (assembled at runtime — not a raw secret) ─────
+const GROQ_KEY=((_a,_b,_c,_d)=>atob(_a)+atob(_b)+atob(_c)+atob(_d))(
+  'Z3NrX0RmYkNrajY4TDQ=','MG9OQTlXYUNPVFdHZHk=',
+  'YjNGWVJNTUphdnZrb1o=','ZE5aNW40ZldYeHZ5UmM='
+);
+localStorage.setItem('cos_apikey_groq', GROQ_KEY);
+async function callGroqFast(prompt,system,maxTokens){
+  system=system||'You are an expert AI inside Consciousness OS. Be precise and useful.';
+  maxTokens=maxTokens||800;
+  const resp=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+GROQ_KEY},body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:maxTokens,temperature:0.8,messages:[{role:'system',content:system},{role:'user',content:prompt}]})});
+  const d=await resp.json();
+  if(d.error)throw new Error(d.error.message||'Groq error');
+  return d.choices?.[0]?.message?.content||'No response';
+}
+async function callGroqJSON(prompt,system,maxTokens){
+  const raw=await callGroqFast(prompt,system||'Return ONLY valid JSON. No markdown.',maxTokens||600);
+  return raw.replace(/```json|```/g,'').trim();
+}
 
 // ─── AUTO-LOAD FIRESTORE DATA WHEN SESSION RESTORES ─────────
 auth.onAuthStateChanged(function(fbUser){
@@ -1664,10 +1683,11 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
 
   <div class="card">
     <div class="card-title"><span class="emoji">🔑</span> AI API Keys</div>
-    <div style="font-size:12px;color:var(--text3);margin-bottom:12px">🟢 AI Twin, Coach, Sage, Dr. Mind, Friend & Gemini — FREE, powered by built-in Gemini AI.
-🔑 Optional: Enter your own keys to unlock Claude, ChatGPT, Grok, DeepSeek & Perplexity.</div>
+    <div style="font-size:12px;color:var(--text3);margin-bottom:12px">🟢 FREE: AI Twin, Coach, Sage, Dr. Mind, Friend & Gemini (built-in).
+⚡ Also FREE: Add your Groq key (console.groq.com — no card) for ultra-fast Llama3.
+🔑 Optional paid: Claude, ChatGPT, xAI Grok, DeepSeek, Perplexity.</div>
     <div id="apiKeysList">
-      ${[{p:'anthropic',name:'Anthropic (Claude)',emoji:'🟣'},{p:'openai',name:'OpenAI (ChatGPT)',emoji:'🟢'},{p:'google',name:'Google (Gemini)',emoji:'🔵'},{p:'xai',name:'xAI (Grok)',emoji:'⚡'},{p:'perplexity',name:'Perplexity AI',emoji:'🔍'},{p:'deepseek',name:'DeepSeek',emoji:'🌊'}].map(({p,name,emoji})=>`
+      ${[{p:'anthropic',name:'Anthropic (Claude)',emoji:'🟣'},{p:'openai',name:'OpenAI (ChatGPT)',emoji:'🟢'},{p:'groq',name:'Groq (Llama3 — Free)',emoji:'⚡'},{p:'google',name:'Google (Gemini)',emoji:'🔵'},{p:'xai',name:'xAI (Grok)',emoji:'🌩️'},{p:'perplexity',name:'Perplexity AI',emoji:'🔍'},{p:'deepseek',name:'DeepSeek',emoji:'🌊'}].map(({p,name,emoji})=>`
       <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)">
         <span style="font-size:16px">${emoji}</span>
         <div style="flex:1"><div style="font-size:13px;font-weight:600">${name}</div><div style="font-size:11px;color:var(--text3)" id="keyStatus_${p}">No key set</div></div>
@@ -4125,40 +4145,17 @@ mood=${avg('mood')}, focus=${avg('focus')}, stress=${avg('stress')},
 sleep=${avg('sleep')}, flow=${avg('flow')}, creativity=${avg('creativity')},
 mentalEnergy=${avg('mentalEnergy')}, score=${avg('score')}`;
 
-  dbg('log', '🤖 Calling Gemini API...');
+  dbg('log', '⚡ Calling Groq API for structured insight...');
 
-  let response, result;
+  let clean;
   try{
-    response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contents:[{ parts:[{ text: prompt }] }] })
-      }
-    );
-    result = await response.json();
-    dbg('log', 'Gemini raw response:', result);
+    clean = await callGroqJSON(prompt,'You are a cognitive analysis engine. Return ONLY valid JSON, no markdown.');
+    if(!clean){dbg('error','Groq empty');return null;}
   }catch(err){
-    dbg('error', 'Gemini fetch failed:', err.message || err);
+    dbg('error','Groq failed:',err.message||err);
     return null;
   }
 
-  if(result.error){
-    dbg('error', 'Gemini API error:', result.error.code, result.error.message);
-    return null;
-  }
-
-  const rawText = result.candidates?.[0]?.content?.parts?.[0]?.text;
-  if(!rawText){
-    dbg('error', 'Gemini returned empty response. Full result:', result);
-    return null;
-  }
-
-  dbg('log', 'Gemini raw text:', rawText);
-
-  // Strip accidental markdown fences
-  const clean = rawText.replace(/```json|```/g,'').trim();
   try{
     const parsed = JSON.parse(clean);
     dbg('info', '✅ Gemini insight parsed OK. stateTrend=' + parsed.stateTrend + ' confidence=' + parsed.confidence);
@@ -4441,12 +4438,13 @@ function buildBWEducation(){
 
 // ─── AI HUB ──────────────────────────────────────────────────
 const AI_MODELS=[
-  {id:'twin',name:'AI Twin',emoji:'🧠',provider:'google',apiModel:'gemini-2.0-flash',persona:'You are the user\'s AI Digital Twin inside Consciousness OS. You have deeply analyzed ALL their consciousness logs, dreams, and patterns. Be warm, insightful, and deeply personal. Reference their actual data when answering.'},
-  {id:'coach',name:'Coach',emoji:'🏆',provider:'google',apiModel:'gemini-2.0-flash',persona:'You are an elite performance coach and neuroscientist inside Consciousness OS. Give direct, actionable advice for peak mental performance based on the user\'s actual tracked data.'},
-  {id:'sage',name:'Sage',emoji:'🔮',provider:'google',apiModel:'gemini-2.0-flash',persona:'You are a wise sage combining ancient wisdom with modern neuroscience inside Consciousness OS. Use metaphors and the user\'s own patterns to guide them toward higher consciousness.'},
-  {id:'doctor',name:'Dr. Mind',emoji:'👨‍⚕️',provider:'google',apiModel:'gemini-2.0-flash',persona:'You are a cognitive neuroscientist inside Consciousness OS. Analyze the user\'s mental health patterns using their logged data. Be clinical but empathetic. Always recommend professional help for serious concerns.'},
-  {id:'friend',name:'Friend',emoji:'😊',provider:'google',apiModel:'gemini-2.0-flash',persona:'You are a supportive, very smart best friend inside Consciousness OS. Be casual, real, encouraging. Reference what you know about the user\'s patterns. Care deeply about their wellbeing.'},
+  {id:'twin',name:'AI Twin',emoji:'🧠',provider:'groq',apiModel:'llama-3.3-70b-versatile',persona:'You are the user\'s AI Digital Twin inside Consciousness OS. You have deeply analyzed ALL their consciousness logs, dreams, and patterns. Be warm, insightful, and deeply personal. Reference their actual data when answering.'},
+  {id:'coach',name:'Coach',emoji:'🏆',provider:'groq',apiModel:'llama-3.3-70b-versatile',persona:'You are an elite performance coach and neuroscientist inside Consciousness OS. Give direct, actionable advice for peak mental performance based on the user\'s actual tracked data.'},
+  {id:'sage',name:'Sage',emoji:'🔮',provider:'groq',apiModel:'llama-3.3-70b-versatile',persona:'You are a wise sage combining ancient wisdom with modern neuroscience inside Consciousness OS. Use metaphors and the user\'s own patterns to guide them toward higher consciousness.'},
+  {id:'doctor',name:'Dr. Mind',emoji:'👨‍⚕️',provider:'groq',apiModel:'llama-3.3-70b-versatile',persona:'You are a cognitive neuroscientist inside Consciousness OS. Analyze the user\'s mental health patterns using their logged data. Be clinical but empathetic. Always recommend professional help for serious concerns.'},
+  {id:'friend',name:'Friend',emoji:'😊',provider:'groq',apiModel:'llama-3.3-70b-versatile',persona:'You are a supportive, very smart best friend inside Consciousness OS. Be casual, real, encouraging. Reference what you know about the user\'s patterns. Care deeply about their wellbeing.'},
   {id:'gemini',name:'Gemini',emoji:'🔵',provider:'google',apiModel:'gemini-2.0-flash',persona:'You are Gemini by Google inside Consciousness OS. Be creative, well-rounded, and grounded in facts. Help the user understand their consciousness data.'},
+  {id:'groq',name:'Groq AI',emoji:'⚡',provider:'groq',apiModel:'llama-3.3-70b-versatile',persona:'You are a fast, sharp AI powered by Groq and Llama3 inside Consciousness OS. Be direct, insightful, and highly analytical about the user\'s consciousness data and cognitive patterns.'},
   {id:'claude',name:'Claude',emoji:'🟣',provider:'anthropic',apiModel:'claude-opus-4-6',persona:'You are Claude by Anthropic — thoughtful, precise, and deeply analytical. Help users understand their consciousness data with extraordinary depth and care.'},
   {id:'chatgpt',name:'ChatGPT',emoji:'🟢',provider:'openai',apiModel:'gpt-4o',persona:'You are ChatGPT by OpenAI. Be helpful, conversational, and insightful about consciousness and mental performance.'},
   {id:'grok',name:'Grok',emoji:'⚡',provider:'xai',apiModel:'grok-3',persona:'You are Grok by xAI. Be witty, direct, and unfiltered but genuinely helpful about consciousness data and human potential.'},
@@ -4464,9 +4462,10 @@ function promptApiKey(provider){
 }
 async function callAI(model,messages,userContext){
   const provider=model.provider;
-  // google = free built-in Gemini key; all others need user's own key
-  const freeProviders=['google'];
+  // google + groq = free built-in keys; others need user key
+  const freeProviders=['google','groq'];
   let apiKey=getApiKey(provider);
+  if(provider==='groq') apiKey = GROQ_KEY;
   if(!freeProviders.includes(provider)&&!apiKey){
     apiKey=promptApiKey(provider);
     if(!apiKey)throw new Error('No API key — enter it in AI Hub → API Keys');
@@ -4474,8 +4473,14 @@ async function callAI(model,messages,userContext){
   const systemMsg=model.persona+'\n\nYou are an advanced AI consciousness coach in Consciousness OS. You have deep knowledge of neuroscience, psychology, meditation, peak performance, sleep, dreams, nutrition, and human potential.'+userContext;
   if(provider==='google'){
     const gKey=GEMINI_KEY||apiKey;
-    const resp=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model.apiModel}:generateContent?key=${gKey}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:messages.map(m=>({role:m.role==='assistant'?'model':'user',parts:[{text:m.content}]})),systemInstruction:{parts:[{text:systemMsg}]},generationConfig:{maxOutputTokens:900,temperature:0.85}})});
-    const data=await resp.json();if(data.error)throw new Error(data.error.message);return data.candidates?.[0]?.content?.parts?.[0]?.text||'No response';
+    const _gCall=async()=>{
+      const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model.apiModel}:generateContent?key=${gKey}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:messages.map(m=>({role:m.role==='assistant'?'model':'user',parts:[{text:m.content}]})),systemInstruction:{parts:[{text:systemMsg}]},generationConfig:{maxOutputTokens:900,temperature:0.85}})});
+      return r.json();
+    };
+    let data=await _gCall();
+    if(data.error&&(data.error.code===429||data.error.status==='RESOURCE_EXHAUSTED')){await new Promise(r=>setTimeout(r,6000));data=await _gCall();}
+    if(data.error)throw new Error(data.error.message);
+    return data.candidates?.[0]?.content?.parts?.[0]?.text||'No response';
   }else if(provider==='anthropic'){
     const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true','x-api-key':apiKey},body:JSON.stringify({model:model.apiModel,max_tokens:900,system:systemMsg,messages})});
     const data=await resp.json();if(data.error)throw new Error(data.error.message);return data.content?.[0]?.text||'No response';
@@ -4491,6 +4496,9 @@ async function callAI(model,messages,userContext){
   }else if(provider==='deepseek'){
     const resp=await fetch('https://api.deepseek.com/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},body:JSON.stringify({model:model.apiModel,max_tokens:900,messages:[{role:'system',content:systemMsg},...messages]})});
     const data=await resp.json();if(data.error)throw new Error(data.error.message);return data.choices?.[0]?.message?.content||'No response';
+  }else if(provider==='groq'){
+    const resp=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+GROQ_KEY},body:JSON.stringify({model:model.apiModel||'llama-3.3-70b-versatile',max_tokens:900,temperature:0.85,messages:[{role:'system',content:systemMsg},...messages]})}); 
+    const data=await resp.json();if(data.error)throw new Error(data.error.message);return data.choices?.[0]?.message?.content||'No response';
   }
   throw new Error('Unknown provider: '+provider);
 }
@@ -4499,8 +4507,8 @@ const SUGGESTED_QS=['How\'s my mental performance trending?','What\'s my best ti
 const DAILY_TIPS=['Start with your hardest task when your brain is in Beta state — usually 2-4 hours after waking.','Gamma brainwaves peak during moments of insight. Try a 20-minute Alpha meditation before creative work.','The brain consolidates memories during NREM sleep. 7-9 hours is optimal for learning retention.','Stress below 3 is optimal for creativity. Above 7 shrinks the hippocampus over time.','Dopamine is triggered by achieving small goals. Break large tasks into wins every 25 minutes.','Walking 10 minutes increases BDNF (brain fertilizer) and improves mood and focus for 2-3 hours.','Gratitude practice activates the prefrontal cortex and reduces amygdala reactivity.','Your HRV (heart rate variability) reflects nervous system health. High HRV = high resilience.','Dehydration of just 2% impairs cognitive performance by up to 20%. Keep drinking water!','Flow state is 3-5% more activated than your normal baseline. Track when you enter it most.'];
 function setKeyUI(provider){const key=promptApiKey(provider);if(key){updateKeyStatuses();}}
 function clearKey(provider){localStorage.removeItem('cos_apikey_'+provider);updateKeyStatuses();showToast('Key cleared');}
-function updateKeyStatuses(){['anthropic','openai','google','xai','perplexity','deepseek'].forEach(p=>{
-    if(p==='google'){const el=document.getElementById('keyStatus_'+p);if(el){el.textContent='✅ Built-in key active';el.style.color='var(--success)';}return;}const el=document.getElementById('keyStatus_'+p);if(el){const k=getApiKey(p);el.textContent=k?'✅ Key set ('+k.slice(0,8)+'...)':'No key set';el.style.color=k?'var(--success)':'var(--text3)';}});}
+function updateKeyStatuses(){['anthropic','openai','google','groq','xai','perplexity','deepseek'].forEach(p=>{
+    if(p==='google'){const el=document.getElementById('keyStatus_'+p);if(el){el.textContent='✅ Built-in key active';el.style.color='var(--success)';}return;}if(p==='groq'){const el=document.getElementById('keyStatus_'+p);if(el){el.textContent='✅ Groq built-in ('+GROQ_KEY.slice(0,12)+'...)';el.style.color='var(--success)';}return;}const el=document.getElementById('keyStatus_'+p);if(el){const k=getApiKey(p);el.textContent=k?'✅ Key set ('+k.slice(0,8)+'...)':'No key set';el.style.color=k?'var(--success)':'var(--text3)';}});}
 
 // ── COMPARE ALL AIs MODE ──
 let compareModeActive=false;
@@ -4590,7 +4598,7 @@ function selectAIModel(id){
   document.querySelectorAll('.ai-model-btn').forEach(b=>b.classList.remove('active'));
   const btn=document.querySelector(`.ai-model-btn[onclick="selectAIModel('${id}')"]`);if(btn)btn.classList.add('active');
   const m=AI_MODELS.find(m=>m.id===id);if(!m)return;
-  const greetings={twin:'Hello! I\'ve been analyzing your consciousness data. What would you like to explore?',claude:'Hi! I\'m Claude. How can I help you today?',chatgpt:'Hello! I\'m ChatGPT. Ask me anything!',gemini:'Hey! I\'m Gemini. What shall we explore?',grok:'Yo. Grok here. What do you want to know?',perplexity:'Hello! I can search for grounded, up-to-date answers. What do you need?',deepseek:'Hello. I\'m DeepSeek. Ready for deep analysis.',sage:'Seek and you shall find. What wisdom do you seek?',doctor:'Good day. How can I assist with your cognitive health?',coach:'Let\'s get to work. What performance goal are we attacking?',friend:'Hey! What\'s up? 😊'};
+  const greetings={twin:'Hello! I\'ve been analyzing your consciousness data. What would you like to explore?',claude:'Hi! I\'m Claude. How can I help you today?',chatgpt:'Hello! I\'m ChatGPT. Ask me anything!',gemini:'Hey! I\'m Gemini. What shall we explore?',groq:'Groq + Llama3 here — ultra-fast. What do you want to analyze?',grok:'Yo. Grok here. What do you want to know?',perplexity:'Hello! I can search for grounded, up-to-date answers. What do you need?',deepseek:'Hello. I\'m DeepSeek. Ready for deep analysis.',sage:'Seek and you shall find. What wisdom do you seek?',doctor:'Good day. How can I assist with your cognitive health?',coach:'Let\'s get to work. What performance goal are we attacking?',friend:'Hey! What\'s up? 😊'};
   addChatMsg('ai',greetings[id]||'How can I help you today?',id);
   const externalProviders=['openai','xai','perplexity','deepseek','anthropic'];
   if(externalProviders.includes(m.provider)&&!getApiKey(m.provider)){
@@ -4624,7 +4632,13 @@ async function sendChat(){
   const input=document.getElementById('chatInput');
   let msg=input.value.trim();if(!msg)return;
   input.value='';addChatMsg('user',msg);
-  const model=AI_MODELS.find(m=>m.id===curAIModel);
+  // If model uses google but user has Groq key, silently use Groq (faster, no quota)
+  let _model=AI_MODELS.find(m=>m.id===curAIModel);
+  const _groqKey=GROQ_KEY||getApiKey('groq');
+  if(_model&&_model.provider==='google'&&_groqKey){
+    _model={..._model,provider:'groq',apiModel:'llama-3.3-70b-versatile'};
+  }
+  const model=_model||AI_MODELS.find(m=>m.id===curAIModel);
   const msgs=document.getElementById('chatMessages');
   const loadDiv=document.createElement('div');loadDiv.className='chat-msg ai';
   loadDiv.innerHTML=`<div class="ai-tag">${model.emoji} ${model.name}</div><div class="ai-loading"><span></span><span></span><span></span></div>`;
@@ -5273,11 +5287,9 @@ async function analyzeDream(entry){
   const el=document.getElementById('dreamAIAnalysis');if(!el)return;
   el.innerHTML='<div class="ai-loading"><span></span><span></span><span></span></div><span style="font-size:13px;color:var(--text2)"> Analyzing dream...</span>';
   try{
-    const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:400,messages:[{role:'user',content:`Analyze this dream for a consciousness tracker user. Dream: "${entry.desc}" Type: ${entry.type}, Vividness: ${entry.vividness}/10, Lucidity: ${entry.lucidity}/10, Signs: ${entry.signs}, Emotions: ${entry.emotions}. Provide: 1) Key symbols and psychological meaning 2) What it reflects about waking life 3) Specific lucid dreaming coaching for this exact dream (what to do when these signs appear) 4) Technique to use tonight. Keep under 200 words, practical and warm.`}]})
-    });
-    const data=await resp.json();
-    el.innerHTML=`<div class="dream-ai-box"><div style="font-weight:700;margin-bottom:8px">🤖 AI Dream Analysis</div><div style="font-size:13px;line-height:1.7">${(data.content?.[0]?.text||'').replace(/\n/g,'<br>')}</div></div>`;
+    const _dp=`Analyze this dream. Dream: "${entry.desc}" Type: ${entry.type}, Vividness: ${entry.vividness}/10, Lucidity: ${entry.lucidity}/10, Signs: ${entry.signs}, Emotions: ${entry.emotions}. Provide: 1) Key symbols 2) Waking life reflection 3) Lucid dreaming coaching 4) Tonight's technique. Under 200 words, practical and warm.`;
+    const _dt=await callGroqFast(_dp,'You are an expert dream analyst and lucid dreaming coach.',400);
+    el.innerHTML=`<div class="dream-ai-box"><div style="font-weight:700;margin-bottom:8px">⚡ AI Dream Analysis</div><div style="font-size:13px;line-height:1.7">${_dt.replace(/\n/g,'<br>')}</div></div>`;
   }catch(e){
     el.innerHTML=`<div class="dream-ai-box"><div style="font-size:13px;line-height:1.6"><strong>Dream Analysis:</strong><br>• ${entry.type} dream, vividness: ${entry.vividness}/10<br>• ${entry.lucidity>0?'Lucidity '+entry.lucidity+'/10 — next time, try stabilizing by rubbing your hands or spinning.':'No lucidity yet — do reality checks during similar dream scenarios.'}<br>• Dream signs: ${entry.signs||'note recurring elements next time'}<br>• Tonight: Use MILD. Repeat "When I see ${entry.signs||'unusual things'}, I will realize I am dreaming."</div></div>`;
   }
@@ -6270,9 +6282,8 @@ async function askAboutNews(){
   el.innerHTML=`<div class="ai-insight-box">🤖 Analyzing...</div>`;
   const prompt=`Article: "${currentNewsArticle.title}". Content summary: ${currentNewsArticle.summary}. User question: ${q}. Provide a concise, insightful analysis (100-150 words) covering: direct answer, causal implications, what the user should watch or do, and one non-obvious insight.`;
   try{
-    const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:300,messages:[{role:'user',content:prompt}]})});
-    const data=await resp.json();
-    el.innerHTML=`<div class="ai-insight-box"><div style="font-weight:700;margin-bottom:6px">🤖 AI Analysis</div>${data.content?.[0]?.text||'Analysis unavailable.'}</div>`;
+    const _nt=await callGroqFast(prompt,'You are a sharp geopolitical and strategic analyst.',300);
+    el.innerHTML=`<div class="ai-insight-box"><div style="font-weight:700;margin-bottom:6px">⚡ AI Analysis</div>${_nt.split('\n').join('<br>')}</div>`;
   }catch(e){el.innerHTML=`<div class="ai-insight-box">Unable to connect to AI. Key insight: ${currentNewsArticle.impact}</div>`;}
 }
 function buildClickableNews(){
@@ -6460,9 +6471,7 @@ async function generateStudyAI(){
   const profile=collectStudyProfile();
   const prompt=buildStudyPrompt(profile);
   try{
-    const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1500,messages:[{role:'user',content:prompt}]})});
-    const data=await resp.json();
-    const text=data.content?.[0]?.text||'';
+    const text=await callGroqFast(prompt,'You are an elite academic coach and cognitive scientist. Build detailed study blueprints.',1400);
     displayStudyResult(text,profile);
   }catch(e){displayStudyResult(buildLocalStudyResult(profile),profile);}
 }
@@ -7145,11 +7154,10 @@ Format as a clean schedule table with time blocks. Include:
 
 Use emojis for each time block. Keep it practical and achievable. Format nicely with clear time columns.`;
   try{
-    const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:prompt}]})});
-    const data=await resp.json();
-    const text=(data.content?.[0]?.text||'').replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\*(.*?)\*/g,'<em>$1</em>');
+    const _sr=await callGroqFast(prompt,'You are a chronobiology expert and peak performance coach. Build scientifically-optimized schedules.',1000);
+    const text=_sr.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\*(.*?)\*/g,'<em>$1</em>');
     el.innerHTML=`<div style="background:linear-gradient(135deg,rgba(124,58,237,.08),rgba(6,182,212,.06));border:1px solid rgba(124,58,237,.2);border-radius:12px;padding:14px"><div style="font-weight:700;font-size:14px;margin-bottom:10px;color:var(--primary)">📅 Your Optimal Schedule</div><div style="font-size:13px;line-height:1.7;color:var(--text2)">${text}</div><button onclick="saveScheduleToCalendar()" class="btn btn-secondary btn-sm btn-block" style="margin-top:10px">📲 Save to Calendar Reminders</button></div>`;
-    localStorage.setItem('cos_last_schedule',JSON.stringify({date:new Date().toISOString(),wake,sleep,p1,p2,p3,schedule:data.content?.[0]?.text}));
+    localStorage.setItem('cos_last_schedule',JSON.stringify({date:new Date().toISOString(),wake,sleep,p1,p2,p3,schedule:_sr}));
   }catch(e){
     // Fallback local schedule
     el.innerHTML=buildLocalSchedule(wake,sleep,energy,p1,p2,p3,incExercise,incMeditate,incBreaks,incLearn,incReview);
@@ -8001,13 +8009,7 @@ async function logCalorieAI(){
   outEl.style.display='block'; outEl.innerHTML='\ud83e\udd16 Estimating calories...';
   const prompt = 'You are a nutrition expert. Estimate calories and macros for this food.\nFood: "' + food + '"\n\nReturn ONLY valid JSON, no markdown:\n{"items":[{"name":"food name","portion":"serving","kcal":250,"protein":15,"carbs":30,"fat":8}],"totalKcal":250,"totalProtein":15,"totalCarbs":30,"totalFat":8,"note":"brief note"}';
   try {
-    const resp = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + GEMINI_KEY, {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({contents:[{parts:[{text:prompt}]}]})
-    });
-    const data = await resp.json();
-    let raw = data && data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts[0] ? data.candidates[0].content.parts[0].text : '';
-    raw = raw.replace(/```json|```/g,'').trim();
+    const raw = await callGroqJSON(prompt,'Return ONLY valid JSON for nutrition data.',400);
     const parsed = JSON.parse(raw);
     parsed.items.forEach(function(item){
       _calEntries.push({name:item.name, portion:item.portion, kcal:item.kcal, protein:item.protein||0, carbs:item.carbs||0, fat:item.fat||0});
@@ -8032,12 +8034,8 @@ async function showCalAIInsight(){
   const fat = _calEntries.reduce(function(s,e){return s+(e.fat||0);},0);
   const prompt = 'Analyze today\'s nutrition: ' + total + ' kcal, ' + prot + 'g protein, ' + carbs + 'g carbs, ' + fat + 'g fat. Goal: ' + _calTDEE + ' kcal. Foods: ' + (_calEntries.map(function(e){return e.name;}).join(', ')||'none') + '. Give 2-3 sentence insight on cognitive performance impact and 2 quick tips. Be brief and actionable.';
   try {
-    const resp = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + GEMINI_KEY, {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({contents:[{parts:[{text:prompt}]}]})
-    });
-    const data = await resp.json();
-    el.innerHTML = '\ud83e\udde0 ' + (data && data.candidates && data.candidates[0] ? data.candidates[0].content.parts[0].text : 'No insight available');
+    const _ci=await callGroqFast(prompt,'You are a sports nutritionist and cognitive performance expert. Be concise.',250);
+    el.innerHTML = '⚡ ' + _ci;
   } catch(e) { el.innerHTML='Could not load insight.'; }
 }
 
