@@ -4612,14 +4612,15 @@ function buildSuggestedQs(){
   el.innerHTML=shuffled.map(q=>`<button class="sq-btn" onclick="askSuggested('${q.replace(/'/g,"\\'")}')">${q}</button>`).join('');
 }
 function askSuggested(q){document.getElementById('chatInput').value=q;sendChat();}
-function addChatMsg(role,text,modelId){
+function addChatMsg(role,text,modelId,skipHistory){
   const msgs=document.getElementById('chatMessages');if(!msgs)return;
   const model=AI_MODELS.find(m=>m.id===(modelId||curAIModel));
   const div=document.createElement('div');div.className='chat-msg '+role;
   if(role==='ai')div.innerHTML=`<div class="ai-tag">${model?model.emoji+' '+model.name:'AI'}</div>${text}`;
   else div.textContent=text;
   msgs.appendChild(div);msgs.scrollTop=msgs.scrollHeight;
-  chatHistory.push({role,content:text,model:modelId||curAIModel});
+  // Only push to history when explicitly requested (avoid double-pushes from sendChat)
+  if(!skipHistory)chatHistory.push({role,content:text,model:modelId||curAIModel});
 }
 function clearAIChat(){chatHistory=[];document.getElementById('chatMessages').innerHTML='';showToast('Chat cleared');}
 function exportChat(){
@@ -4631,8 +4632,17 @@ function handleChatKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();se
 async function sendChat(){
   const input=document.getElementById('chatInput');
   let msg=input.value.trim();if(!msg)return;
-  input.value='';addChatMsg('user',msg);
-  // If model uses google but user has Groq key, silently use Groq (faster, no quota)
+  input.value='';
+
+  // ── Build API history BEFORE adding user msg to chatHistory ──
+  const recentHistorySnap=chatHistory.filter(m=>m.role==='user'||m.role==='ai').slice(-10);
+  const apiMessages=[...recentHistorySnap.map(m=>({role:m.role==='ai'?'assistant':'user',content:m.content})),{role:'user',content:msg}];
+
+  // Now display user bubble + push to history
+  addChatMsg('user',msg,null,true);
+  chatHistory.push({role:'user',content:msg,model:curAIModel});
+
+  // If model uses google but Groq key exists, silently use Groq (faster, no quota)
   let _model=AI_MODELS.find(m=>m.id===curAIModel);
   const _groqKey=GROQ_KEY||getApiKey('groq');
   if(_model&&_model.provider==='google'&&_groqKey){
@@ -4681,21 +4691,20 @@ ${L.goal?'CURRENT GOAL: "'+L.goal.slice(0,100)+'"':''}`;
   if(studyData.stField)userContext+=`\n\nSTUDY: field=${studyData.stField} target=${studyData.stTargetCareer||'?'}`;
   userContext+=`\n\nCURRENT TIME: ${new Date().toLocaleString('en-IN',{timeZone:'Asia/Kolkata'})} IST`;
 
-  const recentHistory=chatHistory.filter(m=>m.role==='user'||m.role==='ai').slice(-10);
-  const apiMessages=[...recentHistory.map(m=>({role:m.role==='ai'?'assistant':'user',content:m.content})),{role:'user',content:msg}];
-
   try{
     const text=await callAI(model,apiMessages,userContext);
     loadDiv.remove();
+    // ── Use element reference not ID — prevents typeTarget collision across messages ──
     const aiDiv=document.createElement('div');aiDiv.className='chat-msg ai';
-    aiDiv.innerHTML=`<div class="ai-tag">${model.emoji} ${model.name}</div><span id="typeTarget"></span>`;
+    const typeSpan=document.createElement('span');
+    aiDiv.innerHTML=`<div class="ai-tag">${model.emoji} ${model.name}</div>`;
+    aiDiv.appendChild(typeSpan);
     msgs.appendChild(aiDiv);
-    const target=document.getElementById('typeTarget');
-    let i=0;const type=()=>{if(i<text.length){target.textContent+=text[i++];msgs.scrollTop=msgs.scrollHeight;setTimeout(type,10);}};type();
+    let i=0;const type=()=>{if(i<text.length){typeSpan.textContent+=text[i++];msgs.scrollTop=msgs.scrollHeight;setTimeout(type,8);}};type();
     chatHistory.push({role:'ai',content:text,model:curAIModel});
   }catch(e){
     loadDiv.remove();
-    addChatMsg('ai',localAIResponse(msg)+`\n\n<em style="font-size:11px;color:var(--text3)">Note: ${e.message&&e.message.includes("API_KEY")?'API key issue — contact app admin':(e.message||'Connection failed')}.</em>`);
+    addChatMsg('ai',localAIResponse(msg)+`\n\n<em style="font-size:11px;color:var(--text3)">Note: ${e.message&&e.message.includes("API_KEY")?'API key issue — contact app admin':(e.message||'Connection failed')}.</em>`,curAIModel,true);
   }
   buildSuggestedQs();
 }
