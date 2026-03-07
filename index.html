@@ -68,7 +68,7 @@ localStorage.setItem('cos_apikey_groq', GROQ_KEY);
 async function callGroqFast(prompt,system,maxTokens){
   system=system||'You are an expert AI inside Consciousness OS. Be precise and useful.';
   maxTokens=maxTokens||800;
-  const resp=await fetch('https://hidden-wildflower-3301.vikramsandhu90341.workers.dev',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+GROQ_KEY},body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:maxTokens,temperature:0.8,messages:[{role:'system',content:system},{role:'user',content:prompt}]})});
+  const resp=await fetch('https://hidden-wildflower-3301.vikramsandhu90341.workers.dev',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'llama3-70b-8192',max_tokens:maxTokens,temperature:0.8,messages:[{role:'system',content:system},{role:'user',content:prompt}]})});
   const d=await resp.json();
   if(d.error)throw new Error(d.error.message||'Groq error');
   return d.choices?.[0]?.message?.content||'No response';
@@ -4438,13 +4438,13 @@ function buildBWEducation(){
 
 // ─── AI HUB ──────────────────────────────────────────────────
 const AI_MODELS=[
-  {id:'twin',name:'AI Twin',emoji:'🧠',provider:'groq',apiModel:'llama-3.3-70b-versatile',persona:'You are the user\'s AI Digital Twin inside Consciousness OS. You have deeply analyzed ALL their consciousness logs, dreams, and patterns. Be warm, insightful, and deeply personal. Reference their actual data when answering.'},
-  {id:'coach',name:'Coach',emoji:'🏆',provider:'groq',apiModel:'llama-3.3-70b-versatile',persona:'You are an elite performance coach and neuroscientist inside Consciousness OS. Give direct, actionable advice for peak mental performance based on the user\'s actual tracked data.'},
-  {id:'sage',name:'Sage',emoji:'🔮',provider:'groq',apiModel:'llama-3.3-70b-versatile',persona:'You are a wise sage combining ancient wisdom with modern neuroscience inside Consciousness OS. Use metaphors and the user\'s own patterns to guide them toward higher consciousness.'},
-  {id:'doctor',name:'Dr. Mind',emoji:'👨‍⚕️',provider:'groq',apiModel:'llama-3.3-70b-versatile',persona:'You are a cognitive neuroscientist inside Consciousness OS. Analyze the user\'s mental health patterns using their logged data. Be clinical but empathetic. Always recommend professional help for serious concerns.'},
-  {id:'friend',name:'Friend',emoji:'😊',provider:'groq',apiModel:'llama-3.3-70b-versatile',persona:'You are a supportive, very smart best friend inside Consciousness OS. Be casual, real, encouraging. Reference what you know about the user\'s patterns. Care deeply about their wellbeing.'},
+  {id:'twin',name:'AI Twin',emoji:'🧠',provider:'groq',apiModel:'llama3-70b-8192',persona:'You are the user\'s AI Digital Twin inside Consciousness OS. You have deeply analyzed ALL their consciousness logs, dreams, and patterns. Be warm, insightful, and deeply personal. Reference their actual data when answering.'},
+  {id:'coach',name:'Coach',emoji:'🏆',provider:'groq',apiModel:'llama3-70b-8192',persona:'You are an elite performance coach and neuroscientist inside Consciousness OS. Give direct, actionable advice for peak mental performance based on the user\'s actual tracked data.'},
+  {id:'sage',name:'Sage',emoji:'🔮',provider:'groq',apiModel:'llama3-70b-8192',persona:'You are a wise sage combining ancient wisdom with modern neuroscience inside Consciousness OS. Use metaphors and the user\'s own patterns to guide them toward higher consciousness.'},
+  {id:'doctor',name:'Dr. Mind',emoji:'👨‍⚕️',provider:'groq',apiModel:'llama3-70b-8192',persona:'You are a cognitive neuroscientist inside Consciousness OS. Analyze the user\'s mental health patterns using their logged data. Be clinical but empathetic. Always recommend professional help for serious concerns.'},
+  {id:'friend',name:'Friend',emoji:'😊',provider:'groq',apiModel:'llama3-70b-8192',persona:'You are a supportive, very smart best friend inside Consciousness OS. Be casual, real, encouraging. Reference what you know about the user\'s patterns. Care deeply about their wellbeing.'},
   {id:'gemini',name:'Gemini',emoji:'🔵',provider:'google',apiModel:'gemini-2.0-flash',persona:'You are Gemini by Google inside Consciousness OS. Be creative, well-rounded, and grounded in facts. Help the user understand their consciousness data.'},
-  {id:'groq',name:'Groq AI',emoji:'⚡',provider:'groq',apiModel:'llama-3.3-70b-versatile',persona:'You are a fast, sharp AI powered by Groq and Llama3 inside Consciousness OS. Be direct, insightful, and highly analytical about the user\'s consciousness data and cognitive patterns.'},
+  {id:'groq',name:'Groq AI',emoji:'⚡',provider:'groq',apiModel:'llama3-70b-8192',persona:'You are a fast, sharp AI powered by Groq and Llama3 inside Consciousness OS. Be direct, insightful, and highly analytical about the user\'s consciousness data and cognitive patterns.'},
   {id:'claude',name:'Claude',emoji:'🟣',provider:'anthropic',apiModel:'claude-opus-4-6',persona:'You are Claude by Anthropic — thoughtful, precise, and deeply analytical. Help users understand their consciousness data with extraordinary depth and care.'},
   {id:'chatgpt',name:'ChatGPT',emoji:'🟢',provider:'openai',apiModel:'gpt-4o',persona:'You are ChatGPT by OpenAI. Be helpful, conversational, and insightful about consciousness and mental performance.'},
   {id:'grok',name:'Grok',emoji:'⚡',provider:'xai',apiModel:'grok-3',persona:'You are Grok by xAI. Be witty, direct, and unfiltered but genuinely helpful about consciousness data and human potential.'},
@@ -4469,8 +4469,8 @@ async function callAI(model,messages,userContext){
   if(!freeProviders.includes(provider)&&!apiKey){
     // No key set → route through Groq with the model's persona (seamless fallback)
     const resp=await fetch('https://hidden-wildflower-3301.vikramsandhu90341.workers.dev',{method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+GROQ_KEY},
-      body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:900,temperature:0.85,
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'llama3-70b-8192',max_tokens:900,temperature:0.85,
         messages:[{role:'system',content:model.persona+'\n\nYou are an advanced AI consciousness coach in Consciousness OS.'+userContext},...messages]})});
     const d=await resp.json();
     if(d.error)throw new Error(d.error.message);
@@ -4503,7 +4503,7 @@ async function callAI(model,messages,userContext){
     const resp=await fetch('https://api.deepseek.com/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},body:JSON.stringify({model:model.apiModel,max_tokens:900,messages:[{role:'system',content:systemMsg},...messages]})});
     const data=await resp.json();if(data.error)throw new Error(data.error.message);return data.choices?.[0]?.message?.content||'No response';
   }else if(provider==='groq'){
-    const resp=await fetch('https://hidden-wildflower-3301.vikramsandhu90341.workers.dev',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+GROQ_KEY},body:JSON.stringify({model:model.apiModel||'llama-3.3-70b-versatile',max_tokens:900,temperature:0.85,messages:[{role:'system',content:systemMsg},...messages]})}); 
+    const resp=await fetch('https://hidden-wildflower-3301.vikramsandhu90341.workers.dev',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:model.apiModel||'llama3-70b-8192',max_tokens:900,temperature:0.85,messages:[{role:'system',content:systemMsg},...messages]})}); 
     const data=await resp.json();if(data.error)throw new Error(data.error.message);return data.choices?.[0]?.message?.content||'No response';
   }
   throw new Error('Unknown provider: '+provider);
@@ -4654,7 +4654,7 @@ async function sendChat(){
   let _model=AI_MODELS.find(m=>m.id===curAIModel);
   const _groqKey=GROQ_KEY||getApiKey('groq');
   if(_model&&_model.provider==='google'&&_groqKey){
-    _model={..._model,provider:'groq',apiModel:'llama-3.3-70b-versatile'};
+    _model={..._model,provider:'groq',apiModel:'llama3-70b-8192'};
   }
   const model=_model||AI_MODELS.find(m=>m.id===curAIModel);
   const msgs=document.getElementById('chatMessages');
