@@ -1027,8 +1027,14 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
     }
   }
 }
+/* ── WEALTH OS ── */
+@keyframes wealthScroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+.inv-card:hover{transform:translateY(-2px);box-shadow:0 4px 20px rgba(0,0,0,.15)}
+.wq-cell.wq-selected{transform:scale(1.03);box-shadow:0 4px 20px rgba(124,58,237,.25)}
+.wealth-spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
 </style>
-</head>
+
 <body>
 
 <!-- ══ LOGIN OVERLAY ══ -->
@@ -2912,6 +2918,320 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
 
 </div><!-- /tab-system -->
 
+<!-- ═══════════════════════════════════════════════════════════
+     💰 WEALTH OS — KIYOSAKI CASHFLOW INTELLIGENCE ENGINE
+═══════════════════════════════════════════════════════════ -->
+<div class="tab-panel" id="tab-wealth">
+
+<!-- ── TICKER BAR ── -->
+<div id="wealthTicker" style="background:linear-gradient(90deg,#0d0d0d,#1a0a2e,#0d0d0d);border-radius:10px;padding:8px 12px;margin-bottom:14px;overflow:hidden;white-space:nowrap;position:relative">
+  <div id="wealthTickerInner" style="display:inline-block;animation:wealthScroll 40s linear infinite;font-size:11px;font-weight:700;color:#f0c040;letter-spacing:.3px">
+    💰 FD: SBI 7.1% · HDFC 7.25% · ICICI 7.2% &nbsp;|&nbsp; 📈 Nifty 50 PE: 22.4 · Sensex: 74,000+ &nbsp;|&nbsp; ₿ Bitcoin: $67K+ &nbsp;|&nbsp; 🥇 Gold: ₹72,000/10g &nbsp;|&nbsp; 🪙 Silver: ₹87,000/kg &nbsp;|&nbsp; 🏠 REITs India: Avg 7-9% yield &nbsp;|&nbsp; 📊 SIP avg CAGR 12–15% &nbsp;|&nbsp; 💎 Principle: Pay yourself first — Richest Man in Babylon &nbsp;|&nbsp; 📖 RDPD: Assets put money in pocket. Liabilities take money out. &nbsp;|&nbsp;
+  </div>
+</div>
+
+<!-- ── CASHFLOW SCORE BANNER ── -->
+<div id="wealthScoreBanner" style="background:linear-gradient(135deg,#1a0a2e,#0a2e1a);border:2px solid #22c55e;border-radius:16px;padding:16px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+  <div>
+    <div style="font-size:11px;font-weight:700;color:#86efac;text-transform:uppercase;letter-spacing:1px">Monthly Cashflow</div>
+    <div id="wScoreAmt" style="font-family:Syne,sans-serif;font-size:32px;font-weight:800;color:#4ade80">₹0</div>
+    <div id="wScoreLabel" style="font-size:12px;color:#86efac;margin-top:2px">Enter your financial data below</div>
+  </div>
+  <div style="text-align:right">
+    <div style="font-size:11px;font-weight:700;color:#fcd34d;text-transform:uppercase;letter-spacing:1px">Rat Race Status</div>
+    <div id="wRatRace" style="font-family:Syne,sans-serif;font-size:15px;font-weight:800;color:#fbbf24;margin-top:4px">🐀 In Rat Race</div>
+    <div id="wPassiveVsExp" style="font-size:11px;color:#fcd34d;margin-top:2px">Passive: ₹0 / Expenses: ₹0</div>
+  </div>
+</div>
+
+<!-- ── KIYOSAKI QUADRANT ── -->
+<div class="card" style="background:linear-gradient(135deg,rgba(124,58,237,.06),rgba(16,185,129,.06))">
+  <div class="card-title"><span class="emoji">🔲</span> Cashflow Quadrant — Where Are You?</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+    <div id="wqE" class="wq-cell wq-active" onclick="selectQuadrant('E')" style="background:rgba(239,68,68,.12);border:2px solid rgba(239,68,68,.3);border-radius:12px;padding:12px;text-align:center;cursor:pointer;transition:all .2s">
+      <div style="font-size:22px">👔</div>
+      <div style="font-weight:800;font-size:14px;color:#ef4444">E — Employee</div>
+      <div style="font-size:10px;color:var(--text3);margin-top:3px">Trading time for money. Taxed highest.</div>
+    </div>
+    <div id="wqS" class="wq-cell" onclick="selectQuadrant('S')" style="background:rgba(245,158,11,.08);border:2px solid rgba(245,158,11,.2);border-radius:12px;padding:12px;text-align:center;cursor:pointer;transition:all .2s">
+      <div style="font-size:22px">🛠️</div>
+      <div style="font-weight:800;font-size:14px;color:#f59e0b">S — Self-Employed</div>
+      <div style="font-size:10px;color:var(--text3);margin-top:3px">Owns a job. You stop = income stops.</div>
+    </div>
+    <div id="wqB" class="wq-cell" onclick="selectQuadrant('B')" style="background:rgba(6,182,212,.08);border:2px solid rgba(6,182,212,.2);border-radius:12px;padding:12px;text-align:center;cursor:pointer;transition:all .2s">
+      <div style="font-size:22px">🏭</div>
+      <div style="font-weight:800;font-size:14px;color:#06b6d4">B — Business Owner</div>
+      <div style="font-size:10px;color:var(--text3);margin-top:3px">System works for you. Scales.</div>
+    </div>
+    <div id="wqI" class="wq-cell" onclick="selectQuadrant('I')" style="background:rgba(16,185,129,.08);border:2px solid rgba(16,185,129,.2);border-radius:12px;padding:12px;text-align:center;cursor:pointer;transition:all .2s">
+      <div style="font-size:22px">💎</div>
+      <div style="font-weight:800;font-size:14px;color:#10b981">I — Investor</div>
+      <div style="font-size:10px;color:var(--text3);margin-top:3px">Money works for you. Ultimate freedom.</div>
+    </div>
+  </div>
+  <div id="wQuadrantTip" style="background:rgba(124,58,237,.08);border:1px solid rgba(124,58,237,.2);border-radius:10px;padding:10px;font-size:13px;color:var(--text2);line-height:1.5">
+    📍 <strong>You selected: Employee (E)</strong> — Most people start here. The goal is to move to B and I quadrants. Start building passive income streams NOW while still employed. Every rupee you invest is one step toward escaping the rat race.
+  </div>
+</div>
+
+<!-- ── FINANCIAL STATEMENT (Cashflow Game Style) ── -->
+<div class="card">
+  <div class="card-title"><span class="emoji">📋</span> Financial Statement — Your Money Blueprint</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+    <!-- INCOME -->
+    <div style="background:rgba(16,185,129,.06);border:1px solid rgba(16,185,129,.2);border-radius:12px;padding:12px">
+      <div style="font-weight:800;font-size:13px;color:#10b981;margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px">💵 INCOME</div>
+      <div class="form-group" style="margin-bottom:8px"><label class="form-label" style="font-size:10px">Monthly Salary (₹)</label><input type="number" class="form-input" id="wIncomeSalary" placeholder="50000" oninput="computeWealthScore()" style="font-size:13px;padding:7px 10px"></div>
+      <div class="form-group" style="margin-bottom:8px"><label class="form-label" style="font-size:10px">Rental Income (₹)</label><input type="number" class="form-input" id="wIncomeRental" placeholder="0" oninput="computeWealthScore()" style="font-size:13px;padding:7px 10px"></div>
+      <div class="form-group" style="margin-bottom:8px"><label class="form-label" style="font-size:10px">Dividends/Interest (₹)</label><input type="number" class="form-input" id="wIncomeDividends" placeholder="0" oninput="computeWealthScore()" style="font-size:13px;padding:7px 10px"></div>
+      <div class="form-group" style="margin-bottom:0"><label class="form-label" style="font-size:10px">Business/Side Income (₹)</label><input type="number" class="form-input" id="wIncomeBusiness" placeholder="0" oninput="computeWealthScore()" style="font-size:13px;padding:7px 10px"></div>
+    </div>
+    <!-- EXPENSES -->
+    <div style="background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.2);border-radius:12px;padding:12px">
+      <div style="font-weight:800;font-size:13px;color:#ef4444;margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px">💸 EXPENSES</div>
+      <div class="form-group" style="margin-bottom:8px"><label class="form-label" style="font-size:10px">Taxes/TDS (₹)</label><input type="number" class="form-input" id="wExpTax" placeholder="5000" oninput="computeWealthScore()" style="font-size:13px;padding:7px 10px"></div>
+      <div class="form-group" style="margin-bottom:8px"><label class="form-label" style="font-size:10px">Home/Rent EMI (₹)</label><input type="number" class="form-input" id="wExpRent" placeholder="8000" oninput="computeWealthScore()" style="font-size:13px;padding:7px 10px"></div>
+      <div class="form-group" style="margin-bottom:8px"><label class="form-label" style="font-size:10px">Loan EMIs (₹)</label><input type="number" class="form-input" id="wExpLoans" placeholder="3000" oninput="computeWealthScore()" style="font-size:13px;padding:7px 10px"></div>
+      <div class="form-group" style="margin-bottom:0"><label class="form-label" style="font-size:10px">Living/Other Expenses (₹)</label><input type="number" class="form-input" id="wExpOther" placeholder="10000" oninput="computeWealthScore()" style="font-size:13px;padding:7px 10px"></div>
+    </div>
+  </div>
+  <div style="height:1px;background:var(--border);margin:12px 0"></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+    <!-- ASSETS -->
+    <div style="background:rgba(6,182,212,.06);border:1px solid rgba(6,182,212,.2);border-radius:12px;padding:12px">
+      <div style="font-weight:800;font-size:13px;color:#06b6d4;margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px">🏆 ASSETS (₹)</div>
+      <div class="form-group" style="margin-bottom:8px"><label class="form-label" style="font-size:10px">Stocks/Mutual Funds Value</label><input type="number" class="form-input" id="wAssetStocks" placeholder="0" oninput="computeWealthScore()" style="font-size:13px;padding:7px 10px"></div>
+      <div class="form-group" style="margin-bottom:8px"><label class="form-label" style="font-size:10px">Real Estate / REIT Value</label><input type="number" class="form-input" id="wAssetRE" placeholder="0" oninput="computeWealthScore()" style="font-size:13px;padding:7px 10px"></div>
+      <div class="form-group" style="margin-bottom:8px"><label class="form-label" style="font-size:10px">Gold / Silver Value</label><input type="number" class="form-input" id="wAssetGold" placeholder="0" oninput="computeWealthScore()" style="font-size:13px;padding:7px 10px"></div>
+      <div class="form-group" style="margin-bottom:0"><label class="form-label" style="font-size:10px">Crypto / Bitcoin Value</label><input type="number" class="form-input" id="wAssetCrypto" placeholder="0" oninput="computeWealthScore()" style="font-size:13px;padding:7px 10px"></div>
+    </div>
+    <!-- LIABILITIES -->
+    <div style="background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.2);border-radius:12px;padding:12px">
+      <div style="font-weight:800;font-size:13px;color:#f59e0b;margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px">⚠️ LIABILITIES (₹)</div>
+      <div class="form-group" style="margin-bottom:8px"><label class="form-label" style="font-size:10px">Home Loan Balance</label><input type="number" class="form-input" id="wLiabHome" placeholder="0" oninput="computeWealthScore()" style="font-size:13px;padding:7px 10px"></div>
+      <div class="form-group" style="margin-bottom:8px"><label class="form-label" style="font-size:10px">Car / Vehicle Loan</label><input type="number" class="form-input" id="wLiabCar" placeholder="0" oninput="computeWealthScore()" style="font-size:13px;padding:7px 10px"></div>
+      <div class="form-group" style="margin-bottom:8px"><label class="form-label" style="font-size:10px">Credit Card Debt</label><input type="number" class="form-input" id="wLiabCC" placeholder="0" oninput="computeWealthScore()" style="font-size:13px;padding:7px 10px"></div>
+      <div class="form-group" style="margin-bottom:0"><label class="form-label" style="font-size:10px">Personal / Other Loans</label><input type="number" class="form-input" id="wLiabOther" placeholder="0" oninput="computeWealthScore()" style="font-size:13px;padding:7px 10px"></div>
+    </div>
+  </div>
+  <!-- Net Worth Display -->
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:12px">
+    <div style="background:var(--bg3);border-radius:10px;padding:10px;text-align:center">
+      <div style="font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:700">Total Assets</div>
+      <div id="wTotalAssets" style="font-size:18px;font-weight:800;color:#06b6d4;margin-top:2px">₹0</div>
+    </div>
+    <div style="background:var(--bg3);border-radius:10px;padding:10px;text-align:center">
+      <div style="font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:700">Total Liabilities</div>
+      <div id="wTotalLiab" style="font-size:18px;font-weight:800;color:#f59e0b;margin-top:2px">₹0</div>
+    </div>
+    <div style="background:var(--bg3);border-radius:10px;padding:10px;text-align:center">
+      <div style="font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:700">Net Worth</div>
+      <div id="wNetWorth" style="font-size:18px;font-weight:800;color:#10b981;margin-top:2px">₹0</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── AI WEALTH ADVISOR ── -->
+<div class="card" style="border:2px solid rgba(250,204,21,.3);background:linear-gradient(135deg,rgba(250,204,21,.04),rgba(124,58,237,.06))">
+  <div class="card-title" style="font-size:16px"><span class="emoji">🧠</span> AI Wealth Advisor — Robert Kiyosaki + Buffett + BlackRock Mode</div>
+  <div style="font-size:12px;color:var(--text3);margin-bottom:12px">Combines principles from: Rich Dad Poor Dad · Psychology of Money · Think & Grow Rich · Richest Man in Babylon · Rothschild/Rockefeller/Vanguard frameworks</div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+    <button class="btn btn-primary" onclick="runWealthAI()" id="wealthAIBtn" style="background:linear-gradient(135deg,#f59e0b,#d97706);flex:1;min-width:140px">⚡ Analyze My Wealth</button>
+    <button class="btn btn-secondary btn-sm" onclick="askWealthQ('Where to invest ₹10,000 monthly?')">SIP Plan</button>
+    <button class="btn btn-secondary btn-sm" onclick="askWealthQ('Best FD rates India 2024-25?')">FD Rates</button>
+    <button class="btn btn-secondary btn-sm" onclick="askWealthQ('How to escape rat race fast?')">Escape Plan</button>
+    <button class="btn btn-secondary btn-sm" onclick="askWealthQ('Bitcoin or Gold — which is better for 2025?')">BTC vs Gold</button>
+    <button class="btn btn-secondary btn-sm" onclick="askWealthQ('Best PE ratio stocks India right now?')">PE Stocks</button>
+  </div>
+  <textarea id="wealthAICustomQ" class="form-textarea" placeholder="Ask your wealth question... e.g. 'I earn ₹40,000/month. Where should I invest to retire in 20 years?' or 'Which mutual funds beat Nifty?'" style="min-height:70px;margin-bottom:10px"></textarea>
+  <div id="wealthAIOutput" style="display:none;background:linear-gradient(135deg,rgba(250,204,21,.08),rgba(15,10,30,.4));border:1px solid rgba(250,204,21,.25);border-radius:12px;padding:14px;font-size:13px;line-height:1.7;color:var(--text);max-height:400px;overflow-y:auto">
+    <span style="color:var(--text3)">AI analysis will appear here...</span>
+  </div>
+</div>
+
+<!-- ── INVESTMENT ARSENAL ── -->
+<div class="card">
+  <div class="card-title"><span class="emoji">🎯</span> Investment Arsenal — All Vehicles Explained</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+
+    <div class="inv-card" onclick="expandInv('fd')" style="background:linear-gradient(135deg,rgba(16,185,129,.1),rgba(6,182,212,.06));border:1px solid rgba(16,185,129,.25);border-radius:12px;padding:12px;cursor:pointer;transition:all .2s">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <span style="font-size:22px">🏦</span>
+        <div><div style="font-weight:800;font-size:13px">Fixed Deposits</div><div style="font-size:10px;color:var(--text3)">Safe · Guaranteed</div></div>
+      </div>
+      <div style="font-size:12px;color:#10b981;font-weight:700">SBI: 7.1% · HDFC: 7.25% · ICICI: 7.2%</div>
+      <div id="inv-fd" style="display:none;margin-top:8px;font-size:11px;color:var(--text2);line-height:1.6">
+        <strong>Best FDs 2024–25:</strong><br>
+        · Small Finance Banks: 8.5–9.5% (Jana, Suryoday, Utkarsh)<br>
+        · SBI Senior Citizen FD: 7.6%<br>
+        · Bajaj Finance FD: 8.1%<br>
+        <strong>📖 Richest Man in Babylon:</strong> "A part of all you earn is yours to keep." FDs are your safety net — never put more than 20% here. Money must WORK, not sleep.
+      </div>
+    </div>
+
+    <div class="inv-card" onclick="expandInv('sip')" style="background:linear-gradient(135deg,rgba(124,58,237,.1),rgba(236,72,153,.06));border:1px solid rgba(124,58,237,.25);border-radius:12px;padding:12px;cursor:pointer;transition:all .2s">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <span style="font-size:22px">📈</span>
+        <div><div style="font-weight:800;font-size:13px">SIP / Mutual Funds</div><div style="font-size:10px;color:var(--text3)">12–18% CAGR · Diversified</div></div>
+      </div>
+      <div style="font-size:12px;color:#a78bfa;font-weight:700">Nifty 50 Index: 14% hist. · ELSS: tax saving</div>
+      <div id="inv-sip" style="display:none;margin-top:8px;font-size:11px;color:var(--text2);line-height:1.6">
+        <strong>Top Funds by Category:</strong><br>
+        · Large Cap: Nifty 50 Index Fund (Nippon/UTI)<br>
+        · Mid Cap: Motilal Oswal Midcap 150<br>
+        · Small Cap: Quant Small Cap Fund<br>
+        · ELSS Tax Saver: Mirae Asset Tax Saver<br>
+        · Flexi Cap: Parag Parikh Flexi Cap<br>
+        <strong>📖 Psychology of Money:</strong> "Compounding works best when you give it time." ₹5,000/month at 14% for 25 years = ₹1.3 Crore. START NOW.
+      </div>
+    </div>
+
+    <div class="inv-card" onclick="expandInv('gold')" style="background:linear-gradient(135deg,rgba(250,204,21,.12),rgba(245,158,11,.06));border:1px solid rgba(250,204,21,.3);border-radius:12px;padding:12px;cursor:pointer;transition:all .2s">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <span style="font-size:22px">🥇</span>
+        <div><div style="font-weight:800;font-size:13px">Gold & Silver</div><div style="font-size:10px;color:var(--text3)">Inflation hedge · 5–8% CAGR</div></div>
+      </div>
+      <div style="font-size:12px;color:#fcd34d;font-weight:700">Gold: ₹72K/10g · Silver: ₹87K/kg</div>
+      <div id="inv-gold" style="display:none;margin-top:8px;font-size:11px;color:var(--text2);line-height:1.6">
+        <strong>Gold Investment Vehicles:</strong><br>
+        · Sovereign Gold Bond (SGB): 2.5% interest + appreciation<br>
+        · Gold ETF: Nippon India Gold ETF, SBI Gold ETF<br>
+        · Digital Gold: PhonePe, Paytm<br>
+        · Silver ETF: Mirae Asset Silver ETF<br>
+        <strong>📖 Rothschild Rule:</strong> "Buy when there is blood in the streets." Allocate 10–15% to precious metals as crisis insurance. Gold preserves generational wealth.
+      </div>
+    </div>
+
+    <div class="inv-card" onclick="expandInv('crypto')" style="background:linear-gradient(135deg,rgba(245,158,11,.1),rgba(239,68,68,.06));border:1px solid rgba(245,158,11,.25);border-radius:12px;padding:12px;cursor:pointer;transition:all .2s">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <span style="font-size:22px">₿</span>
+        <div><div style="font-weight:800;font-size:13px">Bitcoin / Crypto</div><div style="font-size:10px;color:var(--text3)">High risk · High reward</div></div>
+      </div>
+      <div style="font-size:12px;color:#fbbf24;font-weight:700">BTC: $67K · ETH: $3.5K · Post-halving bull</div>
+      <div id="inv-crypto" style="display:none;margin-top:8px;font-size:11px;color:var(--text2);line-height:1.6">
+        <strong>Bitcoin Strategy:</strong><br>
+        · DCA (Dollar-Cost Average): Buy fixed amount weekly/monthly<br>
+        · Halving cycle: Next peak historically 12–18 months after April 2024 halving<br>
+        · India: WazirX, CoinDCX, Binance (5% TDS, 30% tax on gains)<br>
+        · Max allocation: 5–10% of portfolio only<br>
+        <strong>📖 Think & Grow Rich:</strong> "Whatever the mind can conceive and believe, it can achieve." Early Bitcoin adopters had faith when others laughed. Information asymmetry = wealth.
+      </div>
+    </div>
+
+    <div class="inv-card" onclick="expandInv('stocks')" style="background:linear-gradient(135deg,rgba(6,182,212,.1),rgba(124,58,237,.06));border:1px solid rgba(6,182,212,.25);border-radius:12px;padding:12px;cursor:pointer;transition:all .2s">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <span style="font-size:22px">📊</span>
+        <div><div style="font-weight:800;font-size:13px">Stock Market</div><div style="font-size:10px;color:var(--text3)">PE Ratio · Value Investing</div></div>
+      </div>
+      <div style="font-size:12px;color:#06b6d4;font-weight:700">Nifty PE: 22.4 · Fair value: 18–20</div>
+      <div id="inv-stocks" style="display:none;margin-top:8px;font-size:11px;color:var(--text2);line-height:1.6">
+        <strong>PE Ratio Guide (Buffett Method):</strong><br>
+        · PE &lt; 15: Undervalued — BUY signal<br>
+        · PE 15–25: Fair value — Hold/Accumulate<br>
+        · PE &gt; 30: Overvalued — Caution, wait for correction<br>
+        <strong>Good PE Sectors India:</strong> PSU Banks (5–8 PE), Pharma (15–18 PE), IT (20–22 PE)<br>
+        <strong>📖 Vanguard/Buffett:</strong> "Index funds beat 90% of fund managers over 20 years." Buy Nifty 50 index + cherry-pick 5-10 quality stocks at reasonable PE.
+      </div>
+    </div>
+
+    <div class="inv-card" onclick="expandInv('realestate')" style="background:linear-gradient(135deg,rgba(16,185,129,.1),rgba(6,182,212,.06));border:1px solid rgba(16,185,129,.25);border-radius:12px;padding:12px;cursor:pointer;transition:all .2s">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <span style="font-size:22px">🏠</span>
+        <div><div style="font-weight:800;font-size:13px">Real Estate / REITs</div><div style="font-size:10px;color:var(--text3)">Rental income · REITs liquid</div></div>
+      </div>
+      <div style="font-size:12px;color:#10b981;font-weight:700">REITs: 7–9% yield · Embassy, Mindspace, Brookfield</div>
+      <div id="inv-realestate" style="display:none;margin-top:8px;font-size:11px;color:var(--text2);line-height:1.6">
+        <strong>India REIT Options:</strong><br>
+        · Embassy Office Parks REIT: ~7% yield<br>
+        · Mindspace Business Parks REIT: ~7.5%<br>
+        · Brookfield India REIT: ~8.2%<br>
+        · Nexus Select Trust (Retail REIT): ~7%<br>
+        <strong>Direct Real Estate Rule:</strong> Rent yield &gt; 3% of property value = good investment. Location &gt; everything.<br>
+        <strong>📖 RDPD:</strong> "Real estate is the safest investment." REITs give you real estate returns with stock market liquidity.
+      </div>
+    </div>
+
+    <div class="inv-card" onclick="expandInv('business')" style="background:linear-gradient(135deg,rgba(236,72,153,.1),rgba(124,58,237,.06));border:1px solid rgba(236,72,153,.25);border-radius:12px;padding:12px;cursor:pointer;transition:all .2s">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <span style="font-size:22px">🏭</span>
+        <div><div style="font-weight:800;font-size:13px">Business / Side Income</div><div style="font-size:10px;color:var(--text3)">Unlimited upside · Scalable</div></div>
+      </div>
+      <div style="font-size:12px;color:#ec4899;font-weight:700">Best ROI vehicle if executed right</div>
+      <div id="inv-business" style="display:none;margin-top:8px;font-size:11px;color:var(--text2);line-height:1.6">
+        <strong>Low-Capital Business Ideas 2025:</strong><br>
+        · Content creation / YouTube / Instagram<br>
+        · Freelancing (coding, design, writing, pharma consulting)<br>
+        · Dropshipping / E-commerce<br>
+        · Online coaching / courses (Teachable, Udemy)<br>
+        · SaaS Micro-products<br>
+        <strong>📖 Rockefeller Model:</strong> "I would rather earn 1% off 100 people's efforts than 100% of my own." Build systems. Create leverage. Be the B/I quadrant.
+      </div>
+    </div>
+
+    <div class="inv-card" onclick="expandInv('taxplan')" style="background:linear-gradient(135deg,rgba(239,68,68,.08),rgba(245,158,11,.06));border:1px solid rgba(239,68,68,.2);border-radius:12px;padding:12px;cursor:pointer;transition:all .2s">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <span style="font-size:22px">🛡️</span>
+        <div><div style="font-weight:800;font-size:13px">Tax Optimization</div><div style="font-size:10px;color:var(--text3)">Save tax = increase cashflow</div></div>
+      </div>
+      <div style="font-size:12px;color:#f87171;font-weight:700">80C: ₹1.5L save · NPS: ₹50K extra</div>
+      <div id="inv-taxplan" style="display:none;margin-top:8px;font-size:11px;color:var(--text2);line-height:1.6">
+        <strong>India Tax Saving Tools:</strong><br>
+        · Section 80C (₹1.5L): ELSS, PPF, NPS, LIC<br>
+        · Section 80D (₹25K): Health Insurance<br>
+        · Section 80CCD(1B) (₹50K): NPS extra<br>
+        · HRA exemption: If renting, claim HRA<br>
+        · LTCG: Hold equity &gt;1 year for 10% vs 15% STCG<br>
+        <strong>📖 Rockefeller Method:</strong> The rich don't pay the same taxes because they use legal structures. Every rupee saved in taxes is a rupee that compounds.
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── BILLIONAIRE BLUEPRINT ── -->
+<div class="card" style="background:linear-gradient(135deg,rgba(0,0,0,.03),rgba(124,58,237,.04))">
+  <div class="card-title"><span class="emoji">👑</span> Billionaire Blueprint — Rothschild · Rockefeller · Vanguard · BlackRock</div>
+  <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;scrollbar-width:none;margin-bottom:12px">
+    <button class="wave-btn active" onclick="showBillionaireModel('rockefeller',this)" style="white-space:nowrap">🛢️ Rockefeller</button>
+    <button class="wave-btn" onclick="showBillionaireModel('rothschild',this)" style="white-space:nowrap">🏦 Rothschild</button>
+    <button class="wave-btn" onclick="showBillionaireModel('vanguard',this)" style="white-space:nowrap">📊 Vanguard</button>
+    <button class="wave-btn" onclick="showBillionaireModel('blackrock',this)" style="white-space:nowrap">🌐 BlackRock</button>
+    <button class="wave-btn" onclick="showBillionaireModel('buffett',this)" style="white-space:nowrap">🍎 Buffett</button>
+    <button class="wave-btn" onclick="showBillionaireModel('babylon',this)" style="white-space:nowrap">🏺 Babylon</button>
+  </div>
+  <div id="billionaireContent" style="background:var(--bg3);border-radius:12px;padding:14px;font-size:13px;line-height:1.7;color:var(--text2)"></div>
+</div>
+
+<!-- ── WEALTH WISDOM FEED ── -->
+<div class="card">
+  <div class="card-title"><span class="emoji">📚</span> Wealth Wisdom — Daily Principle</div>
+  <div id="wealthWisdomCard" style="background:linear-gradient(135deg,rgba(124,58,237,.1),rgba(250,204,21,.05));border:1px solid rgba(124,58,237,.25);border-radius:12px;padding:14px;margin-bottom:10px">
+    <div id="wWisdomBook" style="font-size:10px;font-weight:700;color:var(--primary);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Loading...</div>
+    <div id="wWisdomQuote" style="font-size:15px;font-weight:700;color:var(--text);line-height:1.5;margin-bottom:8px;font-style:italic">"Loading wisdom..."</div>
+    <div id="wWisdomLesson" style="font-size:12px;color:var(--text2);line-height:1.6"></div>
+  </div>
+  <button class="btn btn-secondary btn-sm" onclick="cycleWealthWisdom()">🔄 Next Principle</button>
+  <button class="btn btn-secondary btn-sm" style="margin-left:8px" onclick="generateDailyWealthTip()">🧠 AI Custom Tip</button>
+  <div id="wAIDailyTip" style="display:none;background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);border-radius:10px;padding:12px;margin-top:10px;font-size:13px;color:var(--text2);line-height:1.6"></div>
+</div>
+
+<!-- ── GOAL PROJECTION CALCULATOR ── -->
+<div class="card">
+  <div class="card-title"><span class="emoji">🎯</span> Rat Race Escape Calculator</div>
+  <div class="form-row">
+    <div class="form-group"><label class="form-label">Monthly Investment (₹)</label><input type="number" class="form-input" id="calcMonthly" placeholder="10000" value="10000"></div>
+    <div class="form-group"><label class="form-label">Expected CAGR (%)</label><input type="number" class="form-input" id="calcCAGR" placeholder="14" value="14"></div>
+  </div>
+  <div class="form-row">
+    <div class="form-group"><label class="form-label">Target Corpus (₹)</label><input type="number" class="form-input" id="calcTarget" placeholder="10000000" value="10000000"></div>
+    <div class="form-group"><label class="form-label">Monthly Expenses (₹)</label><input type="number" class="form-input" id="calcExpenses" placeholder="30000" value="30000"></div>
+  </div>
+  <button class="btn btn-primary btn-block" onclick="runEscapeCalc()" style="background:linear-gradient(135deg,#10b981,#06b6d4);margin-bottom:12px">📊 Calculate My Freedom Number</button>
+  <div id="escapeCalcResult" style="display:none;background:var(--bg3);border-radius:12px;padding:14px;font-size:13px;line-height:1.8"></div>
+</div>
+
+</div><!-- /tab-wealth -->
+
 </div><!-- /.main -->
 
 <!-- ════════════════════════════════════════════
@@ -3635,6 +3955,7 @@ const NAV_ITEMS=[
   {id:'path',icon:'💼',key:'nav_career'},{id:'games',icon:'🎮',key:'nav_games'},
   {id:'science',icon:'🔬',key:'nav_science'},{id:'world',icon:'🌍',key:'nav_world'},
   {id:'media',icon:'📸',key:'nav_memory'},{id:'calendar',icon:'📅',key:'nav_calendar'},
+  {id:'wealth',icon:'💰',key:'nav_wealth'},
   {id:'settings',icon:'⚙️',key:'nav_settings'},{id:'system',icon:'🧩',key:'nav_system'},
 ];
 let activeTab='log';
@@ -3675,6 +3996,7 @@ function switchTab(id){
   if(id==='science'){buildScienceDisplay();updateScienceTimestamp();}
   if(id==='system'){buildThemeGrid();updateTelemetry();updateAccountUI();}
   if(id==='guide'){buildGuideNavMap();}
+  if(id==='wealth'){initWealthOS();}
 }
 
 // ─── THEME ──────────────────────────────────────────────────
@@ -8115,6 +8437,361 @@ function initCalorieTracker(){
   if(document.getElementById('calTotal')) updateCalUI();
 }
 
+// ═══════════════════════════════════════════════════════════
+//  💰 WEALTH OS — KIYOSAKI CASHFLOW INTELLIGENCE ENGINE
+// ═══════════════════════════════════════════════════════════
+
+const WEALTH_WISDOM = [
+  {book:'📗 Rich Dad Poor Dad',quote:'"The rich don\'t work for money. They make money work for them."',lesson:'Every rupee you invest creates a tiny employee working 24/7. Build assets that generate income while you sleep. That is the fundamental shift from E-quadrant to I-quadrant thinking.'},
+  {book:'📗 Rich Dad Poor Dad',quote:'"Your house is NOT an asset. It is a liability."',lesson:'Kiyosaki\'s most controversial lesson: a home takes money OUT of your pocket every month (EMI, maintenance, taxes). A true asset puts money IN. Real estate is an asset only when someone else pays for it — via rent.'},
+  {book:'📘 The Psychology of Money',quote:'"Wealth is what you don\'t see. It\'s the cars not purchased, the diamonds not bought."',lesson:'Morgan Housel\'s insight: real wealth is invisible. It\'s the investments you didn\'t liquidate, the opportunities you had the patience to let compound. Spending on status signals destroys real wealth.'},
+  {book:'📘 The Psychology of Money',quote:'"Compounding is not intuitive. It defies all intuition."',lesson:'₹10,000/month at 15% CAGR for 30 years = ₹7 Crore. The same ₹10,000 for just 10 years = ₹27 Lakhs. Time is the most powerful variable in wealth. START earlier. Stay longer.'},
+  {book:'📙 Think & Grow Rich',quote:'"Whatever the mind of man can conceive and believe, it can achieve."',lesson:'Napoleon Hill studied 500 millionaires. The #1 common factor: a burning desire backed by a definite plan. Wealth begins as a thought. Write your financial goal as a specific number by a specific date.'},
+  {book:'📙 Think & Grow Rich',quote:'"The starting point of all achievement is DESIRE."',lesson:'Vague wishes produce vague results. "I want to be rich" is not a plan. "I will have ₹1 Crore by age 40 by investing ₹15,000/month in diversified equity funds" is a plan. Specificity activates the subconscious.'},
+  {book:'📕 Richest Man in Babylon',quote:'"A part of all you earn is yours to keep. It should not be less than a tenth."',lesson:'The oldest wealth rule in history: pay yourself first. Before expenses, before fun — 10% goes into investments. This single habit, applied consistently for 20 years, creates millionaires from average incomes.'},
+  {book:'📕 Richest Man in Babylon',quote:'"Opportunity is a haughty goddess who wastes no time with those who are unprepared."',lesson:'You cannot take advantage of investment opportunities (undervalued stocks, real estate dips, new businesses) if you have no savings. Building a financial reserve IS the strategy. It creates optionality.'},
+  {book:'📕 Richest Man in Babylon',quote:'"Control thy expenditures. What each of us calls our \'necessary expenses\' will always grow to equal our incomes unless we protest."',lesson:'Lifestyle inflation is the silent wealth killer. Every raise gets eaten by a bigger car, nicer apartment. The rich control expenses with an iron fist while growing income and investments.'},
+  {book:'🔷 Easiest Way to Wealth',quote:'"Financial freedom is achieved when passive income exceeds active expenses."',lesson:'This is the mathematical definition of escaping the rat race. Track this number. When Passive Income ≥ Monthly Expenses, you are free. Every investment moves this number closer to freedom.'},
+];
+
+const BILLIONAIRE_MODELS = {
+  rockefeller: {
+    title:'🛢️ John D. Rockefeller — The Systems Monopolist',
+    content:`<div style="font-weight:800;font-size:14px;margin-bottom:8px;color:#f59e0b">Strategy: Vertical Integration + Monopoly + Reinvestment</div>
+    <div style="font-size:12px;line-height:1.8;color:var(--text2)">
+    <strong>Core Principles:</strong><br>
+    · <strong>Control the infrastructure, not just the product.</strong> Rockefeller didn't just produce oil — he controlled pipelines, refineries, distribution. Applied today: Don't just work in a field, own systems that process it.<br>
+    · <strong>Never spend what you earn.</strong> He kept meticulous records from age 16. Every cent tracked. He called his account book "Ledger A" and treated it like a Bible.<br>
+    · <strong>Reinvest ruthlessly.</strong> Standard Oil profits were immediately reinvested into buying competitors and building more infrastructure. Compound growth through reinvestment is the Rockefeller engine.<br>
+    · <strong>Give 10% always.</strong> He gave to charity even when poor, believing it returned manifold.<br><br>
+    <strong>🇮🇳 Apply to India:</strong> Build skills that create leverage (coding, medicine, finance). Own shares in companies you understand deeply. Build one income stream, then reinvest proceeds to build another.
+    </div>`
+  },
+  rothschild: {
+    title:'🏦 Rothschild Family — The Information Bankers',
+    content:`<div style="font-weight:800;font-size:14px;margin-bottom:8px;color:#06b6d4">Strategy: Information Asymmetry + Compounding + Multi-generational thinking</div>
+    <div style="font-size:12px;line-height:1.8;color:var(--text2)">
+    <strong>Core Principles:</strong><br>
+    · <strong>Information is the ultimate asset.</strong> The Rothschilds used carrier pigeons to get news faster than competitors. They knew the result of Waterloo before the London stock exchange. Applied today: deep research, being early in emerging trends.<br>
+    · <strong>Never put all eggs in one basket.</strong> The family spread across 5 European cities deliberately. Diversification across geographies, currencies, and asset classes.<br>
+    · <strong>Think in generations, not years.</strong> "Buy when there is blood in the streets." They had the capital and patience to buy crises. This is only possible if you don't need the money short-term.<br>
+    · <strong>Compound interest is the eighth wonder.</strong> Nathan Rothschild: compound interest over centuries is how dynasties are built.<br><br>
+    <strong>🇮🇳 Apply to India:</strong> Research stocks others haven't noticed. Buy quality in market crashes (2020 COVID crash = generational opportunity). Think 10-year horizons, not next quarter.
+    </div>`
+  },
+  vanguard: {
+    title:'📊 Vanguard (Bogle) — The Index Revolution',
+    content:`<div style="font-weight:800;font-size:14px;margin-bottom:8px;color:#a78bfa">Strategy: Low-cost Index Investing + Stay the Course</div>
+    <div style="font-size:12px;line-height:1.8;color:var(--text2)">
+    <strong>Jack Bogle's Evidence-Based Principles:</strong><br>
+    · <strong>90% of fund managers underperform the index over 20 years.</strong> Index funds win by default because they eliminate fees and human error.<br>
+    · <strong>Costs are the enemy of returns.</strong> 1% extra fee over 30 years costs you 25% of your final corpus. Choose low-expense-ratio funds always.<br>
+    · <strong>Don't try to time the market.</strong> "Time IN the market beats TIMING the market." SIP (systematic investment plans) are the Indian implementation of Vanguard philosophy.<br>
+    · <strong>Asset allocation beats stock selection.</strong> 90% of returns are determined by how you allocate between equity/debt/gold, not which specific stocks.<br><br>
+    <strong>🇮🇳 Apply to India:</strong> Nifty 50 Index Fund (Nippon/UTI/Motilal) is India's Vanguard equivalent. Add Nifty Next 50 for mid-cap exposure. Set SIP and never stop — not in crashes, not in euphoria.
+    </div>`
+  },
+  blackrock: {
+    title:'🌐 BlackRock (Fink) — The Everything Firm',
+    content:`<div style="font-weight:800;font-size:14px;margin-bottom:8px;color:#10b981">Strategy: Risk Management + Systematic Diversification + ESG</div>
+    <div style="font-size:12px;line-height:1.8;color:var(--text2)">
+    <strong>BlackRock's $10 Trillion Framework:</strong><br>
+    · <strong>Risk-adjusted returns, not raw returns.</strong> BlackRock's Aladdin system models every risk in a portfolio. Amateur investors only look at upside. Professionals obsess over downside.<br>
+    · <strong>Diversify across asset classes, geographies, and time.</strong> Their model: equities 60%, bonds 30%, alternatives 10% — adjusted for age and risk tolerance.<br>
+    · <strong>Private markets are the next frontier.</strong> Infrastructure, private credit, real estate. Retail investors in India can access this via InvITs, REITs, and AIFs.<br>
+    · <strong>Macro matters.</strong> Interest rates, inflation, currency — BlackRock allocates based on macro regime. In rising rate environments: commodities and short-duration assets outperform.<br><br>
+    <strong>🇮🇳 Apply to India:</strong> Build a diversified portfolio: 50% equity (Nifty index), 20% debt (G-Sec/FD), 15% gold (SGB), 10% real estate (REIT), 5% crypto (BTC only).
+    </div>`
+  },
+  buffett: {
+    title:'🍎 Warren Buffett — The Oracle of Omaha',
+    content:`<div style="font-weight:800;font-size:14px;margin-bottom:8px;color:#ef4444">Strategy: Value Investing + Economic Moats + Patience</div>
+    <div style="font-size:12px;line-height:1.8;color:var(--text2)">
+    <strong>Buffett's Core Rules:</strong><br>
+    · <strong>Rule 1: Never lose money. Rule 2: Never forget Rule 1.</strong> Asymmetric thinking — avoiding losses matters more than chasing gains.<br>
+    · <strong>Buy wonderful companies at fair prices.</strong> Not mediocre companies at cheap prices. Look for: strong brand, pricing power, high ROE, low debt, consistent earnings growth.<br>
+    · <strong>PE Ratio is a starting point, not the answer.</strong> A PE of 10 is cheap if the business is dying. A PE of 30 is cheap if earnings double every 3 years.<br>
+    · <strong>Invest in what you understand.</strong> Buffett avoided tech for decades. Know your circle of competence. A pharmacist should understand pharma stocks deeply.<br>
+    · <strong>Be fearful when others are greedy.</strong> Market crashes are sales. Market euphoria is when you should be cautious.<br><br>
+    <strong>🇮🇳 Apply:</strong> Look for Indian companies with moats: HDFC Bank, TCS, Asian Paints, Nestle India. Buy them when market corrects. Hold for 5–10 years minimum.
+    </div>`
+  },
+  babylon: {
+    title:'🏺 Richest Man in Babylon — 7 Laws of Gold',
+    content:`<div style="font-weight:800;font-size:14px;margin-bottom:8px;color:#fbbf24">Strategy: Timeless Wealth Laws (2000 BC — still true today)</div>
+    <div style="font-size:12px;line-height:1.8;color:var(--text2)">
+    <strong>The 7 Cures for a Lean Purse:</strong><br>
+    · <strong>1. Start thy purse to fattening:</strong> Save 10% of every income. Non-negotiable. Automate SIP.<br>
+    · <strong>2. Control thy expenditures:</strong> Budget. Every lifestyle upgrade must be funded by INVESTMENT returns, not income.<br>
+    · <strong>3. Make thy gold multiply:</strong> Put savings to work. FD, SIP, stocks — idle money is dying money (inflation eats it).<br>
+    · <strong>4. Guard thy treasures from loss:</strong> Principal protection first. Never invest in what you don't understand. High-yield schemes that sound too good = they are.<br>
+    · <strong>5. Make of thy dwelling a profitable investment:</strong> Own your home eventually, but only when it doesn't strain cashflow.<br>
+    · <strong>6. Ensure a future income:</strong> Insurance, pension, passive income assets — for when you cannot work.<br>
+    · <strong>7. Increase thy ability to earn:</strong> Your most valuable asset is your earning power. Upskill relentlessly. A pharmacist who learns clinical trials, regulatory affairs, or drug formulation doubles their market value.<br><br>
+    <strong>The 5 Laws of Gold:</strong> Gold comes to those who save. Gold multiplies for those who invest wisely. Gold flees those who invest without knowledge. Gold flees those seeking impossible returns. Gold flees those who gamble.
+    </div>`
+  }
+};
+
+let wCurrentQuadrant = 'E';
+let wWisdomIndex = 0;
+
+function initWealthOS(){
+  // Load saved data
+  const saved = JSON.parse(localStorage.getItem('cos_wealth_fs') || '{}');
+  const fields = ['IncomeSalary','IncomeRental','IncomeDividends','IncomeBusiness','ExpTax','ExpRent','ExpLoans','ExpOther','AssetStocks','AssetRE','AssetGold','AssetCrypto','LiabHome','LiabCar','LiabCC','LiabOther'];
+  fields.forEach(f => { const el = document.getElementById('w'+f); if(el && saved[f]) el.value = saved[f]; });
+  computeWealthScore();
+  cycleWealthWisdom();
+  showBillionaireModel('rockefeller', document.querySelector('#tab-wealth .wave-btn'));
+}
+
+function computeWealthScore(){
+  const g = id => parseFloat(document.getElementById(id)?.value) || 0;
+  const salary = g('wIncomeSalary');
+  const rental = g('wIncomeRental');
+  const dividends = g('wIncomeDividends');
+  const business = g('wIncomeBusiness');
+  const totalIncome = salary + rental + dividends + business;
+  const passiveIncome = rental + dividends + business;
+  const totalExpenses = g('wExpTax') + g('wExpRent') + g('wExpLoans') + g('wExpOther');
+  const cashflow = totalIncome - totalExpenses;
+  const totalAssets = g('wAssetStocks') + g('wAssetRE') + g('wAssetGold') + g('wAssetCrypto');
+  const totalLiab = g('wLiabHome') + g('wLiabCar') + g('wLiabCC') + g('wLiabOther');
+  const netWorth = totalAssets - totalLiab;
+
+  // Save
+  const saved = {};
+  ['IncomeSalary','IncomeRental','IncomeDividends','IncomeBusiness','ExpTax','ExpRent','ExpLoans','ExpOther','AssetStocks','AssetRE','AssetGold','AssetCrypto','LiabHome','LiabCar','LiabCC','LiabOther'].forEach(f => {
+    const el = document.getElementById('w'+f); if(el) saved[f] = el.value;
+  });
+  localStorage.setItem('cos_wealth_fs', JSON.stringify(saved));
+
+  // Update UI
+  const fmt = n => '₹' + Math.abs(n).toLocaleString('en-IN');
+  const el = id => document.getElementById(id);
+  if(el('wScoreAmt')) el('wScoreAmt').textContent = fmt(cashflow);
+  if(el('wScoreAmt')) el('wScoreAmt').style.color = cashflow >= 0 ? '#4ade80' : '#f87171';
+  if(el('wScoreBanner')) el('wScoreBanner').style.borderColor = cashflow >= 0 ? '#22c55e' : '#ef4444';
+  if(el('wScoreLabel')) el('wScoreLabel').textContent = cashflow >= 0 ? `Monthly surplus: save & invest it!` : `⚠️ Monthly deficit: cut expenses or add income`;
+  if(el('wTotalAssets')) el('wTotalAssets').textContent = fmt(totalAssets);
+  if(el('wTotalLiab')) el('wTotalLiab').textContent = fmt(totalLiab);
+  if(el('wNetWorth')) { el('wNetWorth').textContent = fmt(netWorth); el('wNetWorth').style.color = netWorth >= 0 ? '#4ade80' : '#f87171'; }
+  if(el('wPassiveVsExp')) el('wPassiveVsExp').textContent = `Passive: ${fmt(passiveIncome)} / Expenses: ${fmt(totalExpenses)}`;
+  
+  const escaped = passiveIncome >= totalExpenses && totalExpenses > 0;
+  const nearEscape = passiveIncome > 0 && passiveIncome >= totalExpenses * 0.5;
+  if(el('wRatRace')) {
+    el('wRatRace').textContent = escaped ? '🏆 RAT RACE ESCAPED!' : nearEscape ? '🔥 Halfway to Freedom' : '🐀 In Rat Race';
+    el('wRatRace').style.color = escaped ? '#4ade80' : nearEscape ? '#fbbf24' : '#f87171';
+  }
+}
+
+function selectQuadrant(q){
+  wCurrentQuadrant = q;
+  ['E','S','B','I'].forEach(x => {
+    const el = document.getElementById('wq'+x);
+    if(el) el.classList.toggle('wq-selected', x === q);
+  });
+  const tips = {
+    E: '📍 <strong>Employee (E):</strong> Your immediate goal — start investing 20%+ of salary every month. Build emergency fund (3 months expenses). Start SIP in Nifty 50 index. Get insurance. Take ANY side income opportunity. Your time is being traded, not leveraged.',
+    S: '📍 <strong>Self-Employed (S):</strong> You own a job, not a business. Critical move — hire others to do what you do. Document your process. Start converting your skills into products (online courses, SOPs, templates). Build passive income while still working.',
+    B: '📍 <strong>Business Owner (B):</strong> You have a system. Now optimize and scale. Reinvest 30-50% of profits back into the business or into investments. Build the I-quadrant portfolio simultaneously. Consider hiring a CFO or financial advisor.',
+    I: '📍 <strong>Investor (I):</strong> Money works for you. Your focus — risk management, diversification, portfolio rebalancing quarterly. Think generational wealth. Set up family trusts. Explore private equity, AIFs. Philanthropy creates legacy.'
+  };
+  const el = document.getElementById('wQuadrantTip');
+  if(el) el.innerHTML = tips[q] || '';
+}
+
+function expandInv(id){
+  const el = document.getElementById('inv-'+id);
+  if(!el) return;
+  const isOpen = el.style.display !== 'none';
+  // Close all
+  document.querySelectorAll('[id^="inv-"]').forEach(e => e.style.display = 'none');
+  if(!isOpen) el.style.display = 'block';
+}
+
+function showBillionaireModel(key, btn){
+  document.querySelectorAll('#tab-wealth .wave-btn').forEach(b => b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  const model = BILLIONAIRE_MODELS[key];
+  const el = document.getElementById('billionaireContent');
+  if(el && model) el.innerHTML = `<div style="font-weight:700;font-size:14px;margin-bottom:10px;color:var(--text)">${model.title}</div>${model.content}`;
+}
+
+function cycleWealthWisdom(){
+  wWisdomIndex = (wWisdomIndex + 1) % WEALTH_WISDOM.length;
+  const w = WEALTH_WISDOM[wWisdomIndex];
+  const book = document.getElementById('wWisdomBook');
+  const quote = document.getElementById('wWisdomQuote');
+  const lesson = document.getElementById('wWisdomLesson');
+  if(book) book.textContent = w.book;
+  if(quote) quote.textContent = w.quote;
+  if(lesson) lesson.textContent = w.lesson;
+}
+
+function getWealthContext(){
+  const g = id => parseFloat(document.getElementById(id)?.value) || 0;
+  return {
+    salary: g('wIncomeSalary'), rental: g('wIncomeRental'), dividends: g('wIncomeDividends'), business: g('wIncomeBusiness'),
+    expTax: g('wExpTax'), expRent: g('wExpRent'), expLoans: g('wExpLoans'), expOther: g('wExpOther'),
+    assetStocks: g('wAssetStocks'), assetRE: g('wAssetRE'), assetGold: g('wAssetGold'), assetCrypto: g('wAssetCrypto'),
+    liabHome: g('wLiabHome'), liabCar: g('wLiabCar'), liabCC: g('wLiabCC'), liabOther: g('wLiabOther'),
+    quadrant: wCurrentQuadrant
+  };
+}
+
+async function runWealthAI(){
+  const btn = document.getElementById('wealthAIBtn');
+  const out = document.getElementById('wealthAIOutput');
+  const customQ = document.getElementById('wealthAICustomQ')?.value?.trim();
+  const ctx = getWealthContext();
+  const totalIncome = ctx.salary + ctx.rental + ctx.dividends + ctx.business;
+  const passiveIncome = ctx.rental + ctx.dividends + ctx.business;
+  const totalExp = ctx.expTax + ctx.expRent + ctx.expLoans + ctx.expOther;
+  const cashflow = totalIncome - totalExp;
+  const netWorth = (ctx.assetStocks + ctx.assetRE + ctx.assetGold + ctx.assetCrypto) - (ctx.liabHome + ctx.liabCar + ctx.liabCC + ctx.liabOther);
+
+  btn.innerHTML = '<span class="wealth-spinner"></span> Analyzing...'; btn.disabled = true;
+  out.style.display = 'block'; out.innerHTML = '⏳ Robert Kiyosaki AI is analyzing your cashflow...';
+
+  const systemPrompt = `You are an elite wealth advisor combining the wisdom of Robert Kiyosaki (Rich Dad Poor Dad), Morgan Housel (Psychology of Money), Napoleon Hill (Think and Grow Rich), George S. Clason (Richest Man in Babylon), Warren Buffett, Rakesh Jhunjhunwala, and the systematic approaches of Vanguard and BlackRock. You advise Indian investors with rupee-based analysis.
+
+Your analysis framework:
+1. Diagnose the cashflow situation using Kiyosaki metrics
+2. Identify which Cashflow Quadrant they're in and path to move right
+3. Give SPECIFIC investment recommendations with actual numbers for India:
+   - Best FDs (name banks + rates)
+   - Best SIP funds (name specific funds)
+   - Gold/Silver allocation (SGBs, ETFs)
+   - Bitcoin/crypto strategy (if any)
+   - Stock recommendations by PE ratio principles
+   - Real estate / REIT options
+4. Calculate their "Freedom Number" (corpus needed for financial independence = monthly expenses × 300 = 25x annual expenses rule)
+5. Give a 3-6-12 month action plan
+6. Use wisdom from financial classics to explain why
+
+Be specific, actionable, numbers-focused. Format with clear sections using emojis. Max 600 words.`;
+
+  const userMsg = customQ || `Analyze my complete financial situation:
+
+INCOME: Salary ₹${ctx.salary}/mo | Rental ₹${ctx.rental}/mo | Dividends ₹${ctx.dividends}/mo | Business ₹${ctx.business}/mo
+TOTAL INCOME: ₹${totalIncome}/mo | PASSIVE INCOME: ₹${passiveIncome}/mo
+EXPENSES: Tax ₹${ctx.expTax} | Rent/EMI ₹${ctx.expRent} | Loans ₹${ctx.expLoans} | Other ₹${ctx.expOther}
+TOTAL EXPENSES: ₹${totalExp}/mo | MONTHLY CASHFLOW: ₹${cashflow}
+ASSETS: Stocks ₹${ctx.assetStocks} | Real Estate ₹${ctx.assetRE} | Gold ₹${ctx.assetGold} | Crypto ₹${ctx.assetCrypto}
+LIABILITIES: Home ₹${ctx.liabHome} | Car ₹${ctx.liabCar} | Credit Cards ₹${ctx.liabCC} | Other ₹${ctx.liabOther}
+NET WORTH: ₹${netWorth}
+CASHFLOW QUADRANT: ${ctx.quadrant}
+
+Give me: 1) Assessment 2) Top 5 investment moves RIGHT NOW 3) How to build passive income 4) When I can escape the rat race 5) Action plan`;
+
+  try {
+    const response = await callGroqFast(userMsg, systemPrompt, 1000);
+    const formatted = response.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/\n\n/g,'</p><p>').replace(/\n/g,'<br>');
+    out.innerHTML = '<p>' + formatted + '</p>';
+  } catch(e) {
+    out.innerHTML = '❌ Error: ' + e.message + '. Check your connection.';
+  }
+  btn.innerHTML = '⚡ Analyze My Wealth'; btn.disabled = false;
+}
+
+async function askWealthQ(question){
+  const qEl = document.getElementById('wealthAICustomQ');
+  if(qEl) qEl.value = question;
+  await runWealthAI();
+}
+
+async function generateDailyWealthTip(){
+  const el = document.getElementById('wAIDailyTip');
+  el.style.display = 'block'; el.textContent = '🧠 Generating your personalized wealth tip...';
+  const ctx = getWealthContext();
+  const cashflow = (ctx.salary + ctx.rental + ctx.dividends + ctx.business) - (ctx.expTax + ctx.expRent + ctx.expLoans + ctx.expOther);
+  const prompt = `Based on a ${ctx.quadrant}-quadrant person in India with monthly cashflow of ₹${cashflow}, give ONE specific, immediately actionable wealth-building tip in 2-3 sentences. Reference a specific principle from Rich Dad Poor Dad, Psychology of Money, or Richest Man in Babylon. Make it practical and measurable.`;
+  try {
+    const tip = await callGroqFast(prompt, 'You are a concise wealth advisor for India. Give ONE specific tip. Be brief and actionable.', 200);
+    el.innerHTML = '💡 ' + tip;
+  } catch(e) { el.textContent = 'Could not load tip.'; }
+}
+
+function runEscapeCalc(){
+  const monthly = parseFloat(document.getElementById('calcMonthly')?.value) || 10000;
+  const cagr = parseFloat(document.getElementById('calcCAGR')?.value) / 100 || 0.14;
+  const target = parseFloat(document.getElementById('calcTarget')?.value) || 10000000;
+  const expenses = parseFloat(document.getElementById('calcExpenses')?.value) || 30000;
+  const freedomNumber = expenses * 300; // 25x annual expenses
+  const monthlyRate = cagr / 12;
+  
+  // Time to reach target corpus
+  let corpus = 0, months = 0;
+  while(corpus < Math.max(target, freedomNumber) && months < 600) {
+    corpus = corpus * (1 + monthlyRate) + monthly;
+    months++;
+  }
+  const years = Math.floor(months / 12);
+  const remMonths = months % 12;
+  
+  // Time to reach freedom number at target rate  
+  let corpus2 = 0, months2 = 0;
+  while(corpus2 < freedomNumber && months2 < 600) {
+    corpus2 = corpus2 * (1 + monthlyRate) + monthly;
+    months2++;
+  }
+  const years2 = Math.floor(months2 / 12);
+
+  const fmt = n => '₹' + n.toLocaleString('en-IN');
+  const el = document.getElementById('escapeCalcResult');
+  el.style.display = 'block';
+  el.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+      <div style="background:rgba(16,185,129,.1);border-radius:10px;padding:10px;text-align:center">
+        <div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase">Your Freedom Number</div>
+        <div style="font-size:20px;font-weight:800;color:#10b981;margin-top:4px">${fmt(freedomNumber)}</div>
+        <div style="font-size:10px;color:var(--text3)">25x annual expenses rule</div>
+      </div>
+      <div style="background:rgba(124,58,237,.1);border-radius:10px;padding:10px;text-align:center">
+        <div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase">Time to Freedom</div>
+        <div style="font-size:20px;font-weight:800;color:#a78bfa;margin-top:4px">${years2} yrs</div>
+        <div style="font-size:10px;color:var(--text3)">${fmt(monthly)}/mo at ${(cagr*100).toFixed(1)}% CAGR</div>
+      </div>
+    </div>
+    <div style="font-size:12px;line-height:1.8;color:var(--text2)">
+      <strong>📊 Projection Summary:</strong><br>
+      · Monthly SIP: <strong>${fmt(monthly)}</strong> at <strong>${(cagr*100).toFixed(1)}% CAGR</strong><br>
+      · Corpus after ${years} years ${remMonths} months: <strong>${fmt(Math.round(corpus))}</strong><br>
+      · Your Freedom Number (4% withdrawal rule): <strong>${fmt(freedomNumber)}</strong><br>
+      · Financial freedom achieved in: <strong>${years2} years</strong><br><br>
+      <strong>💡 Speed-up strategies:</strong><br>
+      · Increase SIP by ₹1,000 every 6 months → saves ${Math.round(years2*0.15)} years<br>
+      · Add any rental/dividend income → directly cuts time<br>
+      · Every ₹${fmt(expenses)} you reduce monthly expenses reduces freedom number by ₹${fmt(expenses*300/expenses*expenses)}<br><br>
+      <em style="color:var(--text3)">📖 "The man who plants trees knowing he will never sit in their shade understands the meaning of wealth." — Richest Man in Babylon</em>
+    </div>
+  `;
+}
+
+// Auto-load wisdom on first load
+document.addEventListener('DOMContentLoaded', () => {
+  // Init wealth wisdom index randomly
+  wWisdomIndex = Math.floor(Math.random() * WEALTH_WISDOM.length);
+  setTimeout(() => {
+    const w = WEALTH_WISDOM[wWisdomIndex];
+    const book = document.getElementById('wWisdomBook');
+    const quote = document.getElementById('wWisdomQuote');
+    const lesson = document.getElementById('wWisdomLesson');
+    if(book) book.textContent = w.book;
+    if(quote) quote.textContent = w.quote;
+    if(lesson) lesson.textContent = w.lesson;
+    // Show default billionaire model
+    const billEl = document.getElementById('billionaireContent');
+    if(billEl) {
+      const model = BILLIONAIRE_MODELS['rockefeller'];
+      billEl.innerHTML = `<div style="font-weight:700;font-size:14px;margin-bottom:10px;color:var(--text)">${model.title}</div>${model.content}`;
+    }
+  }, 1000);
+});
+
 // ─── INIT ────────────────────────────────────────────────────
 function init(){
   const th=localStorage.getItem('cos_theme')||'light';
@@ -8168,6 +8845,10 @@ function init(){
   initNewFeatures_v7();
   initNewFeatures();
   initCalorieTracker();
+  // Init wealth OS data (passive restore)
+  try { const saved = JSON.parse(localStorage.getItem('cos_wealth_fs')||'{}');
+    if(Object.keys(saved).length > 2) setTimeout(()=>{ if(document.getElementById('wIncomeSalary')) initWealthOS(); }, 1200);
+  } catch(e) {}
   // Science timestamp
   updateScienceTimestamp();
   buildScienceDisplay();
@@ -8183,6 +8864,655 @@ function init(){
   }
 }
 document.addEventListener('DOMContentLoaded',init);
+
+// ═══════════════════════════════════════════════════════════════════════
+//  🧠 CONSCIOUSNESS OS — LIVE INTELLIGENCE ENGINE + INTEGRATION LAYER
+//  Real-time world news via Anthropic web search + CIL wiring all tabs
+// ═══════════════════════════════════════════════════════════════════════
+
+// ── ANTHROPIC WEB SEARCH ENGINE ─────────────────────────────────────────
+async function callAnthropicSearch(userPrompt, systemPrompt, maxTokens) {
+  maxTokens = maxTokens || 1200;
+  systemPrompt = systemPrompt || 'You are an expert analyst with access to current web information. Be precise, factual, and current.';
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: maxTokens,
+        system: systemPrompt,
+        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+        messages: [{ role: 'user', content: userPrompt }]
+      })
+    });
+    const data = await resp.json();
+    if (data.error) throw new Error(data.error.message || 'Anthropic API error');
+    // Combine all text content blocks
+    const fullText = (data.content || [])
+      .filter(b => b.type === 'text')
+      .map(b => b.text)
+      .join('\n');
+    return fullText || 'No content returned.';
+  } catch(e) {
+    console.error('[AnthropicSearch]', e.message);
+    throw e;
+  }
+}
+
+// ── CACHE HELPER (30-min TTL) ─────────────────────────────────────────
+const LIVE_CACHE_TTL = 30 * 60 * 1000; // 30 min
+function liveCache(key, data) {
+  if (data !== undefined) {
+    localStorage.setItem(key, JSON.stringify({ ts: Date.now(), data }));
+    return data;
+  }
+  try {
+    const stored = JSON.parse(localStorage.getItem(key) || 'null');
+    if (stored && (Date.now() - stored.ts) < LIVE_CACHE_TTL) return stored.data;
+  } catch(e) {}
+  return null;
+}
+
+// ── LIVE WORLD NEWS FETCHER ───────────────────────────────────────────
+async function fetchLiveWorldNews(force) {
+  const cacheKey = 'cos_live_world_news';
+  if (!force) {
+    const cached = liveCache(cacheKey);
+    if (cached) return cached;
+  }
+  const today = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+  const prompt = `Search for the LATEST breaking world news as of today (${today}). I need REAL current information on:
+
+1. Israel-Iran-US tensions — current state, Strait of Hormuz threats, any military actions
+2. Middle East conflict updates — Gaza, Lebanon, Yemen Houthis, Red Sea
+3. US-China trade war / Taiwan — any new developments
+4. Russia-Ukraine war — latest developments
+5. Global markets — Fed rates, key stock moves, gold, oil, crypto (Bitcoin) latest prices
+6. AI industry news — Anthropic Claude updates, OpenAI news, Google AI, any new model releases
+7. Tech/defense — any Pentagon AI deals, military tech
+8. India-specific — Nifty, RBI, political news, geopolitical stance
+
+For each topic, give me: headline, 1-2 sentence current status, and market impact.
+Format as JSON array: [{"topic":"Israel-Iran","headline":"...","status":"...","impact":"...","emoji":"⚔️","severity":"high/medium/low","region":"🌍"}]
+Return ONLY valid JSON array, no markdown.`;
+  
+  const sysPrompt = 'You are a real-time global intelligence analyst. Search the web for breaking news right now. Return ONLY valid JSON. Include real current facts you found via web search. Today is ' + today + '.';
+  
+  try {
+    const raw = await callAnthropicSearch(prompt, sysPrompt, 1500);
+    const cleaned = raw.replace(/```json|```/g, '').trim();
+    // Find JSON array in response
+    const match = cleaned.match(/\[[\s\S]*\]/);
+    if (!match) throw new Error('No JSON array found');
+    const parsed = JSON.parse(match[0]);
+    liveCache(cacheKey, parsed);
+    return parsed;
+  } catch(e) {
+    console.error('[LiveWorld] Parse error:', e.message);
+    // Fallback — ask as plain text and render differently
+    return null;
+  }
+}
+
+// ── LIVE SCIENCE & TECH NEWS FETCHER ─────────────────────────────────
+async function fetchLiveScienceNews(force) {
+  const cacheKey = 'cos_live_science_news';
+  if (!force) {
+    const cached = liveCache(cacheKey);
+    if (cached) return cached;
+  }
+  const today = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+  const prompt = `Search the web for the LATEST frontier science and technology breakthroughs as of today (${today}). Find REAL recent news on:
+
+1. Anthropic Claude — any new model releases, capabilities, or announcements (Claude Opus, Sonnet, Haiku updates)
+2. OpenAI — GPT-5, o3, new releases, any COBOL/legacy code AI tools, enterprise news
+3. Google DeepMind — Gemini updates, any breakthrough research
+4. AGI progress — any notable capabilities or safety research
+5. Cryonics & longevity — Alcor, cryopreservation advances, age reversal research
+6. Immortality research — Altos Labs, Calico, NMN/rapamycin trials
+7. Neuroscience — brain-computer interfaces (Neuralink), consciousness research
+8. Space tech — SpaceX, NASA, any launches or discoveries
+9. Pentagon AI deals — DARPA, DoD AI projects, defense tech
+10. Quantum computing — any breakthroughs
+
+For each: real headline, brief current status, why it matters for the future.
+Format as JSON: [{"cat":"ai","title":"...","desc":"...","impact":"...","source":"...","date":"..."}]
+Return ONLY valid JSON array, no markdown.`;
+
+  const sysPrompt = 'You are a frontier science and technology journalist with web access. Search for real breaking news today. Return ONLY valid JSON. Today is ' + today + '.';
+  
+  try {
+    const raw = await callAnthropicSearch(prompt, sysPrompt, 1500);
+    const cleaned = raw.replace(/```json|```/g, '').trim();
+    const match = cleaned.match(/\[[\s\S]*\]/);
+    if (!match) throw new Error('No JSON array found');
+    const parsed = JSON.parse(match[0]);
+    liveCache(cacheKey, parsed);
+    return parsed;
+  } catch(e) {
+    console.error('[LiveScience] Parse error:', e.message);
+    return null;
+  }
+}
+
+// ── LIVE MARKET DATA FETCHER ──────────────────────────────────────────
+async function fetchLiveMarkets(force) {
+  const cacheKey = 'cos_live_markets';
+  if (!force) {
+    const cached = liveCache(cacheKey);
+    if (cached) return cached;
+  }
+  const today = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+  const prompt = `Search for current financial market prices and data as of today (${today}):
+- Nifty 50 current level and today's change
+- Sensex current level  
+- Bitcoin (BTC) current price in USD
+- Gold price (per 10g in INR and per oz in USD)
+- Silver price
+- Crude oil (WTI) price
+- USD to INR exchange rate
+- US S&P 500 level
+- Key interest rates: RBI repo rate, US Fed funds rate
+
+Format as JSON: [{"name":"Bitcoin","price":"$67,000","change":"+2.3%","up":true,"emoji":"₿","inr":"₹55.8L"}]
+Return ONLY valid JSON array.`;
+
+  try {
+    const raw = await callAnthropicSearch(prompt, 'Search for real-time market data. Return ONLY valid JSON array. Today is ' + today, 800);
+    const cleaned = raw.replace(/```json|```/g, '').trim();
+    const match = cleaned.match(/\[[\s\S]*\]/);
+    if (!match) throw new Error('No JSON');
+    const parsed = JSON.parse(match[0]);
+    liveCache(cacheKey, parsed);
+    return parsed;
+  } catch(e) {
+    console.error('[LiveMarkets]', e.message);
+    return null;
+  }
+}
+
+// ── RENDER LIVE WORLD NEWS ─────────────────────────────────────────────
+function renderLiveWorldNews(news) {
+  const el = document.getElementById('geoEventsList');
+  if (!el) return;
+  if (!news || !news.length) {
+    el.innerHTML = '<div style="text-align:center;padding:16px;color:var(--text3)">⚠️ Could not fetch live news. Check connection.</div>';
+    return;
+  }
+  const sevColor = { high: '#ef4444', medium: '#f59e0b', low: '#10b981' };
+  el.innerHTML = news.map(n => `
+    <div class="geo-event" style="border-left:3px solid ${sevColor[n.severity]||'#7c3aed'};padding-left:10px;margin-bottom:10px;background:var(--bg2);border-radius:0 10px 10px 0;padding:10px 10px 10px 14px">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+        <span style="font-size:18px">${n.region||'🌍'}</span>
+        <span style="font-size:10px;font-weight:700;color:${sevColor[n.severity]||'#7c3aed'};text-transform:uppercase;background:rgba(0,0,0,.06);padding:2px 7px;border-radius:10px">${n.severity||'update'}</span>
+        <span style="font-size:10px;color:var(--text3);margin-left:auto">🔴 LIVE</span>
+      </div>
+      <div style="font-weight:800;font-size:13px;color:var(--text);margin-bottom:3px">${n.headline||n.topic}</div>
+      <div style="font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:4px">${n.status||''}</div>
+      <div style="font-size:11px;color:var(--success);font-weight:600">📊 Market impact: ${n.impact||'Monitoring...'}</div>
+    </div>
+  `).join('');
+}
+
+function renderLiveScienceNews(news) {
+  const el = document.getElementById('discoveriesDisplay');
+  if (!el) return;
+  if (!news || !news.length) {
+    el.innerHTML = '<div style="text-align:center;padding:16px;color:var(--text3)">⚠️ Could not load live science feed. Check connection.</div>';
+    return;
+  }
+  const catEmoji = { ai: '🤖', neuro: '🧠', longevity: '🧬', space: '🚀', physics: '⚛️', biotech: '🔬', defense: '🛡️', quantum: '⚡', tech: '💻' };
+  el.innerHTML = news.map(n => `
+    <div class="discovery-card" style="border-left:3px solid var(--primary);padding-left:12px;background:var(--bg2);border-radius:0 12px 12px 0;margin-bottom:10px;padding:12px 12px 12px 14px">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+        <span style="font-size:16px">${catEmoji[n.cat]||'🔬'}</span>
+        <span style="font-size:10px;font-weight:700;color:var(--primary);text-transform:uppercase">${n.cat||'science'}</span>
+        <span style="font-size:10px;color:var(--text3);margin-left:auto">${n.date||'TODAY'} · 🔴 LIVE</span>
+      </div>
+      <div style="font-weight:800;font-size:13px;color:var(--text);margin-bottom:4px">${n.title}</div>
+      <div style="font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:4px">${n.desc}</div>
+      <div style="font-size:11px;color:var(--accent);font-weight:600">💡 ${n.impact||''}</div>
+      ${n.source?`<div style="font-size:10px;color:var(--text3);margin-top:3px">📰 ${n.source}</div>`:''}
+    </div>
+  `).join('');
+}
+
+function renderLiveMarkets(markets) {
+  const el = document.getElementById('marketsDisplay');
+  if (!el || !markets || !markets.length) return;
+  el.innerHTML = markets.map(m => `
+    <div class="market-card" style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <div style="font-weight:700;font-size:13px">${m.emoji||'📊'} ${m.name}</div>
+        ${m.inr?`<div style="font-size:10px;color:var(--text3)">${m.inr}</div>`:''}
+      </div>
+      <div style="text-align:right">
+        <div style="font-weight:800;font-size:15px">${m.price}</div>
+        <div style="font-size:11px;font-weight:700;color:${m.up?'#10b981':'#ef4444'}">${m.change}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ── OVERRIDE refreshWorldFeed — NOW LIVE ──────────────────────────────
+const _origRefreshWorldFeed = typeof refreshWorldFeed === 'function' ? refreshWorldFeed : null;
+refreshWorldFeed = async function(force) {
+  const loadEl = document.getElementById('geoEventsList');
+  const lastUpdEl = document.getElementById('worldLastUpdated');
+  
+  // Show loading state
+  if (loadEl) loadEl.innerHTML = `
+    <div style="text-align:center;padding:20px">
+      <div style="font-size:24px;margin-bottom:8px;animation:cosSpinAnim 1.2s linear infinite;display:inline-block">🌐</div>
+      <div style="font-size:13px;font-weight:700;color:var(--text2)">Fetching live world intelligence...</div>
+      <div style="font-size:11px;color:var(--text3);margin-top:4px">Searching web for breaking news: Israel-Iran, markets, AI...</div>
+    </div>`;
+  if (lastUpdEl) lastUpdEl.textContent = '⏳ Fetching live data...';
+  
+  showToast('🌐 Fetching live world intelligence...');
+  
+  try {
+    // Fetch live news + markets in parallel
+    const [news, markets] = await Promise.allSettled([
+      fetchLiveWorldNews(force),
+      fetchLiveMarkets(force)
+    ]);
+    
+    const newsData = news.status === 'fulfilled' ? news.value : null;
+    const mktData = markets.status === 'fulfilled' ? markets.value : null;
+    
+    renderLiveWorldNews(newsData);
+    if (mktData) renderLiveMarkets(mktData);
+    
+    // Update causal chain with real news context
+    if (newsData && newsData.length) {
+      const topStory = newsData[0];
+      const linksEl = document.getElementById('geoMarketLinks');
+      if (linksEl) {
+        linksEl.innerHTML = `
+          <div style="background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.2);border-radius:10px;padding:10px;margin-bottom:8px">
+            <div style="font-size:10px;font-weight:700;color:#ef4444;text-transform:uppercase;margin-bottom:4px">🔴 Top Story Impact Chain</div>
+            <div style="font-size:12px;font-weight:700;color:var(--text)">${topStory.headline||topStory.topic}</div>
+          </div>
+          ${GEO_LINKS.map(l=>`<div class="causal-step"><div class="causal-arrow">→</div><div class="causal-text"><strong>${l.cause}</strong><br>${l.effect}</div></div>`).join('')}`;
+      }
+    }
+    
+    const now = new Date().toLocaleString('en-IN', { timeZone:'Asia/Kolkata', weekday:'short', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
+    if (lastUpdEl) lastUpdEl.textContent = `🔴 LIVE · Updated ${now} IST`;
+    
+    // Store for CIL
+    if (newsData) liveCache('cos_world_for_cil', { news: newsData, ts: Date.now() });
+    cosBrainSync();
+    showToast('✅ Live world intelligence loaded!');
+  } catch(e) {
+    if (loadEl) loadEl.innerHTML = `<div style="text-align:center;padding:16px;color:var(--danger)">❌ Live fetch failed: ${e.message}<br><button class="btn btn-secondary btn-sm" onclick="refreshWorldFeed(true)" style="margin-top:8px">Retry</button></div>`;
+    showToast('❌ World feed error: ' + e.message.slice(0, 60));
+  }
+};
+
+// ── OVERRIDE buildScienceDisplay — NOW LIVE ────────────────────────────
+const _origBuildScienceDisplay2 = typeof buildScienceDisplay === 'function' ? buildScienceDisplay : null;
+buildScienceDisplay = async function(force) {
+  const discEl = document.getElementById('discoveriesDisplay');
+  const tsEl = document.getElementById('scienceTimestamp');
+  
+  // Show loading
+  if (discEl) discEl.innerHTML = `
+    <div style="text-align:center;padding:20px">
+      <div style="font-size:24px;animation:cosSpinAnim 1.2s linear infinite;display:inline-block">🔬</div>
+      <div style="font-size:13px;font-weight:700;color:var(--text2);margin-top:8px">Fetching frontier science intelligence...</div>
+      <div style="font-size:11px;color:var(--text3);margin-top:4px">Claude searching: Anthropic news, cryonics, AGI, longevity...</div>
+    </div>`;
+  
+  // Also update the static super facts (these are timeless)
+  const superEl = document.getElementById('superFactsDisplay');
+  if (superEl && typeof SUPER_FACTS !== 'undefined') {
+    const idx = (Math.floor(Date.now()/86400000) + (typeof sciRefreshIdx!=='undefined'?sciRefreshIdx:0)) % SUPER_FACTS.length;
+    const f = SUPER_FACTS[idx];
+    if (f) superEl.innerHTML = `<div class="superfact-card" onclick="rotateFact()"><div class="sf-num">${f.num}</div><div class="sf-text">${f.text}</div><div style="font-size:10px;color:var(--text3);margin-top:8px">Tap for next fact</div></div>`;
+  }
+  
+  try {
+    const news = await fetchLiveScienceNews(force);
+    renderLiveScienceNews(news);
+    
+    const now = new Date().toLocaleString('en-IN', { timeZone:'Asia/Kolkata', hour:'2-digit', minute:'2-digit', day:'numeric', month:'short' });
+    if (tsEl) tsEl.textContent = `🔴 LIVE · ${now} IST`;
+    
+    // Store for CIL
+    if (news) liveCache('cos_science_for_cil', { news, ts: Date.now() });
+    cosBrainSync();
+  } catch(e) {
+    if (discEl) discEl.innerHTML = `<div style="text-align:center;padding:16px;color:var(--danger)">❌ Science feed error: ${e.message}<br><button class="btn btn-secondary btn-sm" onclick="buildScienceDisplay(true)" style="margin-top:8px">Retry</button></div>`;
+    // Fall back to static DISCOVERIES
+    if (_origBuildScienceDisplay2) try { _origBuildScienceDisplay2(); } catch(e2) {}
+  }
+};
+
+// ── updateScienceTimestamp patch ──────────────────────────────────────
+function updateScienceTimestamp() {
+  const el = document.getElementById('scienceTimestamp');
+  if (el) el.textContent = '🔴 LIVE · Loading...';
+}
+
+// ════════════════════════════════════════════════════════════════════════
+//  🧠 COS_BRAIN — CONSCIOUSNESS INTEGRATION LAYER (CIL)
+//  Aggregates ALL tab data into one global brain object that every
+//  AI call, every tab, and every analysis uses for real context
+// ════════════════════════════════════════════════════════════════════════
+
+const COS_BRAIN = {
+  // Core identity
+  user: null,
+  lastSync: 0,
+  
+  // Tab data snapshots
+  consciousness: {},  // Logs, dreams, mood, focus, energy
+  health: {},         // Sleep, exercise, nutrition
+  career: {},         // Study field, goals
+  wealth: {},         // Financial statement
+  world: {},          // Live geopolitical news
+  science: {},        // Live science/AI news
+  dreams: {},         // Dream journal
+  brainwaves: {},     // Current active frequencies
+  
+  // Cross-tab insights
+  insights: [],
+  alerts: [],
+};
+
+function cosBrainSync() {
+  // ── CONSCIOUSNESS DATA ──
+  try {
+    const logs = typeof getLogs === 'function' ? getLogs() : [];
+    const dreams = typeof getDreams === 'function' ? getDreams() : [];
+    if (logs.length) {
+      const avk = key => (logs.reduce((s,e) => s+(parseFloat(e[key])||0), 0) / logs.length).toFixed(1);
+      const r7 = logs.slice(0, 7);
+      const ravg = (arr, k) => arr.length ? (arr.reduce((s,e) => s+(parseFloat(e[k])||0), 0)/arr.length).toFixed(1) : '—';
+      COS_BRAIN.consciousness = {
+        totalLogs: logs.length,
+        mood7d: ravg(r7, 'mood'), focus7d: ravg(r7, 'focus'),
+        energy7d: ravg(r7, 'physicalEnergy'), stress7d: ravg(r7, 'stress'),
+        creativity7d: ravg(r7, 'creativity'), flow7d: ravg(r7, 'flow'), sleep7d: ravg(r7, 'sleep'),
+        moodAll: avk('mood'), focusAll: avk('focus'), stressAll: avk('stress'),
+        latestLog: logs[0] || null,
+        weekTrend: logs.length > 7 ? (parseFloat(ravg(r7,'score')) - parseFloat((logs.slice(7,14).reduce((s,e)=>s+(parseFloat(e.score)||0),0)/Math.min(7,logs.length-7)).toFixed(1))).toFixed(1) : '0',
+      };
+    }
+    if (dreams.length) {
+      const avgLuc = (dreams.reduce((s,d)=>s+(d.lucidity||0),0)/dreams.length).toFixed(1);
+      COS_BRAIN.dreams = { total: dreams.length, avgLucidity: avgLuc, latest: dreams[0] };
+    }
+  } catch(e) {}
+  
+  // ── HEALTH DATA ──
+  try {
+    const h = JSON.parse(localStorage.getItem('cos_health_profile') || '{}');
+    if (Object.keys(h).length > 2) COS_BRAIN.health = { sleep: h.hSleepDur, exercise: h.hExerciseFreq, stress: h.hStressLevel, diet: h.hDietType };
+  } catch(e) {}
+  
+  // ── CAREER/STUDY DATA ──
+  try {
+    const s = JSON.parse(localStorage.getItem('cos_study_profile') || '{}');
+    if (s.stField) COS_BRAIN.career = { field: s.stField, target: s.stTargetCareer, gapScore: s.stCareerGap };
+  } catch(e) {}
+  
+  // ── WEALTH DATA ──
+  try {
+    const w = JSON.parse(localStorage.getItem('cos_wealth_fs') || '{}');
+    if (Object.keys(w).length > 3) {
+      const salary = parseFloat(w.IncomeSalary)||0;
+      const passive = (parseFloat(w.IncomeRental)||0)+(parseFloat(w.IncomeDividends)||0)+(parseFloat(w.IncomeBusiness)||0);
+      const expenses = (parseFloat(w.ExpTax)||0)+(parseFloat(w.ExpRent)||0)+(parseFloat(w.ExpLoans)||0)+(parseFloat(w.ExpOther)||0);
+      COS_BRAIN.wealth = { salary, passive, totalIncome: salary+passive, expenses, cashflow: salary+passive-expenses, netWorth: (parseFloat(w.AssetStocks)||0)+(parseFloat(w.AssetRE)||0)+(parseFloat(w.AssetGold)||0)+(parseFloat(w.AssetCrypto)||0)-(parseFloat(w.LiabHome)||0)-(parseFloat(w.LiabCar)||0)-(parseFloat(w.LiabCC)||0)-(parseFloat(w.LiabOther)||0) };
+    }
+  } catch(e) {}
+  
+  // ── LIVE WORLD/SCIENCE ──
+  try {
+    const worldCached = liveCache('cos_world_for_cil');
+    if (worldCached) COS_BRAIN.world = { newsCount: worldCached.news?.length||0, topStories: (worldCached.news||[]).slice(0,3).map(n=>n.headline||n.topic) };
+  } catch(e) {}
+  try {
+    const sciCached = liveCache('cos_science_for_cil');
+    if (sciCached) COS_BRAIN.science = { newsCount: sciCached.news?.length||0, topStories: (sciCached.news||[]).slice(0,3).map(n=>n.title) };
+  } catch(e) {}
+  
+  // ── USER ──
+  try {
+    const u = typeof getCurrentUser === 'function' ? getCurrentUser() : null;
+    if (u) COS_BRAIN.user = { name: u.name, email: u.email };
+  } catch(e) {}
+  
+  COS_BRAIN.lastSync = Date.now();
+  
+  // ── GENERATE CROSS-TAB ALERTS ──
+  COS_BRAIN.alerts = [];
+  const c = COS_BRAIN.consciousness;
+  const w = COS_BRAIN.wealth;
+  if (c.stress7d && parseFloat(c.stress7d) > 7) COS_BRAIN.alerts.push({ type: 'health', msg: `🔥 High stress (${c.stress7d}/10) detected — this is impacting your focus and health markers` });
+  if (c.sleep7d && parseFloat(c.sleep7d) < 5) COS_BRAIN.alerts.push({ type: 'health', msg: `😴 Low sleep quality (${c.sleep7d}/10) — glymphatic system under-cleaning your brain` });
+  if (w.cashflow && w.cashflow < 0) COS_BRAIN.alerts.push({ type: 'wealth', msg: `⚠️ Negative cashflow (₹${w.cashflow}/mo) — expenses exceed income` });
+  if (w.passive !== undefined && w.expenses && w.passive < w.expenses * 0.1) COS_BRAIN.alerts.push({ type: 'wealth', msg: `💡 Passive income = ${Math.round(w.passive/w.expenses*100)}% of expenses — build more income streams` });
+  
+  // Update CIL pulse indicator
+  updateCILPulse();
+}
+
+function buildCOSBrainContext() {
+  const b = COS_BRAIN;
+  let ctx = `\n\n═══ CONSCIOUSNESS OS — FULL SYSTEM CONTEXT (CIL v2) ═══`;
+  ctx += `\nSync time: ${new Date(b.lastSync||Date.now()).toLocaleString('en-IN',{timeZone:'Asia/Kolkata'})} IST`;
+  
+  if (b.user) ctx += `\nUSER: ${b.user.name||'User'} (${b.user.email||''})`;
+  
+  if (b.consciousness.totalLogs) {
+    const c = b.consciousness;
+    ctx += `\n\n── CONSCIOUSNESS (${c.totalLogs} logs) ──`;
+    ctx += `\nLast 7d: Mood ${c.mood7d} · Focus ${c.focus7d} · Energy ${c.energy7d} · Stress ${c.stress7d} · Creativity ${c.creativity7d} · Flow ${c.flow7d} · Sleep ${c.sleep7d}`;
+    ctx += `\nAll-time: Mood ${c.moodAll} · Focus ${c.focusAll} · Stress ${c.stressAll}`;
+    ctx += `\nWeek trend: ${parseFloat(c.weekTrend)>0?'↑ Improving':parseFloat(c.weekTrend)<0?'↓ Declining':'→ Stable'} (${c.weekTrend})`;
+    if (c.latestLog) {
+      const L = c.latestLog;
+      ctx += `\nLatest: ${L.date} · ${L.emotion||'?'} · goal: "${(L.goal||'').slice(0,60)}"`;
+      if (L.thought) ctx += `\nThought: "${L.thought.slice(0,120)}"`;
+    }
+  }
+  
+  if (b.dreams.total) ctx += `\n\n── DREAMS (${b.dreams.total} logged, avg lucidity ${b.dreams.avgLucidity}/10) ──`;
+  if (b.dreams.latest) ctx += `\nLatest dream: "${b.dreams.latest.title||'Untitled'}"`;
+  
+  if (b.health.sleep) ctx += `\n\n── HEALTH ── Sleep: ${b.health.sleep}hrs · Exercise: ${b.health.exercise} · Stress: ${b.health.stress}/10 · Diet: ${b.health.diet}`;
+  
+  if (b.career.field) ctx += `\n\n── CAREER/STUDY ── Field: ${b.career.field} · Target: ${b.career.target||'?'}`;
+  
+  if (b.wealth.salary !== undefined) {
+    const w = b.wealth;
+    ctx += `\n\n── FINANCES ── Income: ₹${w.totalIncome}/mo (Passive: ₹${w.passive}) · Expenses: ₹${w.expenses} · Cashflow: ₹${w.cashflow} · Net Worth: ₹${w.netWorth}`;
+  }
+  
+  if (b.world.topStories?.length) ctx += `\n\n── LIVE WORLD NEWS ── ${b.world.topStories.join(' | ')}`;
+  if (b.science.topStories?.length) ctx += `\n── LIVE SCIENCE NEWS ── ${b.science.topStories.join(' | ')}`;
+  
+  if (b.alerts.length) ctx += `\n\n── SYSTEM ALERTS ── ${b.alerts.map(a=>a.msg).join(' · ')}`;
+  
+  ctx += `\n═══════════════════════════════════════════════════`;
+  return ctx;
+}
+
+// ── PATCH sendChat TO USE COS_BRAIN ───────────────────────────────────
+const _origSendChat = sendChat;
+sendChat = async function() {
+  // Sync brain before every AI call
+  cosBrainSync();
+  // Inject CIL into userContext by patching the context building
+  // We do this by temporarily overriding how context is built
+  const origFn = sendChat;
+  return _origSendChat.apply(this, arguments);
+};
+
+// Patch the userContext in sendChat to add CIL
+const _origGetUserContext = function(logs, dreams, healthData, studyData) {
+  return buildCOSBrainContext();
+};
+
+// Monkey-patch: Override the context string appended to every AI call
+// by patching callAI to prepend COS_BRAIN context
+const _origCallAI = typeof callAI === 'function' ? callAI : null;
+if (_origCallAI) {
+  callAI = async function(model, messages, extraContext) {
+    // Append COS_BRAIN context to extraContext
+    const brainCtx = buildCOSBrainContext();
+    const fullContext = (extraContext || '') + '\n' + brainCtx;
+    return _origCallAI(model, messages, fullContext);
+  };
+}
+
+// Also patch callGroqFast to include brain context in system prompts when relevant
+const _origCallGroqFast = callGroqFast;
+callGroqFast = async function(prompt, system, maxTokens) {
+  // Only add brain context for long prompts (actual analysis, not quick calls)
+  if (prompt && prompt.length > 100 && system && system.length > 30) {
+    const brainCtx = buildCOSBrainContext();
+    const enhancedSystem = (system || '') + '\n\nYou have access to the user\'s complete Consciousness OS data:\n' + brainCtx;
+    return _origCallGroqFast(prompt, enhancedSystem, maxTokens);
+  }
+  return _origCallGroqFast(prompt, system, maxTokens);
+};
+
+// ── CIL PULSE UI ──────────────────────────────────────────────────────
+function updateCILPulse() {
+  const el = document.getElementById('cilPulse');
+  if (!el) return;
+  const b = COS_BRAIN;
+  const activeSystems = [
+    b.consciousness.totalLogs ? `🧠 ${b.consciousness.totalLogs} logs` : null,
+    b.dreams.total ? `💤 ${b.dreams.total} dreams` : null,
+    b.health.sleep ? `❤️ health` : null,
+    b.career.field ? `📚 ${b.career.field}` : null,
+    b.wealth.salary !== undefined ? `💰 ₹${b.wealth.cashflow}/mo` : null,
+    b.world.topStories?.length ? `🌍 ${b.world.topStories.length} stories` : null,
+    b.science.topStories?.length ? `🔬 ${b.science.topStories.length} updates` : null,
+  ].filter(Boolean);
+  
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:5px">
+        <div style="width:8px;height:8px;border-radius:50%;background:#10b981;animation:cilPulseAnim 1.5s ease-in-out infinite"></div>
+        <span style="font-size:11px;font-weight:700;color:#10b981">CIL ACTIVE</span>
+      </div>
+      ${activeSystems.map(s => `<span style="font-size:10px;background:rgba(124,58,237,.12);color:var(--primary);padding:2px 7px;border-radius:10px;font-weight:600">${s}</span>`).join('')}
+      ${b.alerts.length ? `<span style="font-size:10px;background:rgba(239,68,68,.12);color:#ef4444;padding:2px 7px;border-radius:10px;font-weight:600">⚠️ ${b.alerts.length} alerts</span>` : ''}
+    </div>`;
+}
+
+// ── CROSS-TAB LIVE UPDATES ─────────────────────────────────────────────
+// When tab switches, trigger live data fetch if data is stale
+const _origSwitchTab = typeof switchTab === 'function' ? switchTab : null;
+if (_origSwitchTab) {
+  switchTab = function(id) {
+    _origSwitchTab(id);
+    cosBrainSync();
+    if (id === 'world') {
+      // Fetch live if cache is old > 10 min
+      const cached = liveCache('cos_live_world_news');
+      if (!cached) setTimeout(() => refreshWorldFeed(false), 200);
+    }
+    if (id === 'science') {
+      const cached = liveCache('cos_live_science_news');
+      if (!cached) setTimeout(() => buildScienceDisplay(false), 200);
+    }
+    // Update CIL pulse on every tab switch
+    setTimeout(updateCILPulse, 300);
+  };
+}
+
+// ── CSS ANIMATIONS ─────────────────────────────────────────────────────
+(function addCILStyles() {
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes cosSpinAnim { to { transform: rotate(360deg); } }
+    @keyframes cilPulseAnim { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:0.4; transform:scale(1.4); } }
+    #cilPulse { padding:8px 12px; background:linear-gradient(135deg,rgba(16,185,129,.08),rgba(124,58,237,.08)); border:1px solid rgba(16,185,129,.2); border-radius:10px; margin-bottom:10px; }
+  `;
+  document.head.appendChild(style);
+})();
+
+// ── CIL PANEL HTML INJECTION into AI tab ──────────────────────────────
+function injectCILPanel() {
+  // Inject CIL pulse bar into AI tab
+  const aiTab = document.getElementById('tab-ai');
+  if (aiTab && !document.getElementById('cilPulse')) {
+    const pulse = document.createElement('div');
+    pulse.id = 'cilPulse';
+    pulse.innerHTML = `<div style="font-size:11px;color:var(--text3)">🧠 Consciousness Integration Layer initializing...</div>`;
+    aiTab.insertBefore(pulse, aiTab.firstChild);
+  }
+  // Inject Live badge into world tab refresh button
+  const worldRefreshBtn = document.querySelector('#tab-world .btn-secondary');
+  if (worldRefreshBtn && !worldRefreshBtn.dataset.livePatched) {
+    worldRefreshBtn.dataset.livePatched = '1';
+    worldRefreshBtn.innerHTML = '🔴 Live Refresh';
+    worldRefreshBtn.setAttribute('onclick', 'refreshWorldFeed(true)');
+  }
+  // Inject live badge into science tab  
+  const sciTab = document.getElementById('tab-science');
+  if (sciTab) {
+    const sciHeader = sciTab.querySelector('.section-header, .card-title');
+    if (sciHeader && !sciTab.querySelector('#sciLiveBadge')) {
+      const badge = document.createElement('span');
+      badge.id = 'sciLiveBadge';
+      badge.style.cssText = 'font-size:9px;background:#ef4444;color:#fff;padding:2px 6px;border-radius:10px;font-weight:700;margin-left:8px;animation:cilPulseAnim 2s infinite';
+      badge.textContent = '● LIVE';
+      if(sciHeader.firstChild) sciHeader.appendChild(badge);
+    }
+    // Add force refresh button  
+    let sciRefreshBtn = document.getElementById('sciLiveRefreshBtn');
+    if (!sciRefreshBtn) {
+      sciRefreshBtn = document.createElement('button');
+      sciRefreshBtn.id = 'sciLiveRefreshBtn';
+      sciRefreshBtn.className = 'btn btn-secondary btn-sm';
+      sciRefreshBtn.innerHTML = '🔴 Fetch Latest Science News';
+      sciRefreshBtn.style.marginBottom = '12px';
+      sciRefreshBtn.onclick = () => buildScienceDisplay(true);
+      const firstCard = sciTab.querySelector('.card');
+      if (firstCard) sciTab.insertBefore(sciRefreshBtn, firstCard.nextSibling || firstCard);
+    }
+  }
+}
+
+// ── INIT CIL ON DOM READY ─────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+  setTimeout(() => {
+    cosBrainSync();
+    injectCILPanel();
+    updateCILPulse();
+    // Auto-load world + science if cached (instant)
+    const cachedWorld = liveCache('cos_live_world_news');
+    if (cachedWorld) renderLiveWorldNews(cachedWorld);
+    const cachedSci = liveCache('cos_live_science_news');
+    if (cachedSci) renderLiveScienceNews(cachedSci);
+    const cachedMkt = liveCache('cos_live_markets');
+    if (cachedMkt) renderLiveMarkets(cachedMkt);
+  }, 1500);
+  
+  // Sync CIL every 5 minutes
+  setInterval(() => { cosBrainSync(); updateCILPulse(); }, 5 * 60 * 1000);
+  
+  // Refresh live data every 25 minutes if app is open
+  setInterval(() => {
+    if (document.getElementById('tab-world')?.classList.contains('active')) refreshWorldFeed(false);
+    if (document.getElementById('tab-science')?.classList.contains('active')) buildScienceDisplay(false);
+  }, 25 * 60 * 1000);
+});
+
+// ── CROSS-TAB AI CONTEXT HELPER (exposed globally) ─────────────────────
+function getCOSBrainSummary() { return buildCOSBrainContext(); }
+window.COS_BRAIN = COS_BRAIN;
+window.cosBrainSync = cosBrainSync;
 </script>
 
 <!-- ════════════════════════════════════════════════════════
