@@ -8913,7 +8913,7 @@ document.addEventListener('DOMContentLoaded',init);
 // ═══════════════════════════════════════════════════════════════════════
 
 // ── ANTHROPIC WEB SEARCH ENGINE ─────────────────────────────────────────
-async async function callAnthropicSearch(userPrompt, systemPrompt, maxTokens) {
+async function callAnthropicSearch(userPrompt, systemPrompt, maxTokens) {
   maxTokens = maxTokens || 1200;
   systemPrompt = systemPrompt || 'You are an expert analyst. Be precise, factual, and current.';
   const apiKey = getApiKey('anthropic');
@@ -8963,7 +8963,7 @@ function liveCache(key, data) {
 }
 
 // ── LIVE WORLD NEWS FETCHER ───────────────────────────────────────────
-async async function fetchLiveWorldNews(force) {
+async function fetchLiveWorldNews(force) {
   const cacheKey = 'cos_live_world_news';
   if (!force) {
     const cached = liveCache(cacheKey);
@@ -9772,13 +9772,13 @@ async function analyzeGeoWithAI(){
   const btn = el?.querySelector('button');
   if(btn){ btn.textContent = '⏳ Analyzing...'; btn.disabled = true; }
   try {
-    const prompt = \`Analyze these real geopolitical headlines and give a cause→effect→market chain for each in 2-3 lines:\n\n\${headlines}\n\nFormat each as: HEADLINE → Effect → Market Impact\`;
+    const prompt = `Analyze these real geopolitical headlines and give a cause→effect→market chain for each in 2-3 lines:\n\n\${headlines}\n\nFormat each as: HEADLINE → Effect → Market Impact`;
     const analysis = await callGroqFast(prompt, 'You are a geopolitical analyst and economist. Be sharp, specific, and connect events to market movements.', 700);
     const formatted = analysis.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');
     const box = document.createElement('div');
     box.className = 'card';
     box.style.marginBottom = '8px';
-    box.innerHTML = \`<div class="card-title"><span class="emoji">🧠</span> AI Geopolitical Analysis</div><div style="font-size:13px;color:var(--text2);line-height:1.8">\${formatted}</div>\`;
+    box.innerHTML = `<div class="card-title"><span class="emoji">🧠</span> AI Geopolitical Analysis</div><div style="font-size:13px;color:var(--text2);line-height:1.8">\${formatted}</div>`;
     el.appendChild(box);
   } catch(e){
     console.log('FETCH ERROR geo AI:', e);
