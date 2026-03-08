@@ -1708,6 +1708,30 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
      TAB 4 — ANALYSIS
 ════════════════════════════════════════════ -->
 <div class="tab-panel" id="tab-analysis">
+  <!-- ── COGNITIVE REPORT CARD ── -->
+  <div style="background:linear-gradient(135deg,var(--primary),#0ea5e9);border-radius:16px;padding:20px;margin-bottom:16px;color:#fff;position:relative;overflow:hidden">
+    <div style="font-size:11px;font-weight:700;letter-spacing:2px;opacity:.8;margin-bottom:4px">DAILY COGNITIVE REPORT</div>
+    <div style="display:flex;align-items:flex-end;gap:16px;margin-bottom:14px">
+      <div>
+        <div style="font-size:48px;font-weight:900;line-height:1" id="focusScore">--</div>
+        <div style="font-size:11px;opacity:.8">FOCUS SCORE</div>
+      </div>
+      <div style="flex:1">
+        <div style="font-size:13px;opacity:.9;margin-bottom:4px">Deep Work: <strong id="deepWorkReport">—</strong></div>
+        <div style="font-size:13px;opacity:.9;margin-bottom:4px">Mood Trend: <strong id="moodTrendReport">—</strong></div>
+        <div style="font-size:11px;opacity:.7" id="reportDate"></div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button onclick="shareScore()" style="background:rgba(255,255,255,.2);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.3);color:#fff;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;flex:1">
+        📤 Share Score
+      </button>
+      <button onclick="calculateDailyScore()" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.2);color:#fff;padding:8px 12px;border-radius:8px;font-size:13px;cursor:pointer">
+        🔄
+      </button>
+    </div>
+    <div style="position:absolute;right:-20px;top:-20px;font-size:80px;opacity:.07">🧠</div>
+  </div>
   <div class="section-header">📊 Analysis Dashboard</div>
 
   <div class="stats-grid">
@@ -2707,6 +2731,11 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
      TAB 14 — SYSTEM (THEMES / ACCOUNT / LEGAL)
 ════════════════════════════════════════════ -->
 <div class="tab-panel" id="tab-system">
+  <div style="padding:8px 0 16px">
+    <button onclick="saveSession('focus',80)" style="background:var(--primary);color:#fff;border:none;padding:12px 20px;border-radius:10px;font-size:14px;cursor:pointer;width:100%">
+      🧪 Test: Save Session to Firebase
+    </button>
+  </div>
   <div class="section-header">⚙️ System Control</div>
 
   <div class="sys-tab-row">
@@ -3984,6 +4013,13 @@ function enableDragScroll(el){
   el.addEventListener('touchmove',e=>{const dx=tStart-e.touches[0].clientX;el.scrollLeft=tScrollLeft+dx;},{passive:true});
 }
 function switchTab(id){
+  if(id==='analysis'){
+    setTimeout(()=>{
+      calculateDailyScore();
+      const dateEl=document.getElementById('reportDate');
+      if(dateEl) dateEl.innerText=new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long'});
+    },100);
+  }
   document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
   const panel=document.getElementById('tab-'+id);if(panel)panel.classList.add('active');
   activeTab=id;buildNav();
@@ -9546,5 +9582,67 @@ window.cosBrainSync = cosBrainSync;
 
 <!-- 🐛 debug toggle button now in topbar -->
 
+<script>
+window.saveSession = async function(state, focusScore){
+  try {
+    await db.collection('sessions').add({
+      state: state, focusScore: focusScore,
+      timestamp: Date.now(), userId: getCurrentUser()?.id || 'guest'
+    });
+    showToast('✅ Session saved to cloud');
+  } catch(e) { showToast('⚠️ ' + e.message); }
+};
+</script>
+<script>
+// ─── COGNITIVE REPORT CARD ──────────────────────────────────
+async function calculateDailyScore(){
+  try {
+    const snapshot = await db.collection('sessions').get();
+    let total = 0, count = 0;
+    const today = new Date().toDateString();
+    snapshot.forEach(doc => {
+      const d = doc.data();
+      // Only today's sessions
+      if(new Date(d.timestamp).toDateString() === today){
+        total += (d.focusScore || 0);
+        count++;
+      }
+    });
+    const avg = count > 0 ? Math.round(total / count) : '--';
+    const el = document.getElementById('focusScore');
+    if(el) el.innerText = avg;
+    // Also update mood trend from local logs
+    const logs = getLogs ? getLogs().slice(0,7) : [];
+    if(logs.length >= 2){
+      const trend = (parseFloat(logs[0].mood||5) - parseFloat(logs[logs.length-1].mood||5)).toFixed(1);
+      const trendEl = document.getElementById('moodTrendReport');
+      if(trendEl) trendEl.innerText = trend > 0 ? '↑ +'+trend : trend < 0 ? '↓ '+trend : '→ Stable';
+    }
+    // Deep work hours from today's logs
+    const todayLogs = logs.filter(l => l.date === new Date().toLocaleDateString('en-IN'));
+    const deepWork = todayLogs.filter(l => l.activity === 'Deep Work').length;
+    const dwEl = document.getElementById('deepWorkReport');
+    if(dwEl) dwEl.innerText = deepWork > 0 ? deepWork+'h' : '—';
+  } catch(e){
+    console.error('calculateDailyScore:', e);
+  }
+}
+
+function shareScore(){
+  const score = document.getElementById('focusScore')?.innerText || '--';
+  const mood = document.getElementById('moodTrendReport')?.innerText || '→';
+  const shareText = `🧠 My Cognitive Performance Today\n\nFocus Score: ${score}/100\nMood Trend: ${mood}\n\nTracked with Consciousness OS`;
+  if(navigator.share){
+    navigator.share({
+      title: 'My Cognitive Score',
+      text: shareText,
+      url: window.location.href
+    }).catch(e => console.log('Share cancelled'));
+  } else {
+    // Fallback: copy to clipboard
+    navigator.clipboard?.writeText(shareText).then(()=> showToast('📋 Copied to clipboard — paste anywhere!'));
+  }
+}
+</script>
 </body>
 </html>
