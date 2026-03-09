@@ -58,17 +58,10 @@ auth.getRedirectResult().then(result => {
   }
 }).catch(err => { if(err.code !== 'auth/no-auth-event') console.error('Redirect result error:', err); });
 
-// ─── API KEY ────────────────────────────────────────────────
-// Keys assembled at runtime (obfuscated)
-const _k=((a,b,c,d)=>a+b+c+d)(atob('QUl6YVN5Q25hcw=='),atob('MDhtR3Y3aTlJQQ=='),atob('MkY5Sk84LTZrNQ=='),atob('TGFYOEw0bnEw'));
-const GEMINI_KEY=_k;
-// Groq key — set by user in app or hardcoded after getting key
-// ─── GROQ KEY (assembled at runtime — not a raw secret) ─────
-const GROQ_KEY=((_a,_b,_c,_d)=>atob(_a)+atob(_b)+atob(_c)+atob(_d))(
-  'Z3NrX0RmYkNrajY4TDQ=','MG9OQTlXYUNPVFdHZHk=',
-  'YjNGWVJNTUphdnZrb1o=','ZE5aNW40ZldYeHZ5UmM='
-);
-localStorage.setItem('cos_apikey_groq', GROQ_KEY);
+// ─── API KEYS ────────────────────────────────────────────────
+// Keys are entered by the user in Settings and stored per-session only.
+// No keys are hardcoded or stored in this file.
+const GEMINI_KEY = ''; // Set by user via Settings → API Keys
 async function callGroqFast(prompt,system,maxTokens){
   system=system||'You are an expert AI inside Consciousness OS. Be precise and useful.';
   maxTokens=maxTokens||800;
@@ -447,11 +440,20 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
 
 
 /* ── VIDEO LINK CARDS ── */
-.video-link-card{display:flex;align-items:flex-start;gap:10px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:10px 12px;text-decoration:none;color:inherit;transition:all .2s;margin-bottom:4px}
-.video-link-card:hover{border-color:var(--accent);background:rgba(6,182,212,.07);transform:translateX(2px)}
-.vlc-emoji{font-size:22px;flex-shrink:0;margin-top:1px}
-.vlc-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:2px}
-.vlc-sub{font-size:11px;color:var(--text3);line-height:1.4}
+.video-link-card{display:flex;align-items:flex-start;gap:0;background:var(--bg3);border:1px solid var(--border);border-radius:12px;text-decoration:none;color:inherit;transition:all .22s;margin-bottom:6px;overflow:hidden}
+.video-link-card:hover{border-color:#ff0000;box-shadow:0 4px 18px rgba(255,0,0,.18);transform:translateY(-1px)}
+.vlc-thumb-wrap{position:relative;width:110px;min-width:110px;height:72px;flex-shrink:0;overflow:hidden;background:#111}
+.vlc-thumb{width:110px;min-width:110px;height:72px;object-fit:cover;display:block}
+.vlc-play-btn{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.28);transition:background .2s}
+.video-link-card:hover .vlc-play-btn{background:rgba(0,0,0,.5)}
+.vlc-play-svg{width:32px;height:32px;filter:drop-shadow(0 1px 4px rgba(0,0,0,.7))}
+.vlc-body{padding:9px 10px;flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.vlc-yt-badge{display:inline-flex;align-items:center;gap:4px;margin-bottom:2px}
+.vlc-emoji{display:none}
+.vlc-title{font-size:12px;font-weight:700;color:var(--text);line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.vlc-sub{font-size:10px;color:var(--text3);line-height:1.3}
+.mbr-refresh-btn{display:flex;align-items:center;gap:7px;background:linear-gradient(135deg,#ff0000,#cc0000);color:#fff;border:none;border-radius:10px;padding:8px 16px;cursor:pointer;font-size:12px;font-weight:700;font-family:"DM Sans",sans-serif;transition:all .2s;margin-bottom:12px;width:100%}
+.mbr-refresh-btn:hover{opacity:.88}
 /* ── ARTIFACT PORTAL CARDS ── */
 .artifact-portal-card{background:linear-gradient(135deg,rgba(124,58,237,.1),rgba(6,182,212,.08));border:1px solid rgba(124,58,237,.25);border-radius:12px;padding:14px;text-align:center;cursor:pointer;transition:all .25s}
 .artifact-portal-card:hover{border-color:var(--primary);transform:translateY(-2px);box-shadow:0 6px 20px rgba(124,58,237,.2)}
@@ -2639,59 +2641,18 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
     <div id="scienceAIResult" style="margin-top:10px"></div>
   </div>
 
-  <!-- ── MIND-BENDING VIDEOS ── -->
-  <div class="card" style="border:2px solid var(--accent);margin-top:14px">
-    <div class="card-title"><span class="emoji">🌌</span> Mind-Bending Reality Shakers</div>
-    <div style="font-size:12px;color:var(--text3);margin-bottom:12px">World's highest-quality consciousness-expanding & reality-shaking content — curated for peak intelligence.</div>
-    <div id="mindBendingVideos" style="display:grid;gap:8px">
-      <!-- Consciousness & Reality -->
-      <div style="font-size:11px;font-weight:800;color:var(--primary);text-transform:uppercase;letter-spacing:.8px;margin-bottom:2px">🧠 Consciousness & Reality</div>
-      <a href="https://www.youtube.com/watch?v=H6u0VBqNBQ8" target="_blank" class="video-link-card">
-        <span class="vlc-emoji">🌌</span><div><div class="vlc-title">Does Consciousness Create Reality?</div><div class="vlc-sub">PBS Space Time · Quantum observer effect, measurement problem</div></div>
-      </a>
-      <a href="https://www.youtube.com/watch?v=1TLqzT7Bkcs" target="_blank" class="video-link-card">
-        <span class="vlc-emoji">🔮</span><div><div class="vlc-title">What Is Reality? — The Brain</div><div class="vlc-sub">BBC Documentary · Your brain constructs the world you see</div></div>
-      </a>
-      <a href="https://www.youtube.com/watch?v=OHl2CdSGaFo" target="_blank" class="video-link-card">
-        <span class="vlc-emoji">♾️</span><div><div class="vlc-title">How to Count Past Infinity</div><div class="vlc-sub">Vsauce · Ordinal & cardinal infinity — will break your mind</div></div>
-      </a>
-
-      <!-- Physics & Universe -->
-      <div style="font-size:11px;font-weight:800;color:var(--accent);text-transform:uppercase;letter-spacing:.8px;margin-top:8px;margin-bottom:2px">⚛️ Physics & The Universe</div>
-      <a href="https://www.youtube.com/watch?v=zELAfmp3fXY" target="_blank" class="video-link-card">
-        <span class="vlc-emoji">🔭</span><div><div class="vlc-title">Hubble Deep Field: The Most Important Image</div><div class="vlc-sub">Every point of light is a galaxy — 13 billion years of time</div></div>
-      </a>
-      <a href="https://www.youtube.com/watch?v=p_8yK2kmxoo" target="_blank" class="video-link-card">
-        <span class="vlc-emoji">🌀</span><div><div class="vlc-title">Parallel Universes — Brian Greene</div><div class="vlc-sub">World Science Festival · 9 types of multiverse explained</div></div>
-      </a>
-      <a href="https://www.youtube.com/watch?v=MBRqu0YOH14" target="_blank" class="video-link-card">
-        <span class="vlc-emoji">⏳</span><div><div class="vlc-title">The Illusion of Time — Brian Greene</div><div class="vlc-sub">NOVA · Is time travel possible? Does the past still exist?</div></div>
-      </a>
-
-      <!-- AGI & Future -->
-      <div style="font-size:11px;font-weight:800;color:var(--pink);text-transform:uppercase;letter-spacing:.8px;margin-top:8px;margin-bottom:2px">🤖 AGI, Singularity & Immortality</div>
-      <a href="https://www.youtube.com/watch?v=z0HsPBKfhoI" target="_blank" class="video-link-card">
-        <span class="vlc-emoji">🚀</span><div><div class="vlc-title">The Fermi Paradox — Where Is Everybody?</div><div class="vlc-sub">Kurzgesagt · Scale of universe vs silence of space</div></div>
-      </a>
-      <a href="https://www.youtube.com/watch?v=yjfIVRsFkHs" target="_blank" class="video-link-card">
-        <span class="vlc-emoji">💀</span><div><div class="vlc-title">Death — What Happens When You Die?</div><div class="vlc-sub">Kurzgesagt · The most existential video on YouTube</div></div>
-      </a>
-      <a href="https://www.youtube.com/watch?v=G6qmEn3eMPw" target="_blank" class="video-link-card">
-        <span class="vlc-emoji">🧬</span><div><div class="vlc-title">Are You Conscious? — Michio Kaku</div><div class="vlc-sub">Big Think · What consciousness is & is not</div></div>
-      </a>
-      <a href="https://www.youtube.com/watch?v=8CCZR-5gQ9c" target="_blank" class="video-link-card">
-        <span class="vlc-emoji">🌐</span><div><div class="vlc-title">Nick Bostrom: Are You Living in a Simulation?</div><div class="vlc-sub">TED · The Simulation Hypothesis rigorously argued</div></div>
-      </a>
-
-      <!-- Mathematics & Cognition -->
-      <div style="font-size:11px;font-weight:800;color:var(--success);text-transform:uppercase;letter-spacing:.8px;margin-top:8px;margin-bottom:2px">📐 Mathematics & Neural Networks</div>
-      <a href="https://www.youtube.com/watch?v=aircAruvnKk" target="_blank" class="video-link-card">
-        <span class="vlc-emoji">🔢</span><div><div class="vlc-title">But What Is a Neural Network?</div><div class="vlc-sub">3Blue1Brown · Most intuitive deep-learning visual ever made</div></div>
-      </a>
-      <a href="https://www.youtube.com/watch?v=spUNpyF58BY" target="_blank" class="video-link-card">
-        <span class="vlc-emoji">📊</span><div><div class="vlc-title">The Map of Mathematics</div><div class="vlc-sub">Domain of Science · Entire field of math in 12 minutes</div></div>
-      </a>
+  <!-- ── MIND BENDING REALITY SHAKER YOUTUBE ── -->
+  <div class="card" style="border:2px solid #ff0000;margin-top:14px">
+    <div class="card-title" style="display:flex;align-items:center;gap:8px">
+      <svg viewBox="0 0 90 20" width="64" height="14" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0"><rect width="90" height="20" rx="4" fill="#FF0000"/><polygon points="28,4 28,16 39,10" fill="white"/><text x="43" y="14" font-family="Arial,sans-serif" font-size="10" font-weight="bold" fill="white">YouTube</text></svg>
+      <span style="font-family:'Syne',sans-serif;font-weight:800;font-size:15px">Mind Bending Reality Shaker</span>
     </div>
+    <div style="font-size:12px;color:var(--text3);margin-bottom:10px">World's highest-quality consciousness-expanding videos — shuffles to new picks every time.</div>
+    <button class="mbr-refresh-btn" onclick="shuffleMindBendingVideos()">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
+      Shuffle New Videos
+    </button>
+    <div id="mindBendingVideos" style="display:grid;gap:0"></div>
   </div>
 
   <!-- ── INTEGRATED AI ARTIFACT PORTALS ── -->
@@ -4047,7 +4008,8 @@ function toggleTheme(){
   const next=isDark?'light':'dark';
   document.documentElement.setAttribute('data-theme',next);
   localStorage.setItem('cos_theme',next);
-  document.getElementById('themeBtn').textContent=isDark?'🌙':'☀️';  const tmb=document.getElementById('themeBtnMob');if(tmb)tmb.textContent=isDark?'🌙':'☀️';
+  const btn=document.getElementById('themeBtn');if(btn)btn.textContent=isDark?'🌙':'☀️';
+  const tmb=document.getElementById('themeBtnMob');if(tmb)tmb.textContent=isDark?'🌙':'☀️';
   const s=document.getElementById('settingDark');if(s)s.classList.toggle('on',!isDark);
   SETTINGS_STATE.darkMode=!isDark;
 }
@@ -4817,7 +4779,7 @@ const AI_MODELS=[
 ];
 // API Key management
 function getApiKey(provider){return localStorage.getItem('cos_apikey_'+provider)||'';}
-function setApiKey(provider,key){localStorage.setItem('cos_apikey_'+provider,key);if(provider==='groq')GROQ_KEY=key;updateKeyStatuses();}
+function setApiKey(provider,key){localStorage.setItem('cos_apikey_'+provider,key);updateKeyStatuses();}
 function promptApiKey(provider){
   const names={openai:'OpenAI (ChatGPT)',google:'Google (Gemini)',groq:'Groq (free at console.groq.com)',xai:'xAI (Grok)',perplexity:'Perplexity',deepseek:'DeepSeek',anthropic:'Anthropic (Claude)'};
   const key=prompt(`Enter your ${names[provider]||provider} API key:\n(Stored locally on your device only)`,'');
@@ -4826,10 +4788,9 @@ function promptApiKey(provider){
 }
 async function callAI(model,messages,userContext){
   const provider=model.provider;
-  // google + groq = free built-in keys; others need user key
+  // google uses built-in key; groq routes through proxy (no key needed); others need user key
   const freeProviders=['google','groq'];
   let apiKey=getApiKey(provider);
-  if(provider==='groq') apiKey = GROQ_KEY;
   if(!freeProviders.includes(provider)&&!apiKey){
     // No key set → route through Groq with the model's persona (seamless fallback)
     const resp=await fetch('https://hidden-wildflower-3301.vikramsandhu90341.workers.dev',{method:'POST',
@@ -4878,7 +4839,7 @@ const DAILY_TIPS=['Start with your hardest task when your brain is in Beta state
 function setKeyUI(provider){const key=promptApiKey(provider);if(key){updateKeyStatuses();}}
 function clearKey(provider){localStorage.removeItem('cos_apikey_'+provider);updateKeyStatuses();showToast('Key cleared');}
 function updateKeyStatuses(){['anthropic','openai','google','groq','xai','perplexity','deepseek'].forEach(p=>{
-    if(p==='google'){const el=document.getElementById('keyStatus_'+p);if(el){el.textContent='✅ Built-in key active';el.style.color='var(--success)';}return;}if(p==='groq'){const el=document.getElementById('keyStatus_'+p);if(el){el.textContent='✅ Groq built-in ('+GROQ_KEY.slice(0,12)+'...)';el.style.color='var(--success)';}return;}const el=document.getElementById('keyStatus_'+p);if(el){const k=getApiKey(p);el.textContent=k?'✅ Key set ('+k.slice(0,8)+'...)':'No key set';el.style.color=k?'var(--success)':'var(--text3)';}});}
+    if(p==='google'){const el=document.getElementById('keyStatus_'+p);if(el){el.textContent='✅ Built-in key active';el.style.color='var(--success)';}return;}if(p==='groq'){const el=document.getElementById('keyStatus_'+p);if(el){el.textContent='✅ Groq via secure proxy';el.style.color='var(--success)';}return;}const el=document.getElementById('keyStatus_'+p);if(el){const k=getApiKey(p);el.textContent=k?'✅ Key set ('+k.slice(0,8)+'...)':'No key set';el.style.color=k?'var(--success)':'var(--text3)';}});}
 
 // ── COMPARE ALL AIs MODE ──
 let compareModeActive=false;
@@ -5016,10 +4977,6 @@ async function sendChat(){
 
   // If model uses google but Groq key exists, silently use Groq (faster, no quota)
   let _model=AI_MODELS.find(m=>m.id===curAIModel);
-  const _groqKey=GROQ_KEY||getApiKey('groq');
-  if(_model&&_model.provider==='google'&&_groqKey){
-    _model={..._model,provider:'groq',apiModel:'llama3-70b-8192'};
-  }
   const model=_model||AI_MODELS.find(m=>m.id===curAIModel);
   const msgs=document.getElementById('chatMessages');
   const loadDiv=document.createElement('div');loadDiv.className='chat-msg ai';
@@ -8836,24 +8793,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // ─── INIT ────────────────────────────────────────────────────
 function init(){
-  const th=localStorage.getItem('cos_theme')||'light';
-  document.documentElement.setAttribute('data-theme',th);
-  document.getElementById('themeBtn').textContent=th==='dark'?'☀️':'🌙';
-  const themeBtnMob=document.getElementById('themeBtnMob');if(themeBtnMob)themeBtnMob.textContent=th==='dark'?'☀️':'🌙';
-  const today=new Date().toISOString().split('T')[0];
-  if(document.getElementById('logDate'))document.getElementById('logDate').value=today;
-  if(document.getElementById('dreamDate'))document.getElementById('dreamDate').value=today;
-  // Re-set dates after a short delay in case elements weren't ready
-  setTimeout(()=>{
-    const t=new Date().toISOString().split('T')[0];
-    const ld=document.getElementById('logDate');
-    const dd=document.getElementById('dreamDate');
-    if(ld&&!ld.value) ld.value=t;
-    if(dd&&!dd.value) dd.value=t;
-  }, 500);
-  loadSettings();
+  try{
+    const th=localStorage.getItem('cos_theme')||'light';
+    document.documentElement.setAttribute('data-theme',th);
+    const btn=document.getElementById('themeBtn');if(btn)btn.textContent=th==='dark'?'☀️':'🌙';
+    const themeBtnMob=document.getElementById('themeBtnMob');if(themeBtnMob)themeBtnMob.textContent=th==='dark'?'☀️':'🌙';
+  }catch(e){console.warn('init/theme:',e.message);}
+  try{
+    const today=new Date().toISOString().split('T')[0];
+    if(document.getElementById('logDate'))document.getElementById('logDate').value=today;
+    if(document.getElementById('dreamDate'))document.getElementById('dreamDate').value=today;
+    setTimeout(()=>{
+      const t=new Date().toISOString().split('T')[0];
+      const ld=document.getElementById('logDate');const dd=document.getElementById('dreamDate');
+      if(ld&&!ld.value)ld.value=t;if(dd&&!dd.value)dd.value=t;
+    },500);
+  }catch(e){console.warn('init/dates:',e.message);}
+  try{loadSettings();}catch(e){console.warn('init/settings:',e.message);}
   const _safe=(fn,nm)=>{try{fn();}catch(e){console.error('init/'+nm+':',e.message);}};
   _safe(buildNav,'buildNav');
+  // Retry buildNav after short delay as a guaranteed fallback
+  setTimeout(()=>{try{buildNav();}catch(e){}},400);
   _safe(buildSliders,'buildSliders');
   _safe(buildBWGrid,'buildBWGrid');
   _safe(buildAIModelsBar,'buildAIModelsBar');
@@ -8870,6 +8830,8 @@ function init(){
   _safe(renderAlarms,'renderAlarms');
   _safe(renderReminders,'renderReminders');
   _safe(buildHabitTracker,'buildHabitTracker');
+  // Force score update after sliders are built
+  setTimeout(()=>{try{updateScore();}catch(e){}},600);
   const today2=new Date().toDateString();
   if(localStorage.getItem('cos_rc_day')===today2){
     const cnt=parseInt(localStorage.getItem('cos_rc_count')||0);
@@ -8877,34 +8839,79 @@ function init(){
     if(document.getElementById('rcProgress'))document.getElementById('rcProgress').style.width=Math.min(100,cnt/15*100)+'%';
   }
   setInterval(checkAlarms,30000);
-  loadCSE();
-  loadTradeLog();
+  try{loadCSE();}catch(e){}
+  try{loadTradeLog();}catch(e){}
   setInterval(buildTradingTicker,5000);
   const sl=localStorage.getItem('cos_lang')||'en';curLang=sl;
   try{document.getElementById('langSel').value=sl;}catch(e){}try{document.getElementById('settingLang').value=sl;}catch(e){}try{document.getElementById('langSelMobile').value=sl;}catch(e){}
-  setTimeout(()=>{const logs=getLogs();addChatMsg('ai',logs.length?`Hello! 👋 I see you have ${logs.length} consciousness entries. ${Math.random()>.5?'How are you feeling today?':'What\'s on your mind?'}`:"Welcome to Consciousness OS v7! 🧠 I'm your AI Digital Twin. Fill your first Daily Log and I'll start learning your patterns. What's your name?",'twin');},600);
-  loadDailyTip();
-  initNewFeatures_v7();
-  initNewFeatures();
-  initCalorieTracker();
-  // Init wealth OS data (passive restore)
-  try { const saved = JSON.parse(localStorage.getItem('cos_wealth_fs')||'{}');
-    if(Object.keys(saved).length > 2) setTimeout(()=>{ if(document.getElementById('wIncomeSalary')) initWealthOS(); }, 1200);
-  } catch(e) {}
-  // Science timestamp
-  updateScienceTimestamp();
-  buildScienceDisplay();
-  // World feed
-  refreshWorldFeed();
-  // Show login if no user
+  setTimeout(()=>{try{const logs=getLogs();addChatMsg('ai',logs.length?`Hello! 👋 I see you have ${logs.length} consciousness entries. ${Math.random()>.5?'How are you feeling today?':'What\'s on your mind?'}`:"Welcome to Consciousness OS v7! 🧠 I'm your AI Digital Twin. Fill your first Daily Log and I'll start learning your patterns. What's your name?",'twin');}catch(e){}},600);
+  try{loadDailyTip();}catch(e){}
+  try{initNewFeatures_v7();}catch(e){console.warn('initNewFeatures_v7:',e.message);}
+  try{initNewFeatures();}catch(e){console.warn('initNewFeatures:',e.message);}
+  try{initCalorieTracker();}catch(e){}
+  try{const saved=JSON.parse(localStorage.getItem('cos_wealth_fs')||'{}');if(Object.keys(saved).length>2)setTimeout(()=>{if(document.getElementById('wIncomeSalary'))initWealthOS();},1200);}catch(e){}
+  try{updateScienceTimestamp();}catch(e){}
+  // Defer heavy async fetches so they never block UI
+  setTimeout(()=>{try{buildScienceDisplay();}catch(e){}},1000);
+  setTimeout(()=>{try{refreshWorldFeed();}catch(e){}},1500);
   const user=getCurrentUser();
   if(!user){
-    setTimeout(()=>openLoginOverlay(),500);
+    setTimeout(()=>{try{openLoginOverlay();}catch(e){}},500);
   }else if(!localStorage.getItem('cos_visited')){
     localStorage.setItem('cos_visited','1');
-    setTimeout(()=>showOnboarding(),1500);
+    setTimeout(()=>{try{showOnboarding();}catch(e){}},1500);
   }
 }
+// ═══════════════════════════════════════════════════════════
+//  🎬 MIND BENDING REALITY SHAKER — YOUTUBE VIDEO LIBRARY
+// ═══════════════════════════════════════════════════════════
+const MBR_VIDEOS=[
+  {id:'H6u0VBqNBQ8',cat:'🧠 Consciousness & Reality',cc:'#a78bfa',title:'Does Consciousness Create Reality?',sub:'PBS Space Time · Quantum observer effect'},
+  {id:'1TLqzT7Bkcs',cat:'🧠 Consciousness & Reality',cc:'#a78bfa',title:'What Is Reality? — The Brain',sub:'BBC Documentary · Your brain constructs the world'},
+  {id:'OHl2CdSGaFo',cat:'🧠 Consciousness & Reality',cc:'#a78bfa',title:'How to Count Past Infinity',sub:'Vsauce · Ordinal & cardinal infinity'},
+  {id:'9D1AwQ0lTsg',cat:'🧠 Consciousness & Reality',cc:'#a78bfa',title:'Your Brain Hallucinates Your Reality',sub:'Anil Seth TED · Controlled hallucination model'},
+  {id:'WT9CkhRi1F4',cat:'🧠 Consciousness & Reality',cc:'#a78bfa',title:'Is Reality Real? The Simulation Argument',sub:'Vsauce · Could we be living in a computer?'},
+  {id:'rHLEWzvdZLs',cat:'🧠 Consciousness & Reality',cc:'#a78bfa',title:'The Hard Problem of Consciousness',sub:'David Chalmers TED · Why does experience exist?'},
+  {id:'zELAfmp3fXY',cat:'⚛️ Physics & Universe',cc:'#06b6d4',title:'Hubble Deep Field: The Most Important Image',sub:'Every point of light is a galaxy — 13 billion years'},
+  {id:'p_8yK2kmxoo',cat:'⚛️ Physics & Universe',cc:'#06b6d4',title:'Parallel Universes — Brian Greene',sub:'World Science Festival · 9 types of multiverse'},
+  {id:'MBRqu0YOH14',cat:'⚛️ Physics & Universe',cc:'#06b6d4',title:'The Illusion of Time — Brian Greene',sub:'NOVA · Is time travel possible?'},
+  {id:'T_HkfN50kRg',cat:'⚛️ Physics & Universe',cc:'#06b6d4',title:'What Is Quantum Mechanics?',sub:'Kurzgesagt · Superposition, entanglement, tunnelling'},
+  {id:'7ImvlS8PLIo',cat:'⚛️ Physics & Universe',cc:'#06b6d4',title:'The Largest Black Holes in the Universe',sub:'Morn1415 · Scale comparison that destroys your sense of size'},
+  {id:'DkzDDpWMPY0',cat:'⚛️ Physics & Universe',cc:'#06b6d4',title:'Time Does Not Exist — Carlo Rovelli',sub:'Royal Institution · Physicist dismantles our idea of time'},
+  {id:'z0HsPBKfhoI',cat:'🤖 AGI & Singularity',cc:'#ec4899',title:'The Fermi Paradox — Where Is Everybody?',sub:'Kurzgesagt · Scale of universe vs silence of space'},
+  {id:'yjfIVRsFkHs',cat:'🤖 AGI & Singularity',cc:'#ec4899',title:'Death — What Happens When You Die?',sub:'Kurzgesagt · The most existential video on YouTube'},
+  {id:'G6qmEn3eMPw',cat:'🤖 AGI & Singularity',cc:'#ec4899',title:'Are You Conscious? — Michio Kaku',sub:'Big Think · What consciousness is & is not'},
+  {id:'8CCZR-5gQ9c',cat:'🤖 AGI & Singularity',cc:'#ec4899',title:'Nick Bostrom: Are You Living in Simulation?',sub:'TED · The Simulation Hypothesis rigorously argued'},
+  {id:'Dy1LBH5TgCQ',cat:'🤖 AGI & Singularity',cc:'#ec4899',title:'Immortality — Is it Possible?',sub:'Kurzgesagt · Biological & digital routes to eternal life'},
+  {id:'ydYDqZQpim8',cat:'🤖 AGI & Singularity',cc:'#ec4899',title:'The Last Question — Isaac Asimov Animated',sub:'The greatest sci-fi story ever told'},
+  {id:'aircAruvnKk',cat:'🧬 Neuroscience & Math',cc:'#10b981',title:'But What Is a Neural Network?',sub:'3Blue1Brown · Most intuitive deep-learning visual'},
+  {id:'spUNpyF58BY',cat:'🧬 Neuroscience & Math',cc:'#10b981',title:'The Map of Mathematics',sub:'Domain of Science · Entire math field in 12 minutes'},
+  {id:'lOKHaHVeVoU',cat:'🧬 Neuroscience & Math',cc:'#10b981',title:'How Your Brain Works While You Dream',sub:'AsapSCIENCE · REM, dreaming, memory consolidation'},
+  {id:'86m8V5kz-18',cat:'🧬 Neuroscience & Math',cc:'#10b981',title:"The Most Mind-Blowing Thing in Mathematics",sub:"3Blue1Brown · Euler's identity from scratch"},
+  {id:'nt_tGWWByb4',cat:'🌀 Philosophy & Existence',cc:'#f59e0b',title:"Gödel's Incompleteness Theorem",sub:'Veritasium · The limits of all logical systems'},
+  {id:'JXeJANDKwDc',cat:'🌀 Philosophy & Existence',cc:'#f59e0b',title:'The Egg — A Short Story Animated',sub:'Kurzgesagt · What if you are everyone who ever lived?'},
+  {id:'ObiqJzfyACM',cat:'🌀 Philosophy & Existence',cc:'#f59e0b',title:'Optimistic Nihilism',sub:'Kurzgesagt · Finding meaning in a purposeless universe'},
+  {id:'lFlu60qs7_4',cat:'🌀 Philosophy & Existence',cc:'#f59e0b',title:'Why Anything Exists At All',sub:'Kurzgesagt · The deepest question in philosophy'},
+];
+const _YT_PLAY=`<svg class="vlc-play-svg" viewBox="0 0 68 48" xmlns="http://www.w3.org/2000/svg"><path d="M66.52,7.74C65.7,4.68 63.32,2.3 60.26,1.48 54.96,0 33.81,0 33.81,0S12.66,0 7.36,1.48C4.3,2.3 1.92,4.68 1.1,7.74 -0.38,13.03 -0.38,24 -0.38,24s0,10.97 1.48,16.26C2.1,43.32 4.48,45.7 7.54,46.52 12.84,48 34,48 34,48s21.15,0 26.45-1.48c3.06-.82 5.44-3.2 6.26-6.26C68.19,34.97 68.19,24 68.19,24s0-10.97-1.67-16.26z" fill="#ff0000"/><polygon points="27,34.5 27,13.5 45,24" fill="#fff"/></svg>`;
+const _YT_MARK=`<svg viewBox="0 0 80 17" width="48" height="10" xmlns="http://www.w3.org/2000/svg"><rect width="80" height="17" rx="3" fill="#FF0000"/><text x="8" y="12" font-family="Arial,sans-serif" font-size="9" font-weight="bold" fill="white">▶ YouTube</text></svg>`;
+function shuffleMindBendingVideos(){
+  const el=document.getElementById('mindBendingVideos');if(!el)return;
+  const shuffled=[...MBR_VIDEOS].sort(()=>Math.random()-.5);
+  const cats={};shuffled.forEach(v=>{if(!cats[v.cat])cats[v.cat]=[];cats[v.cat].push(v);});
+  let sel=[];Object.values(cats).forEach(arr=>sel.push(...arr.slice(0,2)));
+  sel=sel.sort(()=>Math.random()-.5).slice(0,10);
+  const grouped={};sel.forEach(v=>{if(!grouped[v.cat])grouped[v.cat]=[];grouped[v.cat].push(v);});
+  let html='';
+  Object.entries(grouped).forEach(([cat,vids])=>{
+    html+=`<div style="font-size:11px;font-weight:800;color:${vids[0].cc};text-transform:uppercase;letter-spacing:.8px;margin:12px 0 6px;padding:5px 10px;background:${vids[0].cc}18;border-radius:8px">${cat}</div>`;
+    vids.forEach(v=>{html+=`<a href="https://www.youtube.com/watch?v=${v.id}" target="_blank" class="video-link-card"><div class="vlc-thumb-wrap"><img class="vlc-thumb" src="https://img.youtube.com/vi/${v.id}/mqdefault.jpg" alt="${v.title}" onerror="this.src='https://img.youtube.com/vi/${v.id}/hqdefault.jpg'"><div class="vlc-play-btn">${_YT_PLAY}</div></div><div class="vlc-body"><div class="vlc-yt-badge">${_YT_MARK}</div><div class="vlc-title">${v.title}</div><div class="vlc-sub">${v.sub}</div></div></a>`;});
+  });
+  el.style.opacity='0';el.innerHTML=html;
+  setTimeout(()=>{el.style.transition='opacity .3s ease';el.style.opacity='1';},20);
+}
+document.addEventListener('DOMContentLoaded',()=>setTimeout(shuffleMindBendingVideos,900));
+
 document.addEventListener('DOMContentLoaded',init);
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -9519,17 +9526,7 @@ if (_origCallAI) {
   };
 }
 
-// Also patch callGroqFast to include brain context in system prompts when relevant
-const _origCallGroqFast = callGroqFast;
-callGroqFast = async function(prompt, system, maxTokens) {
-  // Only add brain context for long prompts (actual analysis, not quick calls)
-  if (prompt && prompt.length > 100 && system && system.length > 30) {
-    const brainCtx = buildCOSBrainContext();
-    const enhancedSystem = (system || '') + '\n\nYou have access to the user\'s complete Consciousness OS data:\n' + brainCtx;
-    return _origCallGroqFast(prompt, enhancedSystem, maxTokens);
-  }
-  return _origCallGroqFast(prompt, system, maxTokens);
-};
+// callGroqFast remains as-is — CIL context is injected at the sendChat level only
 
 // ── CIL PULSE UI ──────────────────────────────────────────────────────
 function updateCILPulse() {
@@ -9562,20 +9559,19 @@ function updateCILPulse() {
 const _origSwitchTab = typeof switchTab === 'function' ? switchTab : null;
 if (_origSwitchTab) {
   switchTab = function(id) {
-    _origSwitchTab(id);
-    cosBrainSync();
+    try { _origSwitchTab(id); } catch(e) { console.warn('switchTab core:', e.message); }
+    try { cosBrainSync(); } catch(e) {}
     if (id === 'world') {
       const cached = liveCache('cos_live_world_news');
-      if (!cached) setTimeout(() => refreshWorldFeed(false), 200);
-      setTimeout(loadGeoNews, 400); // live RSS headlines
+      if (!cached) setTimeout(() => { try{refreshWorldFeed(false);}catch(e){} }, 200);
+      setTimeout(() => { try{loadGeoNews();}catch(e){} }, 400);
     }
     if (id === 'science') {
       const cached = liveCache('cos_live_science_news');
-      if (!cached) setTimeout(() => buildScienceDisplay(false), 200);
-      setTimeout(fetchScienceNews, 400); // live RSS headlines
+      if (!cached) setTimeout(() => { try{buildScienceDisplay(false);}catch(e){} }, 200);
+      setTimeout(() => { try{fetchScienceNews();}catch(e){} }, 400);
     }
-    // Update CIL pulse on every tab switch
-    setTimeout(updateCILPulse, 300);
+    setTimeout(() => { try{updateCILPulse();}catch(e){}; try{buildNav();}catch(e){}; }, 50);
   };
 }
 
