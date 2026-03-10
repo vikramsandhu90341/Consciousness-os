@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Consciousness OS v7.0 — Neural AI Platform</title>
+<title>Consciousness OS</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#7c3aed">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -1041,6 +1041,31 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
 .wq-cell.wq-selected{transform:scale(1.03);box-shadow:0 4px 20px rgba(124,58,237,.25)}
 .wealth-spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:6px}
 @keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── Header layout helpers ── */
+.header-bar{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  flex-wrap:nowrap;
+  gap:6px;
+}
+.header-actions{
+  display:flex;
+  gap:6px;
+  flex-shrink:0;
+}
+.header-actions button{
+  width:36px;
+  height:36px;
+}
+.header-title{
+  font-size:18px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
 </style>
 
 <body>
@@ -1161,7 +1186,7 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
 <div class="topbar">
   <!-- Row 1: Brand + desktop quick actions -->
   <div class="topbar-row1">
-    <div class="topbar-brand">🧠 Consciousness OS v7</div>
+    <div class="topbar-brand">🧠 Consciousness OS</div>
     <!-- Mobile-only quick actions in row1 -->
     <div class="topbar-quick topbar-mobile-only" style="margin-left:auto">
       <select class="lang-sel" id="langSelMobile" onchange="setLang(this.value)" title="Language">
@@ -2647,7 +2672,7 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
   <div class="card" style="border:1.5px solid rgba(6,182,212,.3)">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
       <div class="card-title" style="margin-bottom:0"><span class="emoji">🔬</span> Live Science Intelligence</div>
-      <button class="btn btn-secondary btn-sm" onclick="sciTieredRefresh()" style="font-size:11px">🔄 Tier Refresh</button>
+      <button class="btn btn-secondary btn-sm" onclick="sciTieredRefresh();loadScienceNews()" style="font-size:11px">🔄 Tier Refresh</button>
     </div>
     <div style="font-size:10px;color:var(--text3);margin-bottom:8px">High-signal science only — breakthroughs that matter to civilization. Each Tier Refresh drills deeper: 24h→12h→6h→3h→1h.</div>
     <div id="science-news" style="margin-bottom:4px"></div>
@@ -8131,7 +8156,7 @@ const LEGAL_CONTENT={
 <p>Any disputes arising from the use of this app shall be governed by applicable laws. Users are responsible for ensuring their use of this app complies with laws in their jurisdiction.</p>
 <h3>Changes</h3>
 <p>We reserve the right to update any legal notices, policies, or terms at any time. The most current version will always be available within the app.</p>
-<p style="margin-top:14px;font-size:12px;color:var(--text3)">Last updated: February 2026 · Consciousness OS v7.0</p>`
+<p style="margin-top:14px;font-size:12px;color:var(--text3)">Last updated: February 2026 · Consciousness OS</p>`
   }
 };
 
@@ -8917,7 +8942,7 @@ function init(){
   setInterval(buildTradingTicker,5000);
   const sl=localStorage.getItem('cos_lang')||'en';curLang=sl;
   try{document.getElementById('langSel').value=sl;}catch(e){}try{document.getElementById('settingLang').value=sl;}catch(e){}try{document.getElementById('langSelMobile').value=sl;}catch(e){}
-  setTimeout(()=>{const logs=getLogs();addChatMsg('ai',logs.length?`Hello! 👋 I see you have ${logs.length} consciousness entries. ${Math.random()>.5?'How are you feeling today?':'What\'s on your mind?'}`:"Welcome to Consciousness OS v7! 🧠 I'm your AI Digital Twin. Fill your first Daily Log and I'll start learning your patterns. What's your name?",'twin');},600);
+  setTimeout(()=>{const logs=getLogs();addChatMsg('ai',logs.length?`Hello! 👋 I see you have ${logs.length} consciousness entries. ${Math.random()>.5?'How are you feeling today?':'What\'s on your mind?'}`:"Welcome to Consciousness OS! 🧠 I'm your AI Digital Twin. Fill your first Daily Log and I'll start learning your patterns. What's your name?",'twin');},600);
   loadDailyTip();
   initNewFeatures_v7();
   initNewFeatures();
@@ -10432,6 +10457,29 @@ document.addEventListener('DOMContentLoaded',()=>{setTimeout(()=>{if(document.ge
           .catch(err => console.log('SW registration failed:', err));
       });
     }
-  </script>
+  
+async function loadScienceNews(){
+  const url = "https://api.rss2json.com/v1/api.json?rss_url=https://www.sciencedaily.com/rss/top/science.xml";
+  try {
+    const res  = await fetch(url + "?v=" + Date.now());
+    const data = await res.json();
+    const container = document.getElementById("scienceFeed");
+    if(!container) return;
+    if(!data.items || !data.items.length){ container.innerHTML='<div style="color:var(--text3);text-align:center;padding:12px">No science articles found.</div>'; return; }
+    container.innerHTML = data.items.slice(0,6).map(item=>`
+      <div class="news-card" style="background:var(--bg2);border-radius:12px;padding:12px;margin-bottom:8px;border:1px solid var(--border)">
+        <h3 style="font-size:13px;font-weight:700;color:var(--text);margin:0 0 6px">${item.title}</h3>
+        <p style="font-size:11px;color:var(--text2);margin:0 0 8px;line-height:1.5">${(item.description||'').replace(/<[^>]+>/g,'').slice(0,180)}</p>
+        <a href="${item.link}" target="_blank" rel="noopener" style="font-size:11px;color:var(--primary);font-weight:700;text-decoration:none">Read →</a>
+      </div>`).join('');
+    showToast('✅ Science feed refreshed!');
+  } catch(e) {
+    const container = document.getElementById("scienceFeed");
+    if(container) container.innerHTML=`<div style="color:var(--danger);text-align:center;padding:12px">⚠️ Feed error: ${e.message}</div>`;
+    showToast('❌ Science feed error');
+  }
+}
+
+</script>
 </body>
 </html>
