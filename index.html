@@ -5137,8 +5137,21 @@ ${ctx}`;
     });
     const d=await resp.json();
     if(d.error)throw new Error(d.error.message||'Groq error');
-    return d.choices?.[0]?.message?.content||getGenericAIAnswer(lower,ctx);
-  }catch(e){return getGenericAIAnswer(lower,ctx);}
+    return d.choices?.[0]?.message?.content||'⚠️ Empty response from AI — please try again.';
+  }catch(e){
+    // Retry with minimal payload
+    try {
+      const simple = await fetch('https://hidden-wildflower-3301.vikramsandhu90341.workers.dev',{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:400,temperature:0.8,
+          messages:[{role:'user',content:msg}]})
+      });
+      const sd=await simple.json();
+      return sd.choices?.[0]?.message?.content||'⚠️ AI returned empty response.';
+    }catch(e2){
+      return '⚠️ **AI temporarily offline.** Your Cloudflare Worker or Groq API may be down.\n\nTry:\n1. Refresh the page\n2. Check your internet connection\n3. Check [Groq status](https://status.groq.com)';
+    }
+  }
 }
 
 function getGenericAIAnswer(q,ctx=''){
@@ -6349,8 +6362,18 @@ Return ONLY the JSON array. No markdown. No explanation outside the array.`;
     const chains=JSON.parse(raw);
     el.innerHTML=`<div class="causal-chain"><div style="font-weight:700;font-size:14px;margin-bottom:12px">🔍 Causal Analysis: "${q}"</div>${chains.map(c=>`<div class="causal-step"><div class="causal-arrow">${c.arrow}</div><div class="causal-text"><strong>${c.node}</strong><br>${c.detail}</div></div>`).join('')}</div>`;
   }catch(err){
-    const chains=generateCausalChain(q);
-    el.innerHTML=`<div class="causal-chain"><div style="font-weight:700;font-size:14px;margin-bottom:12px">🔍 Causal Analysis: "${q}"</div>${chains.map(c=>`<div class="causal-step"><div class="causal-arrow">${c.arrow}</div><div class="causal-text"><strong>${c.node}</strong><br>${c.detail}</div></div>`).join('')}</div>`;
+    // Retry as plain-text causal analysis
+    try {
+      el.innerHTML=`<div style="font-size:12px;color:var(--text3);padding:8px">⏳ Retrying geo analysis...</div>`;
+      const retry = await askAI(
+        'You are an elite geopolitical and macroeconomic analyst. Analyze this query with deep causal chain thinking: "' + q + '". Give 4-5 key nodes: Root Cause → First-Order Effect → Second-Order Effect → Strategic Insight. Each node: one short title + 2 sentence explanation.',
+        'You are a Rothschild-level strategic analyst. Be specific, data-driven, non-generic.', 700
+      );
+      const formatted = retry.replace(/\n/g,'<br>').replace(/→/g,'<span style="color:var(--pink)">→</span>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');
+      el.innerHTML=`<div class="causal-chain"><div style="font-weight:700;font-size:14px;margin-bottom:12px">🔍 Causal Analysis: "${q}"</div><div style="font-size:13px;color:var(--text2);line-height:1.8">${formatted}</div></div>`;
+    } catch(e2) {
+      el.innerHTML=`<div class="causal-chain" style="border-color:var(--danger)"><div style="font-weight:700;margin-bottom:8px;color:var(--danger)">⚠️ Geo AI offline</div><div style="font-size:12px;color:var(--text3)">Worker unreachable. Check connection and retry.</div></div>`;
+    }
   }
 }
 function generateCausalChain(q){
@@ -6578,7 +6601,16 @@ Be specific, cite real concepts/researchers/experiments. No generic filler. 150-
     const text=await callGroqFast(prompt,'You are a brilliant scientist and science communicator. Be precise, specific, and mind-expanding.',500);
     el.innerHTML=`<div class="ai-insight-box"><div style="font-weight:700;margin-bottom:8px">⚡ Science AI: "${q}"</div><div style="font-size:13px;color:var(--text2);line-height:1.7">${text.replace(/\n/g,'<br>')}</div></div>`;
   }catch(err){
-    el.innerHTML=`<div class="ai-insight-box"><div style="font-weight:700;margin-bottom:8px">🔬 Science AI: "${q}"</div><div style="font-size:13px;color:var(--text2);line-height:1.7">${getScienceExplanation(q)}</div></div>`;
+    // Retry with simpler prompt before showing error
+    try {
+      const retry = await askAI(
+        'You are a frontier scientist. Explain concisely: ' + q,
+        'Be precise and specific. 100-150 words.', 400
+      );
+      el.innerHTML=`<div class="ai-insight-box"><div style="font-weight:700;margin-bottom:8px">🔬 Science AI: "${q}"</div><div style="font-size:13px;color:var(--text2);line-height:1.7">${retry.replace(/\n/g,'<br>')}</div></div>`;
+    } catch(e2) {
+      el.innerHTML=`<div class="ai-insight-box" style="border-color:var(--danger)"><div style="font-weight:700;margin-bottom:8px;color:var(--danger)">⚠️ Science AI offline</div><div style="font-size:12px;color:var(--text3)">Groq Worker unreachable. Check your internet connection or try again in a moment.</div></div>`;
+    }
   }
 }
 function getScienceExplanation(q){
@@ -10521,24 +10553,25 @@ async function loadScienceNews(){
 // ── askAI / runAI — General-purpose AI via Groq Worker ────────────────────
 // Routes through the same Cloudflare Worker as all other AI calls.
 // Key never exposed in source — lives only in the Worker secret.
-async function askAI(prompt, systemPrompt) {
-  systemPrompt = systemPrompt || 'You are a brilliant, precise AI assistant inside Consciousness OS. Be specific and actionable.';
-  const resp = await fetch('https://hidden-wildflower-3301.vikramsandhu90341.workers.dev', {
+async function askAI(prompt, systemPrompt, maxTok) {
+  // Single entry point for ALL AI calls → Cloudflare Worker → Groq llama-3.3-70b-versatile
+  systemPrompt = systemPrompt || 'You are an advanced strategic intelligence AI inside Consciousness OS. Be precise, specific, and data-driven.';
+  const res = await fetch('https://hidden-wildflower-3301.vikramsandhu90341.workers.dev', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       model: 'llama-3.3-70b-versatile',
-      max_tokens: 900,
-      temperature: 0.8,
+      max_tokens: maxTok || 900,
+      temperature: 0.85,
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user',   content: prompt }
       ]
     })
   });
-  const d = await resp.json();
-  if (d.error) throw new Error(d.error.message || 'Groq Worker error');
-  return d.choices?.[0]?.message?.content || 'No response';
+  const data = await res.json();
+  if (data.error) throw new Error(data.error.message || 'Groq Worker error');
+  return data.choices?.[0]?.message?.content || 'No response';
 }
 
 async function runAI(inputSelector, outputId, systemPrompt) {
