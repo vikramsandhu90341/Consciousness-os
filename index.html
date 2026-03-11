@@ -2372,9 +2372,11 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
       <div class="ai-ask-row">
         <input type="text" class="form-input" id="worldAskInput" placeholder="Ask about any geopolitical or economic force...">
         <button class="btn btn-primary btn-sm" onclick="askWorldAI()">🔍 Analyze</button>
+        <button class="btn btn-secondary btn-sm" onclick="runAI('#worldAskInput','aiOutput','You are an elite geopolitical and macroeconomic analyst. Give sharp, specific, second-order-effects analysis. No fluff.')" title="Deep analysis via Groq" style="font-size:11px">🤖 Deep</button>
       </div>
     </div>
     <div id="worldAIResult" style="margin-top:10px"></div>
+    <div id="aiOutput" style="margin-top:6px"></div>
   </div>
 
   <!-- Geopolitics Panel -->
@@ -10477,6 +10479,48 @@ async function loadScienceNews(){
     const container = document.getElementById("scienceFeed");
     if(container) container.innerHTML=`<div style="color:var(--danger);text-align:center;padding:12px">⚠️ Feed error: ${e.message}</div>`;
     showToast('❌ Science feed error');
+  }
+}
+
+
+// ── askAI / runAI — General-purpose AI via Groq Worker ────────────────────
+// Routes through the same Cloudflare Worker as all other AI calls.
+// Key never exposed in source — lives only in the Worker secret.
+async function askAI(prompt, systemPrompt) {
+  systemPrompt = systemPrompt || 'You are a brilliant, precise AI assistant inside Consciousness OS. Be specific and actionable.';
+  const resp = await fetch('https://hidden-wildflower-3301.vikramsandhu90341.workers.dev', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'llama3-70b-8192',
+      max_tokens: 900,
+      temperature: 0.8,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user',   content: prompt }
+      ]
+    })
+  });
+  const d = await resp.json();
+  if (d.error) throw new Error(d.error.message || 'Groq Worker error');
+  return d.choices?.[0]?.message?.content || 'No response';
+}
+
+async function runAI(inputSelector, outputId, systemPrompt) {
+  const inputEl = inputSelector ? document.querySelector(inputSelector) : null;
+  const prompt  = (inputEl ? inputEl.value : '').trim();
+  const outEl   = document.getElementById(outputId || 'aiOutput');
+  if (!prompt) { showToast('Enter a question first'); return; }
+  if (outEl) outEl.innerHTML = '<div style="color:var(--text3);font-size:12px;padding:8px">⏳ Groq is thinking...</div>';
+  try {
+    const answer = await askAI(prompt, systemPrompt);
+    if (outEl) outEl.innerHTML =
+      `<div style="background:var(--bg2);border-radius:12px;padding:12px;border:1px solid var(--border);
+        font-size:13px;color:var(--text);line-height:1.6;white-space:pre-wrap">${answer}</div>`;
+    showToast('✅ AI response ready');
+  } catch(e) {
+    if (outEl) outEl.innerHTML = `<div style="color:var(--danger);font-size:12px;padding:8px">❌ ${e.message}</div>`;
+    showToast('❌ AI error: ' + e.message.slice(0,60));
   }
 }
 
