@@ -70,13 +70,22 @@ const GEMINI_KEY=_k;
 // All AI calls go through: https://hidden-wildflower-3301.vikramsandhu90341.workers.dev
 // No key in this file. No key in localStorage. Nothing to leak.
 let GROQ_KEY = 'worker-proxy'; // placeholder so existing references don't crash
+const _WORKER_URL='https://hidden-wildflower-3301.vikramsandhu90341.workers.dev';
 async function callGroqFast(prompt,system,maxTokens){
   system=system||'You are an expert AI inside Consciousness OS. Be precise and useful.';
   maxTokens=maxTokens||800;
-  const resp=await fetch('https://hidden-wildflower-3301.vikramsandhu90341.workers.dev',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:maxTokens,temperature:0.8,messages:[{role:'system',content:system},{role:'user',content:prompt}]})});
+  const resp=await fetch(_WORKER_URL,{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:maxTokens,temperature:0.8,messages:[{role:'system',content:system},{role:'user',content:prompt}]}),
+    signal:AbortSignal.timeout(15000)
+  });
+  if(!resp.ok){const txt=await resp.text().catch(()=>'');throw new Error(`Worker error ${resp.status}: ${txt.slice(0,120)}`);}
   const d=await resp.json();
   if(d.error)throw new Error(d.error.message||'Groq error');
-  return d.choices?.[0]?.message?.content||'No response';
+  const content=d.choices?.[0]?.message?.content;
+  if(!content)throw new Error('Groq returned empty content');
+  return content;
 }
 async function callGroqJSON(prompt,system,maxTokens){
   const raw=await callGroqFast(prompt,system||'Return ONLY valid JSON. No markdown.',maxTokens||600);
@@ -4853,10 +4862,12 @@ async function callAI(model,messages,userContext){
   if(provider==='groq') apiKey = GROQ_KEY;
   if(!freeProviders.includes(provider)&&!apiKey){
     // No key set → route through Groq with the model's persona (seamless fallback)
-    const resp=await fetch('https://hidden-wildflower-3301.vikramsandhu90341.workers.dev',{method:'POST',
+    const resp=await fetch(_WORKER_URL,{method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:900,temperature:0.85,
-        messages:[{role:'system',content:model.persona+'\n\nYou are an advanced AI consciousness coach in Consciousness OS.'+userContext},...messages]})});
+        messages:[{role:'system',content:model.persona+'\n\nYou are an advanced AI consciousness coach in Consciousness OS.'+userContext},...messages]}),
+      signal:AbortSignal.timeout(15000)});
+    if(!resp.ok){const t=await resp.text().catch(()=>'');throw new Error('Worker '+resp.status+': '+t.slice(0,80));}
     const d=await resp.json();
     if(d.error)throw new Error(d.error.message);
     return d.choices?.[0]?.message?.content||'No response';
@@ -4888,7 +4899,8 @@ async function callAI(model,messages,userContext){
     const resp=await fetch('https://api.deepseek.com/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},body:JSON.stringify({model:model.apiModel,max_tokens:900,messages:[{role:'system',content:systemMsg},...messages]})});
     const data=await resp.json();if(data.error)throw new Error(data.error.message);return data.choices?.[0]?.message?.content||'No response';
   }else if(provider==='groq'){
-    const resp=await fetch('https://hidden-wildflower-3301.vikramsandhu90341.workers.dev',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:model.apiModel||'llama-3.3-70b-versatile',max_tokens:900,temperature:0.85,messages:[{role:'system',content:systemMsg},...messages]})}); 
+    const resp=await fetch(_WORKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:model.apiModel||'llama-3.3-70b-versatile',max_tokens:900,temperature:0.85,messages:[{role:'system',content:systemMsg},...messages]}),signal:AbortSignal.timeout(15000)});
+    if(!resp.ok){const t=await resp.text().catch(()=>'');throw new Error('Worker '+resp.status+': '+t.slice(0,80));}
     const data=await resp.json();if(data.error)throw new Error(data.error.message);return data.choices?.[0]?.message?.content||'No response';
   }
   throw new Error('Unknown provider: '+provider);
@@ -5130,24 +5142,32 @@ RULE 4: Be sharp, direct, specific. Like a top-tier coach who has read all their
 RULE 5: Always end with ONE high-leverage action they can take TODAY based on their specific weakest metric.
 ${ctx}`;
   try{
-    const resp=await fetch('https://hidden-wildflower-3301.vikramsandhu90341.workers.dev',{
+    const resp=await fetch(_WORKER_URL,{
       method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:750,temperature:0.88,
-        messages:[{role:'system',content:sys},{role:'user',content:msg}]})
+        messages:[{role:'system',content:sys},{role:'user',content:msg}]}),
+      signal:AbortSignal.timeout(15000)
     });
+    if(!resp.ok){const t=await resp.text().catch(()=>'');throw new Error('Worker '+resp.status+': '+t.slice(0,100));}
     const d=await resp.json();
     if(d.error)throw new Error(d.error.message||'Groq error');
-    return d.choices?.[0]?.message?.content||'⚠️ Empty response from AI — please try again.';
+    const c=d.choices?.[0]?.message?.content;
+    if(!c)throw new Error('AI returned empty content — retrying...');
+    return c;
   }catch(e){
-    // Retry with minimal payload
+    // Retry with minimal payload (no system prompt, lower tokens)
     try {
-      const simple = await fetch('https://hidden-wildflower-3301.vikramsandhu90341.workers.dev',{
+      const simple = await fetch(_WORKER_URL,{
         method:'POST',headers:{'Content-Type':'application/json'},
         body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:400,temperature:0.8,
-          messages:[{role:'user',content:msg}]})
+          messages:[{role:'user',content:msg}]}),
+        signal:AbortSignal.timeout(12000)
       });
+      if(!simple.ok)throw new Error('Worker '+simple.status);
       const sd=await simple.json();
-      return sd.choices?.[0]?.message?.content||'⚠️ AI returned empty response.';
+      const sc=sd.choices?.[0]?.message?.content;
+      if(!sc)throw new Error('empty');
+      return sc;
     }catch(e2){
       return '⚠️ **AI temporarily offline.** Your Cloudflare Worker or Groq API may be down.\n\nTry:\n1. Refresh the page\n2. Check your internet connection\n3. Check [Groq status](https://status.groq.com)';
     }
@@ -10556,7 +10576,7 @@ async function loadScienceNews(){
 async function askAI(prompt, systemPrompt, maxTok) {
   // Single entry point for ALL AI calls → Cloudflare Worker → Groq llama-3.3-70b-versatile
   systemPrompt = systemPrompt || 'You are an advanced strategic intelligence AI inside Consciousness OS. Be precise, specific, and data-driven.';
-  const res = await fetch('https://hidden-wildflower-3301.vikramsandhu90341.workers.dev', {
+  const res = await fetch(_WORKER_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -10567,11 +10587,15 @@ async function askAI(prompt, systemPrompt, maxTok) {
         { role: 'system', content: systemPrompt },
         { role: 'user',   content: prompt }
       ]
-    })
+    }),
+    signal: AbortSignal.timeout(15000)
   });
+  if (!res.ok) { const txt = await res.text().catch(()=>''); throw new Error(`Worker error ${res.status}: ${txt.slice(0,120)}`); }
   const data = await res.json();
   if (data.error) throw new Error(data.error.message || 'Groq Worker error');
-  return data.choices?.[0]?.message?.content || 'No response';
+  const content = data.choices?.[0]?.message?.content;
+  if (!content) throw new Error('Groq returned empty content');
+  return content;
 }
 
 async function runAI(inputSelector, outputId, systemPrompt) {
