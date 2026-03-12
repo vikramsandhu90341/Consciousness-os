@@ -93,18 +93,55 @@ async function callGroqJSON(prompt,system,maxTokens){
 }
 
 // ─── AUTO-LOAD FIRESTORE DATA WHEN SESSION RESTORES ─────────
-auth.onAuthStateChanged(function(fbUser){
-  if(fbUser){
+// ── AUTH STATE + RETURNING USER LOGIC ─────────────────────────────────────
+(function initAuthState() {
+  const hasAccount = !!localStorage.getItem('cos_has_account');
+  const overlay    = document.getElementById('loginOverlay');
+  const restoreUI  = document.getElementById('sessionRestoreUI');
+  const formUI     = document.getElementById('loginFormUI');
+
+  if (hasAccount && overlay && restoreUI && formUI) {
+    // Returning user: show spinner, hide form, wait for Firebase
+    restoreUI.style.display = '';
+    formUI.style.display    = 'none';
+    overlay.style.display   = 'flex';
+    // Safety timeout — if Firebase takes >7s, fall back to sign-in form
+    var _authTimeout = setTimeout(function() {
+      if (overlay.style.display !== 'none') {
+        restoreUI.style.display = 'none';
+        formUI.style.display    = '';
+        // For returning users, pre-select Sign In tab (not Create Account)
+        var tabs = document.querySelectorAll('.login-tab-btn');
+        if (tabs[0]) { tabs[0].click(); }
+      }
+    }, 7000);
+    auth.onAuthStateChanged(function(fbUser) {
+      clearTimeout(_authTimeout);
+      _handleAuthUser(fbUser);
+    });
+  } else {
+    // New visitor: show form immediately, no spinner needed
+    if (overlay)   overlay.style.display = 'flex';
+    if (restoreUI) restoreUI.style.display = 'none';
+    if (formUI)    formUI.style.display = '';
+    auth.onAuthStateChanged(_handleAuthUser);
+  }
+})();
+
+function _handleAuthUser(fbUser) {
+  const overlay = document.getElementById('loginOverlay');
+  const restoreUI = document.getElementById('sessionRestoreUI');
+  const formUI    = document.getElementById('loginFormUI');
+  if (fbUser) {
     dbg('info', '🔐 Auth state: signed in as ' + (fbUser.email||fbUser.uid));
-    // ── Hide login overlay — Firebase confirmed real authenticated session ──
-    const overlay = document.getElementById('loginOverlay');
-    if(overlay) overlay.style.display = 'none';
-    if(typeof loadLogsFromFirestore === 'function') loadLogsFromFirestore(fbUser.uid);
-    if(typeof loadDreamsFromFirestore === 'function') loadDreamsFromFirestore(fbUser.uid);
+    // Hide login overlay — Firebase confirmed real session
+    if (overlay)   overlay.style.display = 'none';
+    localStorage.setItem('cos_has_account', '1');
+    if (typeof loadLogsFromFirestore   === 'function') loadLogsFromFirestore(fbUser.uid);
+    if (typeof loadDreamsFromFirestore === 'function') loadDreamsFromFirestore(fbUser.uid);
     const s = document.getElementById('accountStatus');
-    if(s) s.textContent = '✅ Signed in · Cloud sync active';
-    // Restore local profile from Firebase user if needed
-    if(typeof getCurrentUser === 'function' && !getCurrentUser()){
+    if (s) s.textContent = '✅ Signed in · Cloud sync active';
+    if (typeof getCurrentUser === 'function' && !getCurrentUser()) {
       const profile = {
         id: fbUser.uid,
         name: fbUser.displayName || 'User',
@@ -114,23 +151,23 @@ auth.onAuthStateChanged(function(fbUser){
         isFirebase: true,
         created: new Date().toISOString()
       };
-      if(typeof getUsers === 'function'){
+      if (typeof getUsers === 'function') {
         const users = getUsers();
-        if(!users.find(u=>u.id===fbUser.uid)){ users.push(profile); if(typeof saveUsers==='function') saveUsers(users); }
+        if (!users.find(u => u.id === fbUser.uid)) { users.push(profile); if (typeof saveUsers === 'function') saveUsers(users); }
       }
-      if(typeof setCurrentUser === 'function') setCurrentUser(fbUser.uid);
-      if(typeof buildProfileBar === 'function') setTimeout(buildProfileBar, 500);
+      if (typeof setCurrentUser  === 'function') setCurrentUser(fbUser.uid);
+      if (typeof buildProfileBar === 'function') setTimeout(buildProfileBar, 500);
     }
-  }else{
+  } else {
     dbg('log', '🔐 Auth state: signed out — showing login screen');
-    // ── Show login — no Firebase session; never trust localStorage alone ──
-    const overlay = document.getElementById('loginOverlay');
-    if(overlay) overlay.style.display = 'flex';
-    // Clear any stale localStorage user so UI stays blank
-    if(typeof setCurrentUser === 'function') try{ setCurrentUser(null); }catch(e){}
-    if(typeof buildProfileBar === 'function') setTimeout(buildProfileBar, 300);
+    // Show login form (NOT spinner)
+    if (overlay)   overlay.style.display = 'flex';
+    if (restoreUI) restoreUI.style.display = 'none';
+    if (formUI)    formUI.style.display = '';
+    if (typeof setCurrentUser  === 'function') try { setCurrentUser(null); } catch(e) {}
+    if (typeof buildProfileBar === 'function') setTimeout(buildProfileBar, 300);
   }
-});
+}
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -1094,6 +1131,16 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
       <div style="font-size:12px;color:#888;margin-top:4px">Your mind. Your data. Your evolution.</div>
     </div>
 
+    <!-- SESSION RESTORE SPINNER: shown for returning users while Firebase resolves -->
+    <div id="sessionRestoreUI" style="display:none;text-align:center;padding:24px 0">
+      <div style="width:36px;height:36px;border:3px solid rgba(124,58,237,.2);border-top-color:#7c3aed;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 14px"></div>
+      <div style="font-size:14px;font-weight:700;color:#7c3aed;margin-bottom:6px">Restoring your session…</div>
+      <div style="font-size:12px;color:#aaa;margin-bottom:18px">Connecting to Consciousness OS</div>
+      <button onclick="document.getElementById('sessionRestoreUI').style.display='none';document.getElementById('loginFormUI').style.display=''" style="background:none;border:none;color:#aaa;font-size:12px;cursor:pointer;text-decoration:underline">Sign in manually instead</button>
+    </div>
+
+    <!-- LOGIN FORM: hidden for returning users, shown for new users -->
+    <div id="loginFormUI">
     <div class="login-tabs" id="loginTabs">
       <button class="login-tab-btn active" onclick="switchLoginTab('login',this)">Sign In</button>
       <button class="login-tab-btn" onclick="switchLoginTab('register',this)">Create Account</button>
@@ -1183,6 +1230,7 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
 
     <div id="loginMsg" style="margin-top:10px;font-size:13px;text-align:center;min-height:20px;color:var(--danger)"></div>
     <div style="text-align:center;margin-top:12px;font-size:11px;color:#aaa">By continuing, you agree to our <a href="#" onclick="openLegal('terms')" style="color:#7c3aed">Terms</a> & <a href="#" onclick="openLegal('privacy')" style="color:#7c3aed">Privacy Policy</a></div>
+    </div><!-- /loginFormUI -->
   </div>
 </div>
 
@@ -8009,8 +8057,13 @@ function closeLoginOverlay(){
   document.getElementById('loginOverlay').style.display='none';
 }
 function openLoginOverlay(preferTab){
+  // Always show the form (not the spinner) when manually opening
+  const restoreUI = document.getElementById('sessionRestoreUI');
+  const formUI    = document.getElementById('loginFormUI');
+  if (restoreUI) restoreUI.style.display = 'none';
+  if (formUI)    formUI.style.display    = '';
   document.getElementById('loginOverlay').style.display='flex';
-  // Default to 'register' for first-time users, 'login' otherwise
+  // Default to 'login' for returning users, 'register' for first-timers
   const tab = preferTab || (localStorage.getItem('cos_has_account') ? 'login' : 'register');
   const btn = document.querySelector(`.login-tab-btn[onclick*="'${tab}'"]`);
   if(btn) switchLoginTab(tab, btn);
@@ -10542,7 +10595,22 @@ document.addEventListener('DOMContentLoaded',()=>{setTimeout(()=>{if(document.ge
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('./service-worker.js')
-          .then(reg => console.log('✅ SW registered:', reg.scope))
+          .then(reg => {
+            console.log('✅ SW registered:', reg.scope);
+            reg.update(); // check for update immediately on load
+            setInterval(() => reg.update(), 60000); // re-check every 60s
+            // When a new SW is waiting, reload to activate it
+            reg.addEventListener('updatefound', () => {
+              const nw = reg.installing;
+              if (!nw) return;
+              nw.addEventListener('statechange', () => {
+                if (nw.state === 'installed' && navigator.serviceWorker.controller) {
+                  console.log('[SW] New version ready — reloading…');
+                  window.location.reload();
+                }
+              });
+            });
+          })
           .catch(err => console.log('SW registration failed:', err));
       });
     }
