@@ -6118,21 +6118,34 @@ const TRADING_CONCEPTS={
 
 function buildTradingTicker(){
   const el=document.getElementById('tradingTicker');
-  if(!el)return;
-  // Simulate real-time random variation
-  const ticks=LIVE_TICKERS.map(t=>{
-    const jitter=(Math.random()-0.48)*0.5;
-    const newChg=(t.chg+jitter).toFixed(2);
-    const up=parseFloat(newChg)>=0;
-    return`<div style="flex:0 0 auto;background:var(--bg3);border:1px solid ${up?'rgba(16,185,129,.3)':'rgba(239,68,68,.3)'};border-radius:10px;padding:8px 12px;text-align:center;min-width:80px">
-      <div style="font-size:11px;font-weight:800;color:var(--text)">${t.sym}</div>
-      <div style="font-size:12px;font-weight:700;color:var(--primary)">${t.sym==='BTC'?'$'+t.price.toLocaleString():t.price>1000?'$'+t.price.toLocaleString():'$'+t.price}</div>
-      <div style="font-size:10px;font-weight:700;color:${up?'var(--success)':'var(--danger)'}">${up?'+':''}${newChg}%</div>
-    </div>`;
-  });
-  el.innerHTML=ticks.join('');
+  if(!el||document.hidden)return;
   const tEl=document.getElementById('tickerTime');
   if(tEl)tEl.textContent=new Date().toLocaleTimeString('en',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  // PERF: update text in-place on subsequent calls, skip full innerHTML rewrite
+  const cards=el.querySelectorAll('[data-ticker]');
+  if(cards.length===LIVE_TICKERS.length){
+    cards.forEach((card,i)=>{
+      const t=LIVE_TICKERS[i];
+      const jitter=(Math.random()-0.48)*0.5;
+      const newChg=(t.chg+jitter).toFixed(2);
+      const up=parseFloat(newChg)>=0;
+      const priceEl=card.querySelector('.tk-price');
+      const chgEl=card.querySelector('.tk-chg');
+      if(priceEl)priceEl.textContent=t.sym==='BTC'?'$'+t.price.toLocaleString():t.price>1000?'$'+t.price.toLocaleString():'$'+t.price;
+      if(chgEl){chgEl.textContent=(up?'+':'')+newChg+'%';chgEl.style.color=up?'var(--success)':'var(--danger)';}
+      card.style.borderColor=up?'rgba(16,185,129,.3)':'rgba(239,68,68,.3)';
+    });
+    return;
+  }
+  // First render only
+  el.innerHTML=LIVE_TICKERS.map(t=>{
+    const up=t.chg>=0;
+    return`<div data-ticker="${t.sym}" style="flex:0 0 auto;background:var(--bg3);border:1px solid ${up?'rgba(16,185,129,.3)':'rgba(239,68,68,.3)'};border-radius:10px;padding:8px 12px;text-align:center;min-width:80px">
+      <div style="font-size:11px;font-weight:800;color:var(--text)">${t.sym}</div>
+      <div class="tk-price" style="font-size:12px;font-weight:700;color:var(--primary)">${t.sym==='BTC'?'$'+t.price.toLocaleString():t.price>1000?'$'+t.price.toLocaleString():'$'+t.price}</div>
+      <div class="tk-chg" style="font-size:10px;font-weight:700;color:${up?'var(--success)':'var(--danger)'}">${up?'+':''}${t.chg.toFixed(2)}%</div>
+    </div>`;
+  }).join('');
 }
 
 function buildMktSentiment(){
@@ -7347,7 +7360,8 @@ function initPassiveSensing(){
     passiveData.lastInteraction=Date.now();
   },{passive:true});
   // Update passive score every 30s
-  setInterval(computePassiveCognition,30000);
+  // PERF: passive cognition every 90s (was 30s), pauses when hidden
+  setInterval(function(){ if(!document.hidden) computePassiveCognition(); },90000);
   computePassiveCognition();
 }
 function computePassiveCognition(){
@@ -9052,7 +9066,11 @@ function init(){
   setInterval(checkAlarms,30000);
   loadCSE();
   loadTradeLog();
-  setInterval(buildTradingTicker,5000);
+  // PERF: Ticker only runs every 60s (was 5s) and only when World tab is active
+  setInterval(function(){
+    const worldTab = document.getElementById('tab-world');
+    if(worldTab && worldTab.classList.contains('active') && !document.hidden) buildTradingTicker();
+  }, 60000);
   const sl=localStorage.getItem('cos_lang')||'en';curLang=sl;
   try{document.getElementById('langSel').value=sl;}catch(e){}try{document.getElementById('settingLang').value=sl;}catch(e){}try{document.getElementById('langSelMobile').value=sl;}catch(e){}
   setTimeout(()=>{const logs=getLogs();addChatMsg('ai',logs.length?`Hello! 👋 I see you have ${logs.length} consciousness entries. ${Math.random()>.5?'How are you feeling today?':'What\'s on your mind?'}`:"Welcome to Consciousness OS! 🧠 I'm your AI Digital Twin. Fill your first Daily Log and I'll start learning your patterns. What's your name?",'twin');},600);
@@ -10695,6 +10713,43 @@ function getThumbnail(url){
   } catch(e) { return ''; }
 }
 
+</script>
+
+<script>
+// ── PAGE VISIBILITY: pause all heavy work when screen turns off / app backgrounded ──
+(function() {
+  // Freeze / resume on visibility change
+  document.addEventListener('visibilitychange', function() {
+    if (document.hidden) {
+      // Page hidden: stop any running immersive timer, audio, animations
+      if (typeof stopImmersive === 'function') try { stopImmersive(); } catch(e) {}
+      if (typeof stopBrainwaveAudio === 'function') try { stopBrainwaveAudio(); } catch(e) {}
+      // Suspend all CSS animations to free GPU
+      document.documentElement.style.setProperty('--anim-play-state', 'paused');
+    } else {
+      // Page visible again: resume
+      document.documentElement.style.setProperty('--anim-play-state', 'running');
+    }
+  });
+
+  // Aggressive memory cleanup: clear large caches if RAM is tight
+  if ('memory' in performance) {
+    setInterval(function() {
+      const mem = performance.memory;
+      // If using >200MB JS heap, clear non-critical caches
+      if (mem.usedJSHeapSize > 200 * 1024 * 1024) {
+        try {
+          // Clear allorigins RSS caches
+          ['cos_sci_cache','cos_world_cache','cos_mkt_cache'].forEach(k => {
+            const v = localStorage.getItem(k);
+            // Only clear if older than 5 min
+            if (v) { try { const d = JSON.parse(v); if (Date.now() - d.ts > 300000) localStorage.removeItem(k); } catch(e){} }
+          });
+        } catch(e) {}
+      }
+    }, 120000); // check every 2 min
+  }
+})();
 </script>
 </body>
 </html>
