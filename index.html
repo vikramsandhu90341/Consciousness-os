@@ -70,22 +70,13 @@ const GEMINI_KEY=_k;
 // All AI calls go through: https://hidden-wildflower-3301.vikramsandhu90341.workers.dev
 // No key in this file. No key in localStorage. Nothing to leak.
 let GROQ_KEY = 'worker-proxy'; // placeholder so existing references don't crash
-const _WORKER_URL='https://hidden-wildflower-3301.vikramsandhu90341.workers.dev';
 async function callGroqFast(prompt,system,maxTokens){
   system=system||'You are an expert AI inside Consciousness OS. Be precise and useful.';
   maxTokens=maxTokens||800;
-  const resp=await fetch(_WORKER_URL,{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:maxTokens,temperature:0.8,messages:[{role:'system',content:system},{role:'user',content:prompt}]}),
-    signal:AbortSignal.timeout(15000)
-  });
-  if(!resp.ok){const txt=await resp.text().catch(()=>'');throw new Error(`Worker error ${resp.status}: ${txt.slice(0,120)}`);}
+  const resp=await fetch('https://hidden-wildflower-3301.vikramsandhu90341.workers.dev',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:maxTokens,temperature:0.8,messages:[{role:'system',content:system},{role:'user',content:prompt}]})});
   const d=await resp.json();
   if(d.error)throw new Error(d.error.message||'Groq error');
-  const content=d.choices?.[0]?.message?.content;
-  if(!content)throw new Error('Groq returned empty content');
-  return content;
+  return d.choices?.[0]?.message?.content||'No response';
 }
 async function callGroqJSON(prompt,system,maxTokens){
   const raw=await callGroqFast(prompt,system||'Return ONLY valid JSON. No markdown.',maxTokens||600);
@@ -93,55 +84,18 @@ async function callGroqJSON(prompt,system,maxTokens){
 }
 
 // ─── AUTO-LOAD FIRESTORE DATA WHEN SESSION RESTORES ─────────
-// ── AUTH STATE + RETURNING USER LOGIC ─────────────────────────────────────
-(function initAuthState() {
-  const hasAccount = !!localStorage.getItem('cos_has_account');
-  const overlay    = document.getElementById('loginOverlay');
-  const restoreUI  = document.getElementById('sessionRestoreUI');
-  const formUI     = document.getElementById('loginFormUI');
-
-  if (hasAccount && overlay && restoreUI && formUI) {
-    // Returning user: show spinner, hide form, wait for Firebase
-    restoreUI.style.display = '';
-    formUI.style.display    = 'none';
-    overlay.style.display   = 'flex';
-    // Safety timeout — if Firebase takes >7s, fall back to sign-in form
-    var _authTimeout = setTimeout(function() {
-      if (overlay.style.display !== 'none') {
-        restoreUI.style.display = 'none';
-        formUI.style.display    = '';
-        // For returning users, pre-select Sign In tab (not Create Account)
-        var tabs = document.querySelectorAll('.login-tab-btn');
-        if (tabs[0]) { tabs[0].click(); }
-      }
-    }, 7000);
-    auth.onAuthStateChanged(function(fbUser) {
-      clearTimeout(_authTimeout);
-      _handleAuthUser(fbUser);
-    });
-  } else {
-    // New visitor: show form immediately, no spinner needed
-    if (overlay)   overlay.style.display = 'flex';
-    if (restoreUI) restoreUI.style.display = 'none';
-    if (formUI)    formUI.style.display = '';
-    auth.onAuthStateChanged(_handleAuthUser);
-  }
-})();
-
-function _handleAuthUser(fbUser) {
-  const overlay = document.getElementById('loginOverlay');
-  const restoreUI = document.getElementById('sessionRestoreUI');
-  const formUI    = document.getElementById('loginFormUI');
-  if (fbUser) {
+auth.onAuthStateChanged(function(fbUser){
+  if(fbUser){
     dbg('info', '🔐 Auth state: signed in as ' + (fbUser.email||fbUser.uid));
-    // Hide login overlay — Firebase confirmed real session
-    if (overlay)   overlay.style.display = 'none';
-    localStorage.setItem('cos_has_account', '1');
-    if (typeof loadLogsFromFirestore   === 'function') loadLogsFromFirestore(fbUser.uid);
-    if (typeof loadDreamsFromFirestore === 'function') loadDreamsFromFirestore(fbUser.uid);
+    // ── Hide login overlay — Firebase confirmed real authenticated session ──
+    const overlay = document.getElementById('loginOverlay');
+    if(overlay) overlay.style.display = 'none';
+    if(typeof loadLogsFromFirestore === 'function') loadLogsFromFirestore(fbUser.uid);
+    if(typeof loadDreamsFromFirestore === 'function') loadDreamsFromFirestore(fbUser.uid);
     const s = document.getElementById('accountStatus');
-    if (s) s.textContent = '✅ Signed in · Cloud sync active';
-    if (typeof getCurrentUser === 'function' && !getCurrentUser()) {
+    if(s) s.textContent = '✅ Signed in · Cloud sync active';
+    // Restore local profile from Firebase user if needed
+    if(typeof getCurrentUser === 'function' && !getCurrentUser()){
       const profile = {
         id: fbUser.uid,
         name: fbUser.displayName || 'User',
@@ -151,23 +105,23 @@ function _handleAuthUser(fbUser) {
         isFirebase: true,
         created: new Date().toISOString()
       };
-      if (typeof getUsers === 'function') {
+      if(typeof getUsers === 'function'){
         const users = getUsers();
-        if (!users.find(u => u.id === fbUser.uid)) { users.push(profile); if (typeof saveUsers === 'function') saveUsers(users); }
+        if(!users.find(u=>u.id===fbUser.uid)){ users.push(profile); if(typeof saveUsers==='function') saveUsers(users); }
       }
-      if (typeof setCurrentUser  === 'function') setCurrentUser(fbUser.uid);
-      if (typeof buildProfileBar === 'function') setTimeout(buildProfileBar, 500);
+      if(typeof setCurrentUser === 'function') setCurrentUser(fbUser.uid);
+      if(typeof buildProfileBar === 'function') setTimeout(buildProfileBar, 500);
     }
-  } else {
+  }else{
     dbg('log', '🔐 Auth state: signed out — showing login screen');
-    // Show login form (NOT spinner)
-    if (overlay)   overlay.style.display = 'flex';
-    if (restoreUI) restoreUI.style.display = 'none';
-    if (formUI)    formUI.style.display = '';
-    if (typeof setCurrentUser  === 'function') try { setCurrentUser(null); } catch(e) {}
-    if (typeof buildProfileBar === 'function') setTimeout(buildProfileBar, 300);
+    // ── Show login — no Firebase session; never trust localStorage alone ──
+    const overlay = document.getElementById('loginOverlay');
+    if(overlay) overlay.style.display = 'flex';
+    // Clear any stale localStorage user so UI stays blank
+    if(typeof setCurrentUser === 'function') try{ setCurrentUser(null); }catch(e){}
+    if(typeof buildProfileBar === 'function') setTimeout(buildProfileBar, 300);
   }
-}
+});
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -1131,16 +1085,6 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
       <div style="font-size:12px;color:#888;margin-top:4px">Your mind. Your data. Your evolution.</div>
     </div>
 
-    <!-- SESSION RESTORE SPINNER: shown for returning users while Firebase resolves -->
-    <div id="sessionRestoreUI" style="display:none;text-align:center;padding:24px 0">
-      <div style="width:36px;height:36px;border:3px solid rgba(124,58,237,.2);border-top-color:#7c3aed;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 14px"></div>
-      <div style="font-size:14px;font-weight:700;color:#7c3aed;margin-bottom:6px">Restoring your session…</div>
-      <div style="font-size:12px;color:#aaa;margin-bottom:18px">Connecting to Consciousness OS</div>
-      <button onclick="document.getElementById('sessionRestoreUI').style.display='none';document.getElementById('loginFormUI').style.display=''" style="background:none;border:none;color:#aaa;font-size:12px;cursor:pointer;text-decoration:underline">Sign in manually instead</button>
-    </div>
-
-    <!-- LOGIN FORM: hidden for returning users, shown for new users -->
-    <div id="loginFormUI">
     <div class="login-tabs" id="loginTabs">
       <button class="login-tab-btn active" onclick="switchLoginTab('login',this)">Sign In</button>
       <button class="login-tab-btn" onclick="switchLoginTab('register',this)">Create Account</button>
@@ -1230,7 +1174,6 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
 
     <div id="loginMsg" style="margin-top:10px;font-size:13px;text-align:center;min-height:20px;color:var(--danger)"></div>
     <div style="text-align:center;margin-top:12px;font-size:11px;color:#aaa">By continuing, you agree to our <a href="#" onclick="openLegal('terms')" style="color:#7c3aed">Terms</a> & <a href="#" onclick="openLegal('privacy')" style="color:#7c3aed">Privacy Policy</a></div>
-    </div><!-- /loginFormUI -->
   </div>
 </div>
 
@@ -4910,12 +4853,10 @@ async function callAI(model,messages,userContext){
   if(provider==='groq') apiKey = GROQ_KEY;
   if(!freeProviders.includes(provider)&&!apiKey){
     // No key set → route through Groq with the model's persona (seamless fallback)
-    const resp=await fetch(_WORKER_URL,{method:'POST',
+    const resp=await fetch('https://hidden-wildflower-3301.vikramsandhu90341.workers.dev',{method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:900,temperature:0.85,
-        messages:[{role:'system',content:model.persona+'\n\nYou are an advanced AI consciousness coach in Consciousness OS.'+userContext},...messages]}),
-      signal:AbortSignal.timeout(15000)});
-    if(!resp.ok){const t=await resp.text().catch(()=>'');throw new Error('Worker '+resp.status+': '+t.slice(0,80));}
+        messages:[{role:'system',content:model.persona+'\n\nYou are an advanced AI consciousness coach in Consciousness OS.'+userContext},...messages]})});
     const d=await resp.json();
     if(d.error)throw new Error(d.error.message);
     return d.choices?.[0]?.message?.content||'No response';
@@ -4947,8 +4888,7 @@ async function callAI(model,messages,userContext){
     const resp=await fetch('https://api.deepseek.com/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},body:JSON.stringify({model:model.apiModel,max_tokens:900,messages:[{role:'system',content:systemMsg},...messages]})});
     const data=await resp.json();if(data.error)throw new Error(data.error.message);return data.choices?.[0]?.message?.content||'No response';
   }else if(provider==='groq'){
-    const resp=await fetch(_WORKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:model.apiModel||'llama-3.3-70b-versatile',max_tokens:900,temperature:0.85,messages:[{role:'system',content:systemMsg},...messages]}),signal:AbortSignal.timeout(15000)});
-    if(!resp.ok){const t=await resp.text().catch(()=>'');throw new Error('Worker '+resp.status+': '+t.slice(0,80));}
+    const resp=await fetch('https://hidden-wildflower-3301.vikramsandhu90341.workers.dev',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:model.apiModel||'llama-3.3-70b-versatile',max_tokens:900,temperature:0.85,messages:[{role:'system',content:systemMsg},...messages]})}); 
     const data=await resp.json();if(data.error)throw new Error(data.error.message);return data.choices?.[0]?.message?.content||'No response';
   }
   throw new Error('Unknown provider: '+provider);
@@ -5190,32 +5130,24 @@ RULE 4: Be sharp, direct, specific. Like a top-tier coach who has read all their
 RULE 5: Always end with ONE high-leverage action they can take TODAY based on their specific weakest metric.
 ${ctx}`;
   try{
-    const resp=await fetch(_WORKER_URL,{
+    const resp=await fetch('https://hidden-wildflower-3301.vikramsandhu90341.workers.dev',{
       method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:750,temperature:0.88,
-        messages:[{role:'system',content:sys},{role:'user',content:msg}]}),
-      signal:AbortSignal.timeout(15000)
+        messages:[{role:'system',content:sys},{role:'user',content:msg}]})
     });
-    if(!resp.ok){const t=await resp.text().catch(()=>'');throw new Error('Worker '+resp.status+': '+t.slice(0,100));}
     const d=await resp.json();
     if(d.error)throw new Error(d.error.message||'Groq error');
-    const c=d.choices?.[0]?.message?.content;
-    if(!c)throw new Error('AI returned empty content — retrying...');
-    return c;
+    return d.choices?.[0]?.message?.content||'⚠️ Empty response from AI — please try again.';
   }catch(e){
-    // Retry with minimal payload (no system prompt, lower tokens)
+    // Retry with minimal payload
     try {
-      const simple = await fetch(_WORKER_URL,{
+      const simple = await fetch('https://hidden-wildflower-3301.vikramsandhu90341.workers.dev',{
         method:'POST',headers:{'Content-Type':'application/json'},
         body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:400,temperature:0.8,
-          messages:[{role:'user',content:msg}]}),
-        signal:AbortSignal.timeout(12000)
+          messages:[{role:'user',content:msg}]})
       });
-      if(!simple.ok)throw new Error('Worker '+simple.status);
       const sd=await simple.json();
-      const sc=sd.choices?.[0]?.message?.content;
-      if(!sc)throw new Error('empty');
-      return sc;
+      return sd.choices?.[0]?.message?.content||'⚠️ AI returned empty response.';
     }catch(e2){
       return '⚠️ **AI temporarily offline.** Your Cloudflare Worker or Groq API may be down.\n\nTry:\n1. Refresh the page\n2. Check your internet connection\n3. Check [Groq status](https://status.groq.com)';
     }
@@ -6118,34 +6050,21 @@ const TRADING_CONCEPTS={
 
 function buildTradingTicker(){
   const el=document.getElementById('tradingTicker');
-  if(!el||document.hidden)return;
+  if(!el)return;
+  // Simulate real-time random variation
+  const ticks=LIVE_TICKERS.map(t=>{
+    const jitter=(Math.random()-0.48)*0.5;
+    const newChg=(t.chg+jitter).toFixed(2);
+    const up=parseFloat(newChg)>=0;
+    return`<div style="flex:0 0 auto;background:var(--bg3);border:1px solid ${up?'rgba(16,185,129,.3)':'rgba(239,68,68,.3)'};border-radius:10px;padding:8px 12px;text-align:center;min-width:80px">
+      <div style="font-size:11px;font-weight:800;color:var(--text)">${t.sym}</div>
+      <div style="font-size:12px;font-weight:700;color:var(--primary)">${t.sym==='BTC'?'$'+t.price.toLocaleString():t.price>1000?'$'+t.price.toLocaleString():'$'+t.price}</div>
+      <div style="font-size:10px;font-weight:700;color:${up?'var(--success)':'var(--danger)'}">${up?'+':''}${newChg}%</div>
+    </div>`;
+  });
+  el.innerHTML=ticks.join('');
   const tEl=document.getElementById('tickerTime');
   if(tEl)tEl.textContent=new Date().toLocaleTimeString('en',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
-  // PERF: update text in-place on subsequent calls, skip full innerHTML rewrite
-  const cards=el.querySelectorAll('[data-ticker]');
-  if(cards.length===LIVE_TICKERS.length){
-    cards.forEach((card,i)=>{
-      const t=LIVE_TICKERS[i];
-      const jitter=(Math.random()-0.48)*0.5;
-      const newChg=(t.chg+jitter).toFixed(2);
-      const up=parseFloat(newChg)>=0;
-      const priceEl=card.querySelector('.tk-price');
-      const chgEl=card.querySelector('.tk-chg');
-      if(priceEl)priceEl.textContent=t.sym==='BTC'?'$'+t.price.toLocaleString():t.price>1000?'$'+t.price.toLocaleString():'$'+t.price;
-      if(chgEl){chgEl.textContent=(up?'+':'')+newChg+'%';chgEl.style.color=up?'var(--success)':'var(--danger)';}
-      card.style.borderColor=up?'rgba(16,185,129,.3)':'rgba(239,68,68,.3)';
-    });
-    return;
-  }
-  // First render only
-  el.innerHTML=LIVE_TICKERS.map(t=>{
-    const up=t.chg>=0;
-    return`<div data-ticker="${t.sym}" style="flex:0 0 auto;background:var(--bg3);border:1px solid ${up?'rgba(16,185,129,.3)':'rgba(239,68,68,.3)'};border-radius:10px;padding:8px 12px;text-align:center;min-width:80px">
-      <div style="font-size:11px;font-weight:800;color:var(--text)">${t.sym}</div>
-      <div class="tk-price" style="font-size:12px;font-weight:700;color:var(--primary)">${t.sym==='BTC'?'$'+t.price.toLocaleString():t.price>1000?'$'+t.price.toLocaleString():'$'+t.price}</div>
-      <div class="tk-chg" style="font-size:10px;font-weight:700;color:${up?'var(--success)':'var(--danger)'}">${up?'+':''}${t.chg.toFixed(2)}%</div>
-    </div>`;
-  }).join('');
 }
 
 function buildMktSentiment(){
@@ -7360,8 +7279,7 @@ function initPassiveSensing(){
     passiveData.lastInteraction=Date.now();
   },{passive:true});
   // Update passive score every 30s
-  // PERF: passive cognition every 90s (was 30s), pauses when hidden
-  setInterval(function(){ if(!document.hidden) computePassiveCognition(); },90000);
+  setInterval(computePassiveCognition,30000);
   computePassiveCognition();
 }
 function computePassiveCognition(){
@@ -8071,13 +7989,8 @@ function closeLoginOverlay(){
   document.getElementById('loginOverlay').style.display='none';
 }
 function openLoginOverlay(preferTab){
-  // Always show the form (not the spinner) when manually opening
-  const restoreUI = document.getElementById('sessionRestoreUI');
-  const formUI    = document.getElementById('loginFormUI');
-  if (restoreUI) restoreUI.style.display = 'none';
-  if (formUI)    formUI.style.display    = '';
   document.getElementById('loginOverlay').style.display='flex';
-  // Default to 'login' for returning users, 'register' for first-timers
+  // Default to 'register' for first-time users, 'login' otherwise
   const tab = preferTab || (localStorage.getItem('cos_has_account') ? 'login' : 'register');
   const btn = document.querySelector(`.login-tab-btn[onclick*="'${tab}'"]`);
   if(btn) switchLoginTab(tab, btn);
@@ -9066,11 +8979,7 @@ function init(){
   setInterval(checkAlarms,30000);
   loadCSE();
   loadTradeLog();
-  // PERF: Ticker only runs every 60s (was 5s) and only when World tab is active
-  setInterval(function(){
-    const worldTab = document.getElementById('tab-world');
-    if(worldTab && worldTab.classList.contains('active') && !document.hidden) buildTradingTicker();
-  }, 60000);
+  setInterval(buildTradingTicker,5000);
   const sl=localStorage.getItem('cos_lang')||'en';curLang=sl;
   try{document.getElementById('langSel').value=sl;}catch(e){}try{document.getElementById('settingLang').value=sl;}catch(e){}try{document.getElementById('langSelMobile').value=sl;}catch(e){}
   setTimeout(()=>{const logs=getLogs();addChatMsg('ai',logs.length?`Hello! 👋 I see you have ${logs.length} consciousness entries. ${Math.random()>.5?'How are you feeling today?':'What\'s on your mind?'}`:"Welcome to Consciousness OS! 🧠 I'm your AI Digital Twin. Fill your first Daily Log and I'll start learning your patterns. What's your name?",'twin');},600);
@@ -10613,22 +10522,7 @@ document.addEventListener('DOMContentLoaded',()=>{setTimeout(()=>{if(document.ge
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('./service-worker.js')
-          .then(reg => {
-            console.log('✅ SW registered:', reg.scope);
-            reg.update(); // check for update immediately on load
-            setInterval(() => reg.update(), 60000); // re-check every 60s
-            // When a new SW is waiting, reload to activate it
-            reg.addEventListener('updatefound', () => {
-              const nw = reg.installing;
-              if (!nw) return;
-              nw.addEventListener('statechange', () => {
-                if (nw.state === 'installed' && navigator.serviceWorker.controller) {
-                  console.log('[SW] New version ready — reloading…');
-                  window.location.reload();
-                }
-              });
-            });
-          })
+          .then(reg => console.log('✅ SW registered:', reg.scope))
           .catch(err => console.log('SW registration failed:', err));
       });
     }
@@ -10662,7 +10556,7 @@ async function loadScienceNews(){
 async function askAI(prompt, systemPrompt, maxTok) {
   // Single entry point for ALL AI calls → Cloudflare Worker → Groq llama-3.3-70b-versatile
   systemPrompt = systemPrompt || 'You are an advanced strategic intelligence AI inside Consciousness OS. Be precise, specific, and data-driven.';
-  const res = await fetch(_WORKER_URL, {
+  const res = await fetch('https://hidden-wildflower-3301.vikramsandhu90341.workers.dev', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -10673,15 +10567,11 @@ async function askAI(prompt, systemPrompt, maxTok) {
         { role: 'system', content: systemPrompt },
         { role: 'user',   content: prompt }
       ]
-    }),
-    signal: AbortSignal.timeout(15000)
+    })
   });
-  if (!res.ok) { const txt = await res.text().catch(()=>''); throw new Error(`Worker error ${res.status}: ${txt.slice(0,120)}`); }
   const data = await res.json();
   if (data.error) throw new Error(data.error.message || 'Groq Worker error');
-  const content = data.choices?.[0]?.message?.content;
-  if (!content) throw new Error('Groq returned empty content');
-  return content;
+  return data.choices?.[0]?.message?.content || 'No response';
 }
 
 async function runAI(inputSelector, outputId, systemPrompt) {
@@ -10713,43 +10603,6 @@ function getThumbnail(url){
   } catch(e) { return ''; }
 }
 
-</script>
-
-<script>
-// ── PAGE VISIBILITY: pause all heavy work when screen turns off / app backgrounded ──
-(function() {
-  // Freeze / resume on visibility change
-  document.addEventListener('visibilitychange', function() {
-    if (document.hidden) {
-      // Page hidden: stop any running immersive timer, audio, animations
-      if (typeof stopImmersive === 'function') try { stopImmersive(); } catch(e) {}
-      if (typeof stopBrainwaveAudio === 'function') try { stopBrainwaveAudio(); } catch(e) {}
-      // Suspend all CSS animations to free GPU
-      document.documentElement.style.setProperty('--anim-play-state', 'paused');
-    } else {
-      // Page visible again: resume
-      document.documentElement.style.setProperty('--anim-play-state', 'running');
-    }
-  });
-
-  // Aggressive memory cleanup: clear large caches if RAM is tight
-  if ('memory' in performance) {
-    setInterval(function() {
-      const mem = performance.memory;
-      // If using >200MB JS heap, clear non-critical caches
-      if (mem.usedJSHeapSize > 200 * 1024 * 1024) {
-        try {
-          // Clear allorigins RSS caches
-          ['cos_sci_cache','cos_world_cache','cos_mkt_cache'].forEach(k => {
-            const v = localStorage.getItem(k);
-            // Only clear if older than 5 min
-            if (v) { try { const d = JSON.parse(v); if (Date.now() - d.ts > 300000) localStorage.removeItem(k); } catch(e){} }
-          });
-        } catch(e) {}
-      }
-    }, 120000); // check every 2 min
-  }
-})();
 </script>
 </body>
 </html>
