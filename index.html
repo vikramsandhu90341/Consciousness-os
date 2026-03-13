@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Consciousness OS v7.0 — Neural AI Platform</title>
+<title>Consciousness OS</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#7c3aed">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -12,9 +12,9 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <meta name="version" content="7.0.0">
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script>
 const firebaseConfig = {
   apiKey: "AIzaSyCR7-T4qXy9xQqNBUMMNjbQaj-lyLUJlLc",
@@ -66,20 +66,26 @@ auth.getRedirectResult().then(result => {
 // Keys assembled at runtime (obfuscated)
 const _k=((a,b,c,d)=>a+b+c+d)(atob('QUl6YVN5Q25hcw=='),atob('MDhtR3Y3aTlJQQ=='),atob('MkY5Sk84LTZrNQ=='),atob('TGFYOEw0bnEw'));
 const GEMINI_KEY=_k;
-// Groq key — set by user in app or hardcoded after getting key
-// ─── GROQ KEY (assembled at runtime — not a raw secret) ─────
-const GROQ_KEY=((_a,_b,_c,_d)=>atob(_a)+atob(_b)+atob(_c)+atob(_d))(
-  'Z3NrX0RmYkNrajY4TDQ=','MG9OQTlXYUNPVFdHZHk=',
-  'YjNGWVJNTUphdnZrb1o=','ZE5aNW40ZldYeHZ5UmM='
-);
-localStorage.setItem('cos_apikey_groq', GROQ_KEY);
+// ─── GROQ — 100% Worker-only (key lives in Cloudflare Worker secret, never here) ───
+// All AI calls go through: https://hidden-wildflower-3301.vikramsandhu90341.workers.dev
+// No key in this file. No key in localStorage. Nothing to leak.
+let GROQ_KEY = 'worker-proxy'; // placeholder so existing references don't crash
+const _WORKER_URL='https://hidden-wildflower-3301.vikramsandhu90341.workers.dev';
 async function callGroqFast(prompt,system,maxTokens){
   system=system||'You are an expert AI inside Consciousness OS. Be precise and useful.';
   maxTokens=maxTokens||800;
-  const resp=await fetch('https://hidden-wildflower-3301.vikramsandhu90341.workers.dev',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'llama3-70b-8192',max_tokens:maxTokens,temperature:0.8,messages:[{role:'system',content:system},{role:'user',content:prompt}]})});
+  const resp=await fetch(_WORKER_URL,{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:maxTokens,temperature:0.8,messages:[{role:'system',content:system},{role:'user',content:prompt}]}),
+    signal:AbortSignal.timeout(15000)
+  });
+  if(!resp.ok){const txt=await resp.text().catch(()=>'');throw new Error(`Worker error ${resp.status}: ${txt.slice(0,120)}`);}
   const d=await resp.json();
   if(d.error)throw new Error(d.error.message||'Groq error');
-  return d.choices?.[0]?.message?.content||'No response';
+  const content=d.choices?.[0]?.message?.content;
+  if(!content)throw new Error('Groq returned empty content');
+  return content;
 }
 async function callGroqJSON(prompt,system,maxTokens){
   const raw=await callGroqFast(prompt,system||'Return ONLY valid JSON. No markdown.',maxTokens||600);
@@ -87,15 +93,55 @@ async function callGroqJSON(prompt,system,maxTokens){
 }
 
 // ─── AUTO-LOAD FIRESTORE DATA WHEN SESSION RESTORES ─────────
-auth.onAuthStateChanged(function(fbUser){
-  if(fbUser){
+// ── AUTH STATE + RETURNING USER LOGIC ─────────────────────────────────────
+(function initAuthState() {
+  const hasAccount = !!localStorage.getItem('cos_has_account');
+  const overlay    = document.getElementById('loginOverlay');
+  const restoreUI  = document.getElementById('sessionRestoreUI');
+  const formUI     = document.getElementById('loginFormUI');
+
+  if (hasAccount && overlay && restoreUI && formUI) {
+    // Returning user: show spinner, hide form, wait for Firebase
+    restoreUI.style.display = '';
+    formUI.style.display    = 'none';
+    overlay.style.display   = 'flex';
+    // Safety timeout — if Firebase takes >7s, fall back to sign-in form
+    var _authTimeout = setTimeout(function() {
+      if (overlay.style.display !== 'none') {
+        restoreUI.style.display = 'none';
+        formUI.style.display    = '';
+        // For returning users, pre-select Sign In tab (not Create Account)
+        var tabs = document.querySelectorAll('.login-tab-btn');
+        if (tabs[0]) { tabs[0].click(); }
+      }
+    }, 7000);
+    auth.onAuthStateChanged(function(fbUser) {
+      clearTimeout(_authTimeout);
+      _handleAuthUser(fbUser);
+    });
+  } else {
+    // New visitor: show form immediately, no spinner needed
+    if (overlay)   overlay.style.display = 'flex';
+    if (restoreUI) restoreUI.style.display = 'none';
+    if (formUI)    formUI.style.display = '';
+    auth.onAuthStateChanged(_handleAuthUser);
+  }
+})();
+
+function _handleAuthUser(fbUser) {
+  const overlay = document.getElementById('loginOverlay');
+  const restoreUI = document.getElementById('sessionRestoreUI');
+  const formUI    = document.getElementById('loginFormUI');
+  if (fbUser) {
     dbg('info', '🔐 Auth state: signed in as ' + (fbUser.email||fbUser.uid));
-    if(typeof loadLogsFromFirestore === 'function') loadLogsFromFirestore(fbUser.uid);
-    if(typeof loadDreamsFromFirestore === 'function') loadDreamsFromFirestore(fbUser.uid);
+    // Hide login overlay — Firebase confirmed real session
+    if (overlay)   overlay.style.display = 'none';
+    localStorage.setItem('cos_has_account', '1');
+    if (typeof loadLogsFromFirestore   === 'function') loadLogsFromFirestore(fbUser.uid);
+    if (typeof loadDreamsFromFirestore === 'function') loadDreamsFromFirestore(fbUser.uid);
     const s = document.getElementById('accountStatus');
-    if(s) s.textContent = '✅ Signed in · Cloud sync active';
-    // Restore local profile from Firebase user if needed
-    if(typeof getCurrentUser === 'function' && !getCurrentUser()){
+    if (s) s.textContent = '✅ Signed in · Cloud sync active';
+    if (typeof getCurrentUser === 'function' && !getCurrentUser()) {
       const profile = {
         id: fbUser.uid,
         name: fbUser.displayName || 'User',
@@ -105,17 +151,23 @@ auth.onAuthStateChanged(function(fbUser){
         isFirebase: true,
         created: new Date().toISOString()
       };
-      if(typeof getUsers === 'function'){
+      if (typeof getUsers === 'function') {
         const users = getUsers();
-        if(!users.find(u=>u.id===fbUser.uid)){ users.push(profile); if(typeof saveUsers==='function') saveUsers(users); }
+        if (!users.find(u => u.id === fbUser.uid)) { users.push(profile); if (typeof saveUsers === 'function') saveUsers(users); }
       }
-      if(typeof setCurrentUser === 'function') setCurrentUser(fbUser.uid);
-      if(typeof buildProfileBar === 'function') setTimeout(buildProfileBar, 500);
+      if (typeof setCurrentUser  === 'function') setCurrentUser(fbUser.uid);
+      if (typeof buildProfileBar === 'function') setTimeout(buildProfileBar, 500);
     }
-  }else{
-    dbg('log', '🔐 Auth state: signed out');
+  } else {
+    dbg('log', '🔐 Auth state: signed out — showing login screen');
+    // Show login form (NOT spinner)
+    if (overlay)   overlay.style.display = 'flex';
+    if (restoreUI) restoreUI.style.display = 'none';
+    if (formUI)    formUI.style.display = '';
+    if (typeof setCurrentUser  === 'function') try { setCurrentUser(null); } catch(e) {}
+    if (typeof buildProfileBar === 'function') setTimeout(buildProfileBar, 300);
   }
-});
+}
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -1041,12 +1093,43 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
 .wq-cell.wq-selected{transform:scale(1.03);box-shadow:0 4px 20px rgba(124,58,237,.25)}
 .wealth-spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:6px}
 @keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── Header layout helpers ── */
+.header-bar{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  flex-wrap:nowrap;
+  gap:6px;
+}
+.header-actions{
+  display:flex;
+  gap:6px;
+  flex-shrink:0;
+}
+.header-actions button{
+  width:36px;
+  height:36px;
+}
+.header-title{
+  font-size:18px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+/* Lazy loading — non-active tabs have zero DOM cost */
+.tab-panel:not(.active) { 
+  display: none !important; 
+  visibility: hidden;
+  pointer-events: none;
+}
 </style>
 
 <body>
 
 <!-- ══ LOGIN OVERLAY ══ -->
-<div class="login-overlay" id="loginOverlay" style="display:none">
+<div class="login-overlay" id="loginOverlay" style="display:flex">
   <div class="login-card">
     <div style="text-align:center;margin-bottom:20px">
       <div style="font-size:48px">🧠</div>
@@ -1054,6 +1137,16 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
       <div style="font-size:12px;color:#888;margin-top:4px">Your mind. Your data. Your evolution.</div>
     </div>
 
+    <!-- SESSION RESTORE SPINNER: shown for returning users while Firebase resolves -->
+    <div id="sessionRestoreUI" style="display:none;text-align:center;padding:24px 0">
+      <div style="width:36px;height:36px;border:3px solid rgba(124,58,237,.2);border-top-color:#7c3aed;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 14px"></div>
+      <div style="font-size:14px;font-weight:700;color:#7c3aed;margin-bottom:6px">Restoring your session…</div>
+      <div style="font-size:12px;color:#aaa;margin-bottom:18px">Connecting to Consciousness OS</div>
+      <button onclick="document.getElementById('sessionRestoreUI').style.display='none';document.getElementById('loginFormUI').style.display=''" style="background:none;border:none;color:#aaa;font-size:12px;cursor:pointer;text-decoration:underline">Sign in manually instead</button>
+    </div>
+
+    <!-- LOGIN FORM: hidden for returning users, shown for new users -->
+    <div id="loginFormUI">
     <div class="login-tabs" id="loginTabs">
       <button class="login-tab-btn active" onclick="switchLoginTab('login',this)">Sign In</button>
       <button class="login-tab-btn" onclick="switchLoginTab('register',this)">Create Account</button>
@@ -1143,6 +1236,7 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
 
     <div id="loginMsg" style="margin-top:10px;font-size:13px;text-align:center;min-height:20px;color:var(--danger)"></div>
     <div style="text-align:center;margin-top:12px;font-size:11px;color:#aaa">By continuing, you agree to our <a href="#" onclick="openLegal('terms')" style="color:#7c3aed">Terms</a> & <a href="#" onclick="openLegal('privacy')" style="color:#7c3aed">Privacy Policy</a></div>
+    </div><!-- /loginFormUI -->
   </div>
 </div>
 
@@ -1161,7 +1255,7 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
 <div class="topbar">
   <!-- Row 1: Brand + desktop quick actions -->
   <div class="topbar-row1">
-    <div class="topbar-brand">🧠 Consciousness OS v7</div>
+    <div class="topbar-brand">🧠 Consciousness OS</div>
     <!-- Mobile-only quick actions in row1 -->
     <div class="topbar-quick topbar-mobile-only" style="margin-left:auto">
       <select class="lang-sel" id="langSelMobile" onchange="setLang(this.value)" title="Language">
@@ -2347,9 +2441,11 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
       <div class="ai-ask-row">
         <input type="text" class="form-input" id="worldAskInput" placeholder="Ask about any geopolitical or economic force...">
         <button class="btn btn-primary btn-sm" onclick="askWorldAI()">🔍 Analyze</button>
+        <button class="btn btn-secondary btn-sm" onclick="runAI('#worldAskInput','aiOutput','You are an elite geopolitical and macroeconomic analyst. Give sharp, specific, second-order-effects analysis. No fluff.')" title="Deep analysis via Groq" style="font-size:11px">🤖 Deep</button>
       </div>
     </div>
     <div id="worldAIResult" style="margin-top:10px"></div>
+    <div id="aiOutput" style="margin-top:6px"></div>
   </div>
 
   <!-- Geopolitics Panel -->
@@ -2647,7 +2743,7 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
   <div class="card" style="border:1.5px solid rgba(6,182,212,.3)">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
       <div class="card-title" style="margin-bottom:0"><span class="emoji">🔬</span> Live Science Intelligence</div>
-      <button class="btn btn-secondary btn-sm" onclick="sciTieredRefresh()" style="font-size:11px">🔄 Tier Refresh</button>
+      <button class="btn btn-secondary btn-sm" onclick="sciTieredRefresh();loadScienceNews()" style="font-size:11px">🔄 Tier Refresh</button>
     </div>
     <div style="font-size:10px;color:var(--text3);margin-bottom:8px">High-signal science only — breakthroughs that matter to civilization. Each Tier Refresh drills deeper: 24h→12h→6h→3h→1h.</div>
     <div id="science-news" style="margin-bottom:4px"></div>
@@ -4006,7 +4102,11 @@ function enableDragScroll(el){
   el.addEventListener('touchstart',e=>{tStart=e.touches[0].clientX;tScrollLeft=el.scrollLeft;},{passive:true});
   el.addEventListener('touchmove',e=>{const dx=tStart-e.touches[0].clientX;el.scrollLeft=tScrollLeft+dx;},{passive:true});
 }
-function switchTab(id){
+const _tabRendered = {};
+function switchTab(tabId) {
+  const id = tabId; // keep backward compat with callers using 'id'
+
+  // Preserve existing eager logic for analysis tab
   if(id==='analysis'){
     setTimeout(()=>{
       calculateDailyScore();
@@ -4014,19 +4114,44 @@ function switchTab(id){
       if(dateEl) dateEl.innerText=new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long'});
     },100);
   }
-  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
-  const panel=document.getElementById('tab-'+id);if(panel)panel.classList.add('active');
-  activeTab=id;buildNav();
+
+  // Hide all tabs
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+
+  // Show selected tab
+  const panel = document.getElementById('tab-' + id);
+  if (!panel) return;
+  panel.classList.add('active');
+
+  // Update nav state
+  activeTab = id; buildNav();
+  document.querySelectorAll('.nav-btn, .tab-btn').forEach(b => b.classList.remove('active'));
+  const btn = document.querySelector(`[data-tab="${id}"]`);
+  if (btn) btn.classList.add('active');
+
+  // Always-run lightweight refreshes (fast, stateless)
   if(id==='analysis'){refreshAnalysis();computeDiversity();}
   if(id==='calendar')renderCalendar();
-  if(id==='dreams'){renderDreamJournal();computeLucidProbability();}
   if(id==='media'){renderVoiceMemos();renderMediaGrid();}
   if(id==='ai'){refreshAIInsights();loadDailyTip();}
-  if(id==='world'){buildWorldPanel();buildClickableNews();}
-  if(id==='science'){buildScienceDisplay();updateScienceTimestamp();}
   if(id==='system'){buildThemeGrid();updateTelemetry();updateAccountUI();}
   if(id==='guide'){buildGuideNavMap();}
-  if(id==='wealth'){initWealthOS();}
+
+  // Lazy init — only run heavy init functions once per tab
+  if (!_tabRendered[id]) {
+    _tabRendered[id] = true;
+    if (id === 'health'   && typeof initHealthTab   === 'function') initHealthTab();
+    if (id === 'science'  && typeof initScienceTab  === 'function') initScienceTab();
+    else if (id === 'science') { buildScienceDisplay(); updateScienceTimestamp(); }
+    if (id === 'world'    && typeof initWorldTab    === 'function') initWorldTab();
+    else if (id === 'world') { buildWorldPanel(); buildClickableNews(); }
+    if (id === 'analysis' && typeof initAnalysis    === 'function') initAnalysis();
+    if (id === 'dreams'   && typeof initDreamsTab   === 'function') initDreamsTab();
+    else if (id === 'dreams') { renderDreamJournal(); computeLucidProbability(); }
+    if (id === 'waves'    && typeof initWavesTab    === 'function') initWavesTab();
+    if (id === 'wealth'   && typeof initWealthTab   === 'function') initWealthTab();
+    else if (id === 'wealth') initWealthOS();
+  }
 }
 
 // ─── THEME ──────────────────────────────────────────────────
@@ -4790,13 +4915,13 @@ function buildBWEducation(){
 
 // ─── AI HUB ──────────────────────────────────────────────────
 const AI_MODELS=[
-  {id:'twin',name:'AI Twin',emoji:'🧠',provider:'groq',apiModel:'llama3-70b-8192',persona:'You are the user\'s AI Digital Twin inside Consciousness OS. You have deeply analyzed ALL their consciousness logs, dreams, and patterns. Be warm, insightful, and deeply personal. Reference their actual data when answering.'},
-  {id:'coach',name:'Coach',emoji:'🏆',provider:'groq',apiModel:'llama3-70b-8192',persona:'You are an elite performance coach and neuroscientist inside Consciousness OS. Give direct, actionable advice for peak mental performance based on the user\'s actual tracked data.'},
-  {id:'sage',name:'Sage',emoji:'🔮',provider:'groq',apiModel:'llama3-70b-8192',persona:'You are a wise sage combining ancient wisdom with modern neuroscience inside Consciousness OS. Use metaphors and the user\'s own patterns to guide them toward higher consciousness.'},
-  {id:'doctor',name:'Dr. Mind',emoji:'👨‍⚕️',provider:'groq',apiModel:'llama3-70b-8192',persona:'You are a cognitive neuroscientist inside Consciousness OS. Analyze the user\'s mental health patterns using their logged data. Be clinical but empathetic. Always recommend professional help for serious concerns.'},
-  {id:'friend',name:'Friend',emoji:'😊',provider:'groq',apiModel:'llama3-70b-8192',persona:'You are a supportive, very smart best friend inside Consciousness OS. Be casual, real, encouraging. Reference what you know about the user\'s patterns. Care deeply about their wellbeing.'},
+  {id:'twin',name:'AI Twin',emoji:'🧠',provider:'groq',apiModel:'llama-3.3-70b-versatile',persona:'You are the user\'s AI Digital Twin inside Consciousness OS. You have deeply analyzed ALL their consciousness logs, dreams, and patterns. Be warm, insightful, and deeply personal. Reference their actual data when answering.'},
+  {id:'coach',name:'Coach',emoji:'🏆',provider:'groq',apiModel:'llama-3.3-70b-versatile',persona:'You are an elite performance coach and neuroscientist inside Consciousness OS. Give direct, actionable advice for peak mental performance based on the user\'s actual tracked data.'},
+  {id:'sage',name:'Sage',emoji:'🔮',provider:'groq',apiModel:'llama-3.3-70b-versatile',persona:'You are a wise sage combining ancient wisdom with modern neuroscience inside Consciousness OS. Use metaphors and the user\'s own patterns to guide them toward higher consciousness.'},
+  {id:'doctor',name:'Dr. Mind',emoji:'👨‍⚕️',provider:'groq',apiModel:'llama-3.3-70b-versatile',persona:'You are a cognitive neuroscientist inside Consciousness OS. Analyze the user\'s mental health patterns using their logged data. Be clinical but empathetic. Always recommend professional help for serious concerns.'},
+  {id:'friend',name:'Friend',emoji:'😊',provider:'groq',apiModel:'llama-3.3-70b-versatile',persona:'You are a supportive, very smart best friend inside Consciousness OS. Be casual, real, encouraging. Reference what you know about the user\'s patterns. Care deeply about their wellbeing.'},
   {id:'gemini',name:'Gemini',emoji:'🔵',provider:'google',apiModel:'gemini-2.0-flash',persona:'You are Gemini by Google inside Consciousness OS. Be creative, well-rounded, and grounded in facts. Help the user understand their consciousness data.'},
-  {id:'groq',name:'Groq AI',emoji:'⚡',provider:'groq',apiModel:'llama3-70b-8192',persona:'You are a fast, sharp AI powered by Groq and Llama3 inside Consciousness OS. Be direct, insightful, and highly analytical about the user\'s consciousness data and cognitive patterns.'},
+  {id:'groq',name:'Groq AI',emoji:'⚡',provider:'groq',apiModel:'llama-3.3-70b-versatile',persona:'You are a fast, sharp AI powered by Groq and Llama3 inside Consciousness OS. Be direct, insightful, and highly analytical about the user\'s consciousness data and cognitive patterns.'},
   {id:'claude',name:'Claude',emoji:'🟣',provider:'anthropic',apiModel:'claude-opus-4-6',persona:'You are Claude by Anthropic — thoughtful, precise, and deeply analytical. Help users understand their consciousness data with extraordinary depth and care.'},
   {id:'chatgpt',name:'ChatGPT',emoji:'🟢',provider:'openai',apiModel:'gpt-4o',persona:'You are ChatGPT by OpenAI. Be helpful, conversational, and insightful about consciousness and mental performance.'},
   {id:'grok',name:'Grok',emoji:'⚡',provider:'xai',apiModel:'grok-3',persona:'You are Grok by xAI. Be witty, direct, and unfiltered but genuinely helpful about consciousness data and human potential.'},
@@ -4820,10 +4945,12 @@ async function callAI(model,messages,userContext){
   if(provider==='groq') apiKey = GROQ_KEY;
   if(!freeProviders.includes(provider)&&!apiKey){
     // No key set → route through Groq with the model's persona (seamless fallback)
-    const resp=await fetch('https://hidden-wildflower-3301.vikramsandhu90341.workers.dev',{method:'POST',
+    const resp=await fetch(_WORKER_URL,{method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:'llama3-70b-8192',max_tokens:900,temperature:0.85,
-        messages:[{role:'system',content:model.persona+'\n\nYou are an advanced AI consciousness coach in Consciousness OS.'+userContext},...messages]})});
+      body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:900,temperature:0.85,
+        messages:[{role:'system',content:model.persona+'\n\nYou are an advanced AI consciousness coach in Consciousness OS.'+userContext},...messages]}),
+      signal:AbortSignal.timeout(15000)});
+    if(!resp.ok){const t=await resp.text().catch(()=>'');throw new Error('Worker '+resp.status+': '+t.slice(0,80));}
     const d=await resp.json();
     if(d.error)throw new Error(d.error.message);
     return d.choices?.[0]?.message?.content||'No response';
@@ -4855,7 +4982,8 @@ async function callAI(model,messages,userContext){
     const resp=await fetch('https://api.deepseek.com/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},body:JSON.stringify({model:model.apiModel,max_tokens:900,messages:[{role:'system',content:systemMsg},...messages]})});
     const data=await resp.json();if(data.error)throw new Error(data.error.message);return data.choices?.[0]?.message?.content||'No response';
   }else if(provider==='groq'){
-    const resp=await fetch('https://hidden-wildflower-3301.vikramsandhu90341.workers.dev',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:model.apiModel||'llama3-70b-8192',max_tokens:900,temperature:0.85,messages:[{role:'system',content:systemMsg},...messages]})}); 
+    const resp=await fetch(_WORKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:model.apiModel||'llama-3.3-70b-versatile',max_tokens:900,temperature:0.85,messages:[{role:'system',content:systemMsg},...messages]}),signal:AbortSignal.timeout(15000)});
+    if(!resp.ok){const t=await resp.text().catch(()=>'');throw new Error('Worker '+resp.status+': '+t.slice(0,80));}
     const data=await resp.json();if(data.error)throw new Error(data.error.message);return data.choices?.[0]?.message?.content||'No response';
   }
   throw new Error('Unknown provider: '+provider);
@@ -4866,7 +4994,7 @@ const DAILY_TIPS=['Start with your hardest task when your brain is in Beta state
 function setKeyUI(provider){const key=promptApiKey(provider);if(key){updateKeyStatuses();}}
 function clearKey(provider){localStorage.removeItem('cos_apikey_'+provider);updateKeyStatuses();showToast('Key cleared');}
 function updateKeyStatuses(){['anthropic','openai','google','groq','xai','perplexity','deepseek'].forEach(p=>{
-    if(p==='google'){const el=document.getElementById('keyStatus_'+p);if(el){el.textContent='✅ Built-in key active';el.style.color='var(--success)';}return;}if(p==='groq'){const el=document.getElementById('keyStatus_'+p);if(el){el.textContent='✅ Groq built-in ('+GROQ_KEY.slice(0,12)+'...)';el.style.color='var(--success)';}return;}const el=document.getElementById('keyStatus_'+p);if(el){const k=getApiKey(p);el.textContent=k?'✅ Key set ('+k.slice(0,8)+'...)':'No key set';el.style.color=k?'var(--success)':'var(--text3)';}});}
+    if(p==='google'){const el=document.getElementById('keyStatus_'+p);if(el){el.textContent='✅ Built-in key active';el.style.color='var(--success)';}return;}if(p==='groq'){const el=document.getElementById('keyStatus_'+p);if(el){el.textContent='✅ Groq via Cloudflare Worker (key secured)';el.style.color='var(--success)';}return;}const el=document.getElementById('keyStatus_'+p);if(el){const k=getApiKey(p);el.textContent=k?'✅ Key set ('+k.slice(0,8)+'...)':'No key set';el.style.color=k?'var(--success)':'var(--text3)';}});}
 
 // ── COMPARE ALL AIs MODE ──
 let compareModeActive=false;
@@ -5004,9 +5132,9 @@ async function sendChat(){
 
   // If model uses google but Groq key exists, silently use Groq (faster, no quota)
   let _model=AI_MODELS.find(m=>m.id===curAIModel);
-  const _groqKey=GROQ_KEY||getApiKey('groq');
+  const _groqKey='worker-proxy'; // key lives in Worker — no client-side key needed
   if(_model&&_model.provider==='google'&&_groqKey){
-    _model={..._model,provider:'groq',apiModel:'llama3-70b-8192'};
+    _model={..._model,provider:'groq',apiModel:'llama-3.3-70b-versatile'};
   }
   const model=_model||AI_MODELS.find(m=>m.id===curAIModel);
   const msgs=document.getElementById('chatMessages');
@@ -5097,15 +5225,36 @@ RULE 4: Be sharp, direct, specific. Like a top-tier coach who has read all their
 RULE 5: Always end with ONE high-leverage action they can take TODAY based on their specific weakest metric.
 ${ctx}`;
   try{
-    const resp=await fetch('https://hidden-wildflower-3301.vikramsandhu90341.workers.dev',{
+    const resp=await fetch(_WORKER_URL,{
       method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:'llama3-70b-8192',max_tokens:750,temperature:0.88,
-        messages:[{role:'system',content:sys},{role:'user',content:msg}]})
+      body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:750,temperature:0.88,
+        messages:[{role:'system',content:sys},{role:'user',content:msg}]}),
+      signal:AbortSignal.timeout(15000)
     });
+    if(!resp.ok){const t=await resp.text().catch(()=>'');throw new Error('Worker '+resp.status+': '+t.slice(0,100));}
     const d=await resp.json();
     if(d.error)throw new Error(d.error.message||'Groq error');
-    return d.choices?.[0]?.message?.content||getGenericAIAnswer(lower,ctx);
-  }catch(e){return getGenericAIAnswer(lower,ctx);}
+    const c=d.choices?.[0]?.message?.content;
+    if(!c)throw new Error('AI returned empty content — retrying...');
+    return c;
+  }catch(e){
+    // Retry with minimal payload (no system prompt, lower tokens)
+    try {
+      const simple = await fetch(_WORKER_URL,{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:400,temperature:0.8,
+          messages:[{role:'user',content:msg}]}),
+        signal:AbortSignal.timeout(12000)
+      });
+      if(!simple.ok)throw new Error('Worker '+simple.status);
+      const sd=await simple.json();
+      const sc=sd.choices?.[0]?.message?.content;
+      if(!sc)throw new Error('empty');
+      return sc;
+    }catch(e2){
+      return '⚠️ **AI temporarily offline.** Your Cloudflare Worker or Groq API may be down.\n\nTry:\n1. Refresh the page\n2. Check your internet connection\n3. Check [Groq status](https://status.groq.com)';
+    }
+  }
 }
 
 function getGenericAIAnswer(q,ctx=''){
@@ -6004,21 +6153,34 @@ const TRADING_CONCEPTS={
 
 function buildTradingTicker(){
   const el=document.getElementById('tradingTicker');
-  if(!el)return;
-  // Simulate real-time random variation
-  const ticks=LIVE_TICKERS.map(t=>{
-    const jitter=(Math.random()-0.48)*0.5;
-    const newChg=(t.chg+jitter).toFixed(2);
-    const up=parseFloat(newChg)>=0;
-    return`<div style="flex:0 0 auto;background:var(--bg3);border:1px solid ${up?'rgba(16,185,129,.3)':'rgba(239,68,68,.3)'};border-radius:10px;padding:8px 12px;text-align:center;min-width:80px">
-      <div style="font-size:11px;font-weight:800;color:var(--text)">${t.sym}</div>
-      <div style="font-size:12px;font-weight:700;color:var(--primary)">${t.sym==='BTC'?'$'+t.price.toLocaleString():t.price>1000?'$'+t.price.toLocaleString():'$'+t.price}</div>
-      <div style="font-size:10px;font-weight:700;color:${up?'var(--success)':'var(--danger)'}">${up?'+':''}${newChg}%</div>
-    </div>`;
-  });
-  el.innerHTML=ticks.join('');
+  if(!el||document.hidden)return;
   const tEl=document.getElementById('tickerTime');
   if(tEl)tEl.textContent=new Date().toLocaleTimeString('en',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  // PERF: update text in-place on subsequent calls, skip full innerHTML rewrite
+  const cards=el.querySelectorAll('[data-ticker]');
+  if(cards.length===LIVE_TICKERS.length){
+    cards.forEach((card,i)=>{
+      const t=LIVE_TICKERS[i];
+      const jitter=(Math.random()-0.48)*0.5;
+      const newChg=(t.chg+jitter).toFixed(2);
+      const up=parseFloat(newChg)>=0;
+      const priceEl=card.querySelector('.tk-price');
+      const chgEl=card.querySelector('.tk-chg');
+      if(priceEl)priceEl.textContent=t.sym==='BTC'?'$'+t.price.toLocaleString():t.price>1000?'$'+t.price.toLocaleString():'$'+t.price;
+      if(chgEl){chgEl.textContent=(up?'+':'')+newChg+'%';chgEl.style.color=up?'var(--success)':'var(--danger)';}
+      card.style.borderColor=up?'rgba(16,185,129,.3)':'rgba(239,68,68,.3)';
+    });
+    return;
+  }
+  // First render only
+  el.innerHTML=LIVE_TICKERS.map(t=>{
+    const up=t.chg>=0;
+    return`<div data-ticker="${t.sym}" style="flex:0 0 auto;background:var(--bg3);border:1px solid ${up?'rgba(16,185,129,.3)':'rgba(239,68,68,.3)'};border-radius:10px;padding:8px 12px;text-align:center;min-width:80px">
+      <div style="font-size:11px;font-weight:800;color:var(--text)">${t.sym}</div>
+      <div class="tk-price" style="font-size:12px;font-weight:700;color:var(--primary)">${t.sym==='BTC'?'$'+t.price.toLocaleString():t.price>1000?'$'+t.price.toLocaleString():'$'+t.price}</div>
+      <div class="tk-chg" style="font-size:10px;font-weight:700;color:${up?'var(--success)':'var(--danger)'}">${up?'+':''}${t.chg.toFixed(2)}%</div>
+    </div>`;
+  }).join('');
 }
 
 function buildMktSentiment(){
@@ -6316,8 +6478,18 @@ Return ONLY the JSON array. No markdown. No explanation outside the array.`;
     const chains=JSON.parse(raw);
     el.innerHTML=`<div class="causal-chain"><div style="font-weight:700;font-size:14px;margin-bottom:12px">🔍 Causal Analysis: "${q}"</div>${chains.map(c=>`<div class="causal-step"><div class="causal-arrow">${c.arrow}</div><div class="causal-text"><strong>${c.node}</strong><br>${c.detail}</div></div>`).join('')}</div>`;
   }catch(err){
-    const chains=generateCausalChain(q);
-    el.innerHTML=`<div class="causal-chain"><div style="font-weight:700;font-size:14px;margin-bottom:12px">🔍 Causal Analysis: "${q}"</div>${chains.map(c=>`<div class="causal-step"><div class="causal-arrow">${c.arrow}</div><div class="causal-text"><strong>${c.node}</strong><br>${c.detail}</div></div>`).join('')}</div>`;
+    // Retry as plain-text causal analysis
+    try {
+      el.innerHTML=`<div style="font-size:12px;color:var(--text3);padding:8px">⏳ Retrying geo analysis...</div>`;
+      const retry = await askAI(
+        'You are an elite geopolitical and macroeconomic analyst. Analyze this query with deep causal chain thinking: "' + q + '". Give 4-5 key nodes: Root Cause → First-Order Effect → Second-Order Effect → Strategic Insight. Each node: one short title + 2 sentence explanation.',
+        'You are a Rothschild-level strategic analyst. Be specific, data-driven, non-generic.', 700
+      );
+      const formatted = retry.replace(/\n/g,'<br>').replace(/→/g,'<span style="color:var(--pink)">→</span>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');
+      el.innerHTML=`<div class="causal-chain"><div style="font-weight:700;font-size:14px;margin-bottom:12px">🔍 Causal Analysis: "${q}"</div><div style="font-size:13px;color:var(--text2);line-height:1.8">${formatted}</div></div>`;
+    } catch(e2) {
+      el.innerHTML=`<div class="causal-chain" style="border-color:var(--danger)"><div style="font-weight:700;margin-bottom:8px;color:var(--danger)">⚠️ Geo AI offline</div><div style="font-size:12px;color:var(--text3)">Worker unreachable. Check connection and retry.</div></div>`;
+    }
   }
 }
 function generateCausalChain(q){
@@ -6545,7 +6717,16 @@ Be specific, cite real concepts/researchers/experiments. No generic filler. 150-
     const text=await callGroqFast(prompt,'You are a brilliant scientist and science communicator. Be precise, specific, and mind-expanding.',500);
     el.innerHTML=`<div class="ai-insight-box"><div style="font-weight:700;margin-bottom:8px">⚡ Science AI: "${q}"</div><div style="font-size:13px;color:var(--text2);line-height:1.7">${text.replace(/\n/g,'<br>')}</div></div>`;
   }catch(err){
-    el.innerHTML=`<div class="ai-insight-box"><div style="font-weight:700;margin-bottom:8px">🔬 Science AI: "${q}"</div><div style="font-size:13px;color:var(--text2);line-height:1.7">${getScienceExplanation(q)}</div></div>`;
+    // Retry with simpler prompt before showing error
+    try {
+      const retry = await askAI(
+        'You are a frontier scientist. Explain concisely: ' + q,
+        'Be precise and specific. 100-150 words.', 400
+      );
+      el.innerHTML=`<div class="ai-insight-box"><div style="font-weight:700;margin-bottom:8px">🔬 Science AI: "${q}"</div><div style="font-size:13px;color:var(--text2);line-height:1.7">${retry.replace(/\n/g,'<br>')}</div></div>`;
+    } catch(e2) {
+      el.innerHTML=`<div class="ai-insight-box" style="border-color:var(--danger)"><div style="font-weight:700;margin-bottom:8px;color:var(--danger)">⚠️ Science AI offline</div><div style="font-size:12px;color:var(--text3)">Groq Worker unreachable. Check your internet connection or try again in a moment.</div></div>`;
+    }
   }
 }
 function getScienceExplanation(q){
@@ -7214,7 +7395,8 @@ function initPassiveSensing(){
     passiveData.lastInteraction=Date.now();
   },{passive:true});
   // Update passive score every 30s
-  setInterval(computePassiveCognition,30000);
+  // PERF: passive cognition every 90s (was 30s), pauses when hidden
+  setInterval(function(){ if(!document.hidden) computePassiveCognition(); },90000);
   computePassiveCognition();
 }
 function computePassiveCognition(){
@@ -7924,8 +8106,13 @@ function closeLoginOverlay(){
   document.getElementById('loginOverlay').style.display='none';
 }
 function openLoginOverlay(preferTab){
+  // Always show the form (not the spinner) when manually opening
+  const restoreUI = document.getElementById('sessionRestoreUI');
+  const formUI    = document.getElementById('loginFormUI');
+  if (restoreUI) restoreUI.style.display = 'none';
+  if (formUI)    formUI.style.display    = '';
   document.getElementById('loginOverlay').style.display='flex';
-  // Default to 'register' for first-time users, 'login' otherwise
+  // Default to 'login' for returning users, 'register' for first-timers
   const tab = preferTab || (localStorage.getItem('cos_has_account') ? 'login' : 'register');
   const btn = document.querySelector(`.login-tab-btn[onclick*="'${tab}'"]`);
   if(btn) switchLoginTab(tab, btn);
@@ -8131,7 +8318,7 @@ const LEGAL_CONTENT={
 <p>Any disputes arising from the use of this app shall be governed by applicable laws. Users are responsible for ensuring their use of this app complies with laws in their jurisdiction.</p>
 <h3>Changes</h3>
 <p>We reserve the right to update any legal notices, policies, or terms at any time. The most current version will always be available within the app.</p>
-<p style="margin-top:14px;font-size:12px;color:var(--text3)">Last updated: February 2026 · Consciousness OS v7.0</p>`
+<p style="margin-top:14px;font-size:12px;color:var(--text3)">Last updated: February 2026 · Consciousness OS</p>`
   }
 };
 
@@ -8914,10 +9101,14 @@ function init(){
   setInterval(checkAlarms,30000);
   loadCSE();
   loadTradeLog();
-  setInterval(buildTradingTicker,5000);
+  // PERF: Ticker only runs every 60s (was 5s) and only when World tab is active
+  setInterval(function(){
+    const worldTab = document.getElementById('tab-world');
+    if(worldTab && worldTab.classList.contains('active') && !document.hidden) buildTradingTicker();
+  }, 60000);
   const sl=localStorage.getItem('cos_lang')||'en';curLang=sl;
   try{document.getElementById('langSel').value=sl;}catch(e){}try{document.getElementById('settingLang').value=sl;}catch(e){}try{document.getElementById('langSelMobile').value=sl;}catch(e){}
-  setTimeout(()=>{const logs=getLogs();addChatMsg('ai',logs.length?`Hello! 👋 I see you have ${logs.length} consciousness entries. ${Math.random()>.5?'How are you feeling today?':'What\'s on your mind?'}`:"Welcome to Consciousness OS v7! 🧠 I'm your AI Digital Twin. Fill your first Daily Log and I'll start learning your patterns. What's your name?",'twin');},600);
+  setTimeout(()=>{const logs=getLogs();addChatMsg('ai',logs.length?`Hello! 👋 I see you have ${logs.length} consciousness entries. ${Math.random()>.5?'How are you feeling today?':'What\'s on your mind?'}`:"Welcome to Consciousness OS! 🧠 I'm your AI Digital Twin. Fill your first Daily Log and I'll start learning your patterns. What's your name?",'twin');},600);
   loadDailyTip();
   initNewFeatures_v7();
   initNewFeatures();
@@ -8931,13 +9122,13 @@ function init(){
   buildScienceDisplay();
   // World feed
   refreshWorldFeed();
-  // Show login if no user
-  const user=getCurrentUser();
-  if(!user){
-    setTimeout(()=>openLoginOverlay(),500);
-  }else if(!localStorage.getItem('cos_visited')){
-    localStorage.setItem('cos_visited','1');
-    setTimeout(()=>showOnboarding(),1500);
+  // Login is handled by Firebase onAuthStateChanged — do NOT use localStorage here
+  // The overlay starts visible; onAuthStateChanged hides it only when Firebase confirms auth.
+  if(!localStorage.getItem('cos_visited')){
+    auth.onAuthStateChanged(function _firstVisit(fbUser){
+      if(fbUser){ localStorage.setItem('cos_visited','1'); setTimeout(()=>showOnboarding&&showOnboarding(),1500); }
+      auth.onAuthStateChanged(_firstVisit); // unsubscribe pattern not needed, one-shot check OK
+    });
   }
 }
 document.addEventListener('DOMContentLoaded',init);
@@ -9013,7 +9204,7 @@ async function fetchLiveWorldNews(force) {
   ];
   for (const feed of RSS2JSON_FEEDS) {
     try {
-      const res = await fetch(feed);
+      const res = await fetch(feed + '&_t=' + Date.now());
       if (!res.ok) continue;
       const data = await res.json();
       if (data.status === 'ok' && data.items && data.items.length >= 3) {
@@ -9269,7 +9460,7 @@ async function fetchLiveScienceNews(force) {
   ];
   for (const feed of RSS2JSON_FEEDS) {
     try {
-      const res = await fetch(feed);
+      const res = await fetch(feed + '&_t=' + Date.now());
       if (!res.ok) continue;
       const data = await res.json();
       if (data.status === 'ok' && data.items && data.items.length >= 3) {
@@ -10078,7 +10269,7 @@ async function fetchScienceNews(tier){
   // Layer 1: Try all RSS feeds
   for (const feed of SCIENCE_FEEDS) {
     try {
-      const res = await fetch(feed);
+      const res = await fetch(feed + '&_t=' + Date.now());
       const data = await res.json();
       if (data.status === 'ok' && data.items?.length >= 2) {
         items = data.items.slice(0, t.count);
@@ -10096,7 +10287,7 @@ async function fetchScienceNews(tier){
 
   // Layer 2: allorigins proxy
   try {
-    const res = await fetch('https://api.allorigins.win/get?url=' + encodeURIComponent('https://www.sciencedaily.com/rss/all.xml'));
+    const res = await fetch('https://api.allorigins.win/get?url=' + encodeURIComponent('https://www.sciencedaily.com/rss/all.xml') + '&_t=' + Date.now());
     const data = await res.json();
     if (data.contents) {
       const xml = new DOMParser().parseFromString(data.contents, 'text/xml');
@@ -10135,7 +10326,7 @@ async function loadGeoNews(tier){
   // Layer 1: Try all RSS feeds
   for (const feed of GEO_FEEDS) {
     try {
-      const res = await fetch(feed);
+      const res = await fetch(feed + '&_t=' + Date.now());
       const data = await res.json();
       if (data.status === 'ok' && data.items?.length >= 2) {
         items = data.items.slice(0, t.count);
@@ -10153,7 +10344,7 @@ async function loadGeoNews(tier){
 
   // Layer 2: allorigins proxy
   try {
-    const res = await fetch('https://api.allorigins.win/get?url=' + encodeURIComponent('https://feeds.bbci.co.uk/news/world/rss.xml'));
+    const res = await fetch('https://api.allorigins.win/get?url=' + encodeURIComponent('https://feeds.bbci.co.uk/news/world/rss.xml') + '&_t=' + Date.now());
     const data = await res.json();
     if (data.contents) {
       const xml = new DOMParser().parseFromString(data.contents, 'text/xml');
@@ -10184,13 +10375,19 @@ async function loadGeoNews(tier){
 // Tiered refresh — each tap goes deeper in time granularity
 function sciTieredRefresh(){
   window._sciRefreshTier = (window._sciRefreshTier + 1) % NEWS_REFRESH_TIERS.length;
+  const t = NEWS_REFRESH_TIERS[window._sciRefreshTier];
+  showToast('🔬 ' + t.label + ' — fetching live…');
+  // Clear localStorage cache so re-fetch is forced (never serve stale data)
+  ['cos_live_science_news','cos_science_for_cil'].forEach(k=>localStorage.removeItem(k));
   fetchScienceNews(window._sciRefreshTier);
-  showToast('🔬 ' + NEWS_REFRESH_TIERS[window._sciRefreshTier].label);
 }
 function geoTieredRefresh(){
   window._geoRefreshTier = (window._geoRefreshTier + 1) % NEWS_REFRESH_TIERS.length;
+  const t = NEWS_REFRESH_TIERS[window._geoRefreshTier];
+  showToast('🌍 ' + t.label + ' — fetching live…');
+  // Clear localStorage cache so re-fetch is forced
+  ['cos_live_world_news','cos_world_for_cil'].forEach(k=>localStorage.removeItem(k));
   loadGeoNews(window._geoRefreshTier);
-  showToast('🌍 ' + NEWS_REFRESH_TIERS[window._geoRefreshTier].label);
 }
 
 async function analyzeSciWithAI(){
@@ -10331,14 +10528,37 @@ function _mbrsGenFallbackThumb(cat,cc){
   }catch(e){return '';}
 }
 
+// Global fallback store — never embed base64 inside HTML attribute strings
+window._mbrsFallbacks = window._mbrsFallbacks || {};
+
+// 3-step clean fallback chain for YouTube thumbs
+function _mbrsFail(img, vid) {
+  var s = img.src || '';
+  if (s.indexOf('mqdefault') > -1) {
+    img.src = 'https://img.youtube.com/vi/' + vid + '/hqdefault.jpg';
+  } else if (s.indexOf('hqdefault') > -1) {
+    img.src = 'https://img.youtube.com/vi/' + vid + '/0.jpg';
+  } else {
+    img.onerror = null;
+    var fb = window._mbrsFallbacks[vid];
+    if (fb) { img.src = fb; return; }
+    // Last resort: replace with gradient tile
+    var d = document.createElement('div');
+    d.style.cssText = 'width:104px;height:60px;border-radius:8px;background:linear-gradient(135deg,#7c3aed,#0a0014);display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0';
+    d.textContent = '🎬';
+    if (img.parentNode) img.parentNode.replaceWith(d);
+  }
+}
+
 function _mbrsBuildCard(item){
   const platColors={youtube:'#FF0000',ted:'#E62B1E',web:'#7c3aed',podcast:'#9333ea',twitter:'#1DA1F2',reddit:'#FF4500',substack:'#FF6719'};
   const bc=item.bc||platColors[item.pl]||'#7c3aed';
-  const fallbackSrc=_mbrsGenFallbackThumb(item.cat,item.cc);
+  // Store canvas fallback in global dict keyed by video ID — not in HTML attr
+  if(item.vid) window._mbrsFallbacks[item.vid] = _mbrsGenFallbackThumb(item.cat, item.cc);
   const thumbHtml=item.vid?
     `<div style="position:relative;flex-shrink:0;width:104px;height:60px;border-radius:8px;overflow:hidden;background:#111">
       <img src="https://img.youtube.com/vi/${item.vid}/mqdefault.jpg" style="width:100%;height:100%;object-fit:cover;display:block"
-        onerror="this.onerror=null;this.src='https://img.youtube.com/vi/${item.vid}/hqdefault.jpg';this.onerror=function(){if('${fallbackSrc}')this.src='${fallbackSrc}';this.onerror=null;}" loading="lazy">
+        onerror="_mbrsFail(this,'${item.vid}')" loading="eager">
       <div style="position:absolute;bottom:3px;right:4px;background:rgba(0,0,0,.85);border-radius:3px;padding:1px 5px;font-size:9px;color:#fff">▶</div>
     </div>`:
     `<div style="flex-shrink:0;width:104px;height:60px;border-radius:8px;background:linear-gradient(135deg,${item.cc||'#7c3aed'},#0a0014);display:flex;align-items:center;justify-content:center;font-size:30px">${(item.cat||'').split(' ')[0]||'🌌'}</div>`;
@@ -10428,10 +10648,143 @@ document.addEventListener('DOMContentLoaded',()=>{setTimeout(()=>{if(document.ge
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('./service-worker.js')
-          .then(reg => console.log('✅ SW registered:', reg.scope))
+          .then(reg => {
+            console.log('✅ SW registered:', reg.scope);
+            reg.update(); // check for update immediately on load
+            setInterval(() => reg.update(), 60000); // re-check every 60s
+            // When a new SW is waiting, reload to activate it
+            reg.addEventListener('updatefound', () => {
+              const nw = reg.installing;
+              if (!nw) return;
+              nw.addEventListener('statechange', () => {
+                if (nw.state === 'installed' && navigator.serviceWorker.controller) {
+                  console.log('[SW] New version ready — reloading…');
+                  window.location.reload();
+                }
+              });
+            });
+          })
           .catch(err => console.log('SW registration failed:', err));
       });
     }
-  </script>
+  
+async function loadScienceNews(){
+  const url = "https://api.rss2json.com/v1/api.json?rss_url=https://www.sciencedaily.com/rss/top/science.xml";
+  try {
+    const res  = await fetch(url + "?v=" + Date.now());
+    const data = await res.json();
+    const container = document.getElementById("scienceFeed");
+    if(!container) return;
+    if(!data.items || !data.items.length){ container.innerHTML='<div style="color:var(--text3);text-align:center;padding:12px">No science articles found.</div>'; return; }
+    container.innerHTML = data.items.slice(0,6).map(item=>`
+      <div class="news-card" style="background:var(--bg2);border-radius:12px;padding:12px;margin-bottom:8px;border:1px solid var(--border)">
+        <h3 style="font-size:13px;font-weight:700;color:var(--text);margin:0 0 6px">${item.title}</h3>
+        <p style="font-size:11px;color:var(--text2);margin:0 0 8px;line-height:1.5">${(item.description||'').replace(/<[^>]+>/g,'').slice(0,180)}</p>
+        <a href="${item.link}" target="_blank" rel="noopener" style="font-size:11px;color:var(--primary);font-weight:700;text-decoration:none">Read →</a>
+      </div>`).join('');
+    showToast('✅ Science feed refreshed!');
+  } catch(e) {
+    const container = document.getElementById("scienceFeed");
+    if(container) container.innerHTML=`<div style="color:var(--danger);text-align:center;padding:12px">⚠️ Feed error: ${e.message}</div>`;
+    showToast('❌ Science feed error');
+  }
+}
+
+
+// ── askAI / runAI — General-purpose AI via Groq Worker ────────────────────
+// Routes through the same Cloudflare Worker as all other AI calls.
+// Key never exposed in source — lives only in the Worker secret.
+async function askAI(prompt, systemPrompt, maxTok) {
+  // Single entry point for ALL AI calls → Cloudflare Worker → Groq llama-3.3-70b-versatile
+  systemPrompt = systemPrompt || 'You are an advanced strategic intelligence AI inside Consciousness OS. Be precise, specific, and data-driven.';
+  const res = await fetch(_WORKER_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'llama-3.3-70b-versatile',
+      max_tokens: maxTok || 900,
+      temperature: 0.85,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user',   content: prompt }
+      ]
+    }),
+    signal: AbortSignal.timeout(15000)
+  });
+  if (!res.ok) { const txt = await res.text().catch(()=>''); throw new Error(`Worker error ${res.status}: ${txt.slice(0,120)}`); }
+  const data = await res.json();
+  if (data.error) throw new Error(data.error.message || 'Groq Worker error');
+  const content = data.choices?.[0]?.message?.content;
+  if (!content) throw new Error('Groq returned empty content');
+  return content;
+}
+
+async function runAI(inputSelector, outputId, systemPrompt) {
+  const inputEl = inputSelector ? document.querySelector(inputSelector) : null;
+  const prompt  = (inputEl ? inputEl.value : '').trim();
+  const outEl   = document.getElementById(outputId || 'aiOutput');
+  if (!prompt) { showToast('Enter a question first'); return; }
+  if (outEl) outEl.innerHTML = '<div style="color:var(--text3);font-size:12px;padding:8px">⏳ Groq is thinking...</div>';
+  try {
+    const answer = await askAI(prompt, systemPrompt);
+    if (outEl) outEl.innerHTML =
+      `<div style="background:var(--bg2);border-radius:12px;padding:12px;border:1px solid var(--border);
+        font-size:13px;color:var(--text);line-height:1.6;white-space:pre-wrap">${answer}</div>`;
+    showToast('✅ AI response ready');
+  } catch(e) {
+    if (outEl) outEl.innerHTML = `<div style="color:var(--danger);font-size:12px;padding:8px">❌ ${e.message}</div>`;
+    showToast('❌ AI error: ' + e.message.slice(0,60));
+  }
+}
+
+
+// ── YouTube Thumbnail Helper ─────────────────────────────────────────────
+function getThumbnail(url){
+  try {
+    const id = url.includes('v=') ? url.split('v=')[1].split('&')[0]
+              : url.includes('youtu.be/') ? url.split('youtu.be/')[1].split('?')[0]
+              : null;
+    return id ? 'https://img.youtube.com/vi/' + id + '/0.jpg' : '';
+  } catch(e) { return ''; }
+}
+
+</script>
+
+<script>
+// ── PAGE VISIBILITY: pause all heavy work when screen turns off / app backgrounded ──
+(function() {
+  // Freeze / resume on visibility change
+  document.addEventListener('visibilitychange', function() {
+    if (document.hidden) {
+      // Page hidden: stop any running immersive timer, audio, animations
+      if (typeof stopImmersive === 'function') try { stopImmersive(); } catch(e) {}
+      if (typeof stopBrainwaveAudio === 'function') try { stopBrainwaveAudio(); } catch(e) {}
+      // Suspend all CSS animations to free GPU
+      document.documentElement.style.setProperty('--anim-play-state', 'paused');
+    } else {
+      // Page visible again: resume
+      document.documentElement.style.setProperty('--anim-play-state', 'running');
+    }
+  });
+
+  // Aggressive memory cleanup: clear large caches if RAM is tight
+  if ('memory' in performance) {
+    setInterval(function() {
+      const mem = performance.memory;
+      // If using >200MB JS heap, clear non-critical caches
+      if (mem.usedJSHeapSize > 200 * 1024 * 1024) {
+        try {
+          // Clear allorigins RSS caches
+          ['cos_sci_cache','cos_world_cache','cos_mkt_cache'].forEach(k => {
+            const v = localStorage.getItem(k);
+            // Only clear if older than 5 min
+            if (v) { try { const d = JSON.parse(v); if (Date.now() - d.ts > 300000) localStorage.removeItem(k); } catch(e){} }
+          });
+        } catch(e) {}
+      }
+    }, 120000); // check every 2 min
+  }
+})();
+</script>
 </body>
 </html>
