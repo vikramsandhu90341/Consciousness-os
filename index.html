@@ -2457,6 +2457,7 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
       </div>
       <div style="font-size:10px;color:var(--text3);margin-bottom:8px">Showing only events every high-IQ, power-aware mind must know. Tap Tier Refresh to see 12h→6h→3h→1h granularity.</div>
       <div id="geo-news" style="margin-bottom:8px"></div>
+      <div id="worldFeed"></div>
     <div id="geoEventsList"></div>
     </div>
     <div class="card">
@@ -2747,6 +2748,7 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
     </div>
     <div style="font-size:10px;color:var(--text3);margin-bottom:8px">High-signal science only — breakthroughs that matter to civilization. Each Tier Refresh drills deeper: 24h→12h→6h→3h→1h.</div>
     <div id="science-news" style="margin-bottom:4px"></div>
+    <div id="scienceFeed"></div>
   </div>
   <div id="discoveriesDisplay"></div>
 
@@ -10784,6 +10786,66 @@ function getThumbnail(url){
       }
     }, 120000); // check every 2 min
   }
+// ── STEP 7: initWorldTab — Wikipedia live news feed ──────────────────────────
+async function initWorldTab() {
+  const container = document.getElementById('worldFeed');
+  if (!container) return;
+  container.innerHTML = '<p style="color:var(--text3);font-size:13px">Loading world events...</p>';
+
+  try {
+    // Wikipedia "In the News" — 100% free, no API key
+    const res = await fetch('https://en.wikipedia.org/api/rest_v1/feed/featured/' +
+      new Date().toISOString().slice(0,10).replace(/-/g,'/'));
+    const data = await res.json();
+    const news = data.news || [];
+
+    container.innerHTML = news.slice(0,8).map(n => `
+      <div style="background:var(--bg3);border-radius:10px;padding:12px;margin-bottom:8px;font-size:13px">
+        <p style="color:var(--text2);line-height:1.6">${n.story.replace(/<[^>]+>/g,'').slice(0,180)}...</p>
+        <a href="${n.links?.[0]?.content_urls?.desktop?.page||'#'}"
+           target="_blank" style="color:var(--primary);font-size:11px;font-weight:700">Read more →</a>
+      </div>
+    `).join('') || '<p style="color:var(--text3)">No news loaded.</p>';
+  } catch(e) {
+    container.innerHTML = '<p style="color:var(--danger);font-size:13px">Could not load news.</p>';
+  }
+}
+
+// ── STEP 8: initScienceTab — HackerNews science feed ─────────────────────────
+async function initScienceTab() {
+  const container = document.getElementById('scienceFeed');
+  if (!container) return;
+  container.innerHTML = '<p style="color:var(--text3);font-size:13px">Loading science news...</p>';
+
+  try {
+    // HackerNews — free, no API key ever
+    const topRes = await fetch('https://hacker-news.firebaseio.com/v0/topstories.json');
+    const ids = (await topRes.json()).slice(0, 15);
+
+    const stories = await Promise.all(
+      ids.map(id => fetch(`https://hacker-news.firebaseio.com/v0/item/${id}.json`).then(r => r.json()))
+    );
+
+    const scienceStories = stories.filter(s =>
+      s && s.title && /science|AI|brain|space|quantum|health|bio|physics|study/i.test(s.title)
+    ).slice(0, 6);
+
+    container.innerHTML = scienceStories.map(s => `
+      <div style="background:var(--bg3);border-radius:10px;padding:12px;margin-bottom:8px">
+        <p style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px">${s.title}</p>
+        <div style="display:flex;gap:12px;font-size:11px;color:var(--text3)">
+          <span>⬆️ ${s.score}</span>
+          <span>💬 ${s.descendants||0}</span>
+          <a href="${s.url||'#'}" target="_blank" style="color:var(--primary);font-weight:700">Read →</a>
+        </div>
+      </div>
+    `).join('') || '<p style="color:var(--text3)">No science stories right now.</p>';
+
+  } catch(e) {
+    container.innerHTML = '<p style="color:var(--danger);font-size:13px">Could not load science feed.</p>';
+  }
+}
+
 })();
 </script>
 </body>
