@@ -1199,6 +1199,61 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
 .protocol-step.active-step{border-left-color:var(--success);background:rgba(16,185,129,.06)}
 .protocol-timer{font-family:Syne,sans-serif;font-size:36px;font-weight:900;color:var(--accent);text-align:center;margin:10px 0}
 .wbtb-alarm-card{background:linear-gradient(135deg,rgba(6,182,212,.1),rgba(124,58,237,.1));border:2px solid rgba(6,182,212,.25);border-radius:14px;padding:16px;margin-bottom:12px;text-align:center}
+
+/* ══════════════════════════════════════════
+   PRO SYSTEM — PAYWALL + STREAK + BADGES
+══════════════════════════════════════════ */
+
+/* PRO BADGE */
+.pro-badge{display:inline-flex;align-items:center;gap:3px;background:linear-gradient(135deg,#f59e0b,#ef4444);color:#fff;font-size:9px;font-weight:900;padding:2px 7px;border-radius:20px;letter-spacing:.5px;text-transform:uppercase;vertical-align:middle;margin-left:6px}
+.pro-lock-icon{font-size:18px;opacity:.5}
+
+/* PRO GATE OVERLAY (inside a card) */
+.pro-gate{position:relative;overflow:hidden;border-radius:12px}
+.pro-gate-blur{filter:blur(4px);pointer-events:none;user-select:none;opacity:.45}
+.pro-gate-overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;z-index:10;padding:20px;text-align:center}
+.pro-gate-overlay .pg-icon{font-size:36px}
+.pro-gate-overlay .pg-title{font-family:Syne,sans-serif;font-size:15px;font-weight:800;color:var(--text)}
+.pro-gate-overlay .pg-sub{font-size:11px;color:var(--text3);line-height:1.5;max-width:220px}
+
+/* PAYWALL MODAL */
+#proModal{display:none;position:fixed;inset:0;z-index:9500;background:rgba(0,0,0,.75);align-items:flex-end;justify-content:center}
+#proModal.open{display:flex}
+.pro-modal-card{background:var(--bg);border-radius:24px 24px 0 0;padding:28px 22px 40px;width:100%;max-width:480px;border:1px solid rgba(124,58,237,.3);box-shadow:0 -12px 60px rgba(124,58,237,.25)}
+.pro-modal-glow{width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#7c3aed,#ec4899);display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 14px}
+.pro-modal-title{font-family:Syne,sans-serif;font-size:22px;font-weight:900;text-align:center;background:linear-gradient(135deg,#a78bfa,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:6px}
+.pro-modal-sub{font-size:13px;color:var(--text3);text-align:center;margin-bottom:20px;line-height:1.6}
+.pro-feature-list{margin-bottom:20px}
+.pro-feature-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px}
+.pro-feature-item:last-child{border-bottom:none}
+.pro-feature-item .pfi-icon{font-size:18px;flex-shrink:0}
+.pro-feature-item .pfi-label{font-weight:700;color:var(--text)}
+.pro-feature-item .pfi-sub{font-size:11px;color:var(--text3)}
+.pro-price-row{background:linear-gradient(135deg,rgba(124,58,237,.12),rgba(236,72,153,.08));border:1px solid rgba(124,58,237,.25);border-radius:14px;padding:14px;text-align:center;margin-bottom:16px}
+.pro-price-main{font-family:Syne,sans-serif;font-size:28px;font-weight:900;color:var(--primary)}
+.pro-price-sub{font-size:11px;color:var(--text3);margin-top:2px}
+.pro-upi-btn{width:100%;padding:16px;border:none;border-radius:14px;background:linear-gradient(135deg,#7c3aed,#ec4899);color:#fff;font-size:16px;font-weight:800;cursor:pointer;letter-spacing:.3px;margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:8px}
+.pro-upi-btn:active{transform:scale(.98)}
+.pro-dismiss{width:100%;background:none;border:none;color:var(--text3);font-size:13px;cursor:pointer;padding:8px}
+
+/* STREAK WIDGET */
+.streak-widget{background:linear-gradient(135deg,rgba(251,146,60,.12),rgba(239,68,68,.08));border:1px solid rgba(251,146,60,.3);border-radius:16px;padding:14px 16px;margin-bottom:14px;display:flex;align-items:center;gap:14px}
+.streak-flame{font-size:32px;line-height:1;animation:flamePulse 2s ease-in-out infinite}
+@keyframes flamePulse{0%,100%{transform:scale(1)}50%{transform:scale(1.15)}}
+.streak-info{}
+.streak-count{font-family:Syne,sans-serif;font-size:26px;font-weight:900;color:#f97316;line-height:1}
+.streak-label{font-size:11px;color:var(--text3);margin-top:2px}
+.streak-dots{display:flex;gap:4px;margin-top:6px}
+.streak-dot{width:8px;height:8px;border-radius:50%;background:var(--bg3);transition:background .3s}
+.streak-dot.active{background:#f97316}
+.streak-dot.today{background:#22c55e;box-shadow:0 0 6px #22c55e}
+.streak-dot.missed{background:#ef4444;opacity:.5}
+
+/* PRO status pill in topbar */
+.pro-status-pill{font-size:10px;font-weight:800;padding:2px 8px;border-radius:10px;background:linear-gradient(135deg,#f59e0b,#ef4444);color:#fff;margin-left:4px;letter-spacing:.3px}
+
+/* Referral card */
+.referral-card{background:linear-gradient(135deg,rgba(6,182,212,.1),rgba(16,185,129,.08));border:1px solid rgba(6,182,212,.25);border-radius:14px;padding:16px;margin-top:14px}
 </style>
 
 <body>
@@ -1331,6 +1386,76 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
   </div>
 </div>
 
+<!-- ══════════════════════════════════════
+     PRO UPGRADE MODAL
+══════════════════════════════════════ -->
+<div id="proModal">
+  <div class="pro-modal-card">
+    <div class="pro-modal-glow">✨</div>
+    <div class="pro-modal-title">Consciousness OS Pro</div>
+    <div class="pro-modal-sub" id="proModalSub">Unlock your full cognitive potential. One-time payment, lifetime access.</div>
+
+    <div class="pro-feature-list">
+      <div class="pro-feature-item">
+        <div class="pfi-icon">🪞</div>
+        <div><div class="pfi-label">AI Mind Mirror — Unlimited</div><div class="pfi-sub">Ask the AI anything about your consciousness data</div></div>
+      </div>
+      <div class="pro-feature-item">
+        <div class="pfi-icon">💾</div>
+        <div><div class="pfi-label">Consciousness Export</div><div class="pfi-sub">Download your full cognitive profile as JSON</div></div>
+      </div>
+      <div class="pro-feature-item">
+        <div class="pfi-icon">📊</div>
+        <div><div class="pfi-label">Deep Pattern Analysis</div><div class="pfi-sub">AI detects behavioral patterns across months</div></div>
+      </div>
+      <div class="pro-feature-item">
+        <div class="pfi-icon">🔮</div>
+        <div><div class="pfi-label">Vault — Full Access</div><div class="pfi-sub">Peak states, fingerprint evolution, all insights</div></div>
+      </div>
+      <div class="pro-feature-item">
+        <div class="pfi-icon">🎁</div>
+        <div><div class="pfi-label">Referral Rewards</div><div class="pfi-sub">Get 1 month Pro free per friend you refer</div></div>
+      </div>
+    </div>
+
+    <div class="pro-price-row">
+      <div class="pro-price-main">₹25 <span style="font-size:14px;font-weight:400;color:var(--text3)">/ month</span></div>
+      <div class="pro-price-sub">or ₹199/year (save 33%) &nbsp;·&nbsp; Cancel anytime</div>
+    </div>
+
+    <button class="pro-upi-btn" onclick="openUPIPayment('monthly')">
+      <span>⚡</span> Pay ₹25 via UPI / Razorpay
+    </button>
+    <button class="pro-upi-btn" onclick="openUPIPayment('yearly')" style="background:linear-gradient(135deg,#0891b2,#7c3aed);margin-bottom:14px">
+      <span>🏆</span> Pay ₹199/year — Best Value
+    </button>
+
+    <div style="font-size:11px;color:var(--text3);text-align:center;margin-bottom:12px;line-height:1.6">
+      📲 UPI payment opens. Send to <strong>vikramsandhu90341@upi</strong><br>
+      After payment, tap "I've Paid" and your Pro unlocks within 1 hour.
+    </div>
+
+    <button class="btn btn-secondary btn-sm btn-block" onclick="iHavePaid()" style="margin-bottom:8px">✅ I've Paid — Unlock Pro</button>
+    <button class="pro-dismiss" onclick="closeProModal()">Maybe later</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     REFERRAL MODAL
+══════════════════════════════════════ -->
+<div id="referralModal" style="display:none;position:fixed;inset:0;z-index:9400;background:rgba(0,0,0,.7);align-items:center;justify-content:center;padding:20px">
+  <div style="background:var(--bg);border-radius:20px;padding:24px;max-width:360px;width:100%;border:1px solid rgba(6,182,212,.3)">
+    <div style="font-size:36px;text-align:center;margin-bottom:10px">🎁</div>
+    <div style="font-family:Syne,sans-serif;font-size:17px;font-weight:800;text-align:center;margin-bottom:6px;color:var(--primary)">Refer & Earn Pro</div>
+    <div style="font-size:12px;color:var(--text3);text-align:center;margin-bottom:16px;line-height:1.6">Share your referral link. When a friend upgrades to Pro, you <strong>both</strong> get 1 month free.</div>
+    <div style="background:var(--bg3);border-radius:10px;padding:12px;font-size:12px;word-break:break-all;color:var(--primary);font-weight:700;margin-bottom:12px;text-align:center" id="referralLinkDisplay">Loading your link...</div>
+    <button class="btn btn-primary btn-block" onclick="copyReferralLink()" style="margin-bottom:8px">📋 Copy Referral Link</button>
+    <button class="btn btn-secondary btn-block" onclick="shareReferralLink()" style="margin-bottom:12px">📲 Share via WhatsApp / Instagram</button>
+    <div style="font-size:11px;color:var(--text3);text-align:center;margin-bottom:10px" id="referralStats">Your referrals: 0 &nbsp;|&nbsp; Free months earned: 0</div>
+    <button onclick="closeReferralModal()" style="width:100%;background:none;border:none;color:var(--text3);font-size:13px;cursor:pointer">Close</button>
+  </div>
+</div>
+
 <!-- ══ LEGAL PAGES OVERLAY ══ -->
 <div class="legal-page-overlay" id="legalPageOverlay">
   <div class="legal-page-card">
@@ -1357,6 +1482,7 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
       <button class="tb-btn" onclick="toggleTheme()" id="themeBtnMob" title="Toggle theme">🌙</button>
       <button class="tb-btn" onclick="openProfileSwitcher()" id="profileTopBtnMob" title="Account">👤</button>
       <button class="tb-btn" onclick="eruda.show()" id="_dbgTopBtnMob" title="DevTools Inspector" style="font-size:15px">🐛</button>
+      <button class="tb-btn" onclick="toggleDevPanel()" id="devPanelBtn" title="Dev Panel" style="font-size:15px;display:none">🛠️</button>
     </div>
   </div>
   <!-- Row 2: Desktop quick action buttons -->
@@ -1392,6 +1518,96 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
 <!-- ── PROFILE BAR (shown below topbar when clicked) ── -->
 <div id="profileBar" style="display:none;position:fixed;top:var(--topbar-h);left:0;right:0;z-index:190;background:var(--bg2);border-bottom:1px solid var(--border);box-shadow:0 4px 12px rgba(0,0,0,.08)">
   <div class="profile-bar" id="profileBarInner"></div>
+</div>
+
+<!-- ══════════════════════════════════════
+     DEV PANEL — LANDSCAPE MODE ONLY
+══════════════════════════════════════ -->
+<div id="devPanel" style="
+  display:none;
+  position:fixed;
+  top:0; right:0;
+  width:320px;
+  height:100vh;
+  z-index:8900;
+  background:var(--bg2);
+  border-left:2px solid var(--primary);
+  box-shadow:-8px 0 40px rgba(124,58,237,.25);
+  flex-direction:column;
+  font-family:monospace;
+  overflow:hidden;
+">
+  <!-- Header -->
+  <div style="background:linear-gradient(135deg,#1a0533,#0d1a33);padding:12px 14px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+    <div style="color:#a78bfa;font-weight:800;font-size:13px;letter-spacing:.5px">🛠️ DEV PANEL</div>
+    <div style="display:flex;gap:6px;align-items:center">
+      <div id="devPanelVersion" style="font-size:10px;color:#666;background:#111;padding:2px 8px;border-radius:4px">v8.0.0</div>
+      <button onclick="toggleDevPanel()" style="background:#ef4444;border:none;color:#fff;border-radius:6px;padding:3px 10px;cursor:pointer;font-size:12px;font-weight:700">✕</button>
+    </div>
+  </div>
+
+  <!-- Tab bar -->
+  <div style="display:flex;background:#111;border-bottom:1px solid #333;flex-shrink:0">
+    <button class="dpTab active" onclick="devTab(this,'dpInfo')" style="flex:1;padding:7px 4px;font-size:10px;font-weight:700;border:none;cursor:pointer;background:rgba(124,58,237,.25);color:#a78bfa;letter-spacing:.3px">INFO</button>
+    <button class="dpTab" onclick="devTab(this,'dpStorage')" style="flex:1;padding:7px 4px;font-size:10px;font-weight:700;border:none;cursor:pointer;background:transparent;color:#666;letter-spacing:.3px">STORAGE</button>
+    <button class="dpTab" onclick="devTab(this,'dpFirebase')" style="flex:1;padding:7px 4px;font-size:10px;font-weight:700;border:none;cursor:pointer;background:transparent;color:#666;letter-spacing:.3px">FIREBASE</button>
+    <button class="dpTab" onclick="devTab(this,'dpPro')" style="flex:1;padding:7px 4px;font-size:10px;font-weight:700;border:none;cursor:pointer;background:transparent;color:#666;letter-spacing:.3px">PRO</button>
+    <button class="dpTab" onclick="devTab(this,'dpLogs')" style="flex:1;padding:7px 4px;font-size:10px;font-weight:700;border:none;cursor:pointer;background:transparent;color:#666;letter-spacing:.3px">LOGS</button>
+  </div>
+
+  <!-- Panels -->
+  <div style="flex:1;overflow-y:auto;padding:12px;font-size:11px;color:#ccc;line-height:1.7" id="devPanelContent">
+
+    <!-- INFO panel -->
+    <div id="dpInfo">
+      <div style="color:#a78bfa;font-weight:700;margin-bottom:8px;font-size:12px">📱 App Info</div>
+      <div id="dpInfoContent" style="background:#111;border-radius:8px;padding:10px;font-size:10px;color:#aaa;line-height:1.9"></div>
+      <div style="color:#a78bfa;font-weight:700;margin:10px 0 6px;font-size:12px">⚡ Quick Actions</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+        <button onclick="devAction('clearCache')" style="background:#1a1a2e;border:1px solid #333;color:#ccc;padding:7px;border-radius:6px;cursor:pointer;font-size:10px;font-family:monospace">🗑️ Clear Cache</button>
+        <button onclick="devAction('reloadApp')" style="background:#1a1a2e;border:1px solid #333;color:#ccc;padding:7px;border-radius:6px;cursor:pointer;font-size:10px;font-family:monospace">🔄 Reload App</button>
+        <button onclick="devAction('exportLogs')" style="background:#1a1a2e;border:1px solid #333;color:#ccc;padding:7px;border-radius:6px;cursor:pointer;font-size:10px;font-family:monospace">📤 Export Logs</button>
+        <button onclick="devAction('testToast')" style="background:#1a1a2e;border:1px solid #333;color:#ccc;padding:7px;border-radius:6px;cursor:pointer;font-size:10px;font-family:monospace">🍞 Test Toast</button>
+        <button onclick="devAction('grantPro')" style="background:#2d1a0e;border:1px solid #7c3aed;color:#a78bfa;padding:7px;border-radius:6px;cursor:pointer;font-size:10px;font-family:monospace">✨ Grant Pro</button>
+        <button onclick="devAction('revokePro')" style="background:#1a0e0e;border:1px solid #ef4444;color:#f87171;padding:7px;border-radius:6px;cursor:pointer;font-size:10px;font-family:monospace">🚫 Revoke Pro</button>
+      </div>
+    </div>
+
+    <!-- STORAGE panel -->
+    <div id="dpStorage" style="display:none">
+      <div style="color:#a78bfa;font-weight:700;margin-bottom:8px;font-size:12px">🗄️ LocalStorage Keys</div>
+      <div id="dpStorageContent" style="background:#111;border-radius:8px;padding:8px;font-size:9px;color:#aaa;line-height:1.8;word-break:break-all;max-height:calc(100vh - 180px);overflow-y:auto"></div>
+    </div>
+
+    <!-- FIREBASE panel -->
+    <div id="dpFirebase" style="display:none">
+      <div style="color:#a78bfa;font-weight:700;margin-bottom:8px;font-size:12px">🔥 Firebase Status</div>
+      <div id="dpFirebaseContent" style="background:#111;border-radius:8px;padding:10px;font-size:10px;color:#aaa;line-height:1.9"></div>
+      <button onclick="devFirebaseSync()" style="width:100%;margin-top:8px;background:#1a1a2e;border:1px solid #7c3aed;color:#a78bfa;padding:8px;border-radius:6px;cursor:pointer;font-size:10px;font-family:monospace">🔄 Force Firestore Sync</button>
+    </div>
+
+    <!-- PRO panel -->
+    <div id="dpPro" style="display:none">
+      <div style="color:#f59e0b;font-weight:700;margin-bottom:8px;font-size:12px">✨ Pro System</div>
+      <div id="dpProContent" style="background:#111;border-radius:8px;padding:10px;font-size:10px;color:#aaa;line-height:1.9"></div>
+      <div style="color:#a78bfa;font-weight:700;margin:10px 0 6px;font-size:12px">📨 Pending Approvals</div>
+      <div id="dpProPending" style="background:#111;border-radius:8px;padding:8px;font-size:9px;color:#aaa;max-height:160px;overflow-y:auto">Loading...</div>
+      <button onclick="devLoadPendingPro()" style="width:100%;margin-top:8px;background:#1a1a2e;border:1px solid #f59e0b;color:#f59e0b;padding:8px;border-radius:6px;cursor:pointer;font-size:10px;font-family:monospace">🔄 Refresh Pending</button>
+    </div>
+
+    <!-- LOGS panel -->
+    <div id="dpLogs" style="display:none">
+      <div style="color:#a78bfa;font-weight:700;margin-bottom:8px;font-size:12px">📋 Console Log</div>
+      <div id="dpLogsContent" style="background:#111;border-radius:8px;padding:8px;font-size:9px;color:#aaa;line-height:1.8;max-height:calc(100vh - 180px);overflow-y:auto;word-break:break-all"></div>
+      <button onclick="document.getElementById('dpLogsContent').innerHTML=''" style="width:100%;margin-top:8px;background:#1a1a2e;border:1px solid #ef4444;color:#f87171;padding:8px;border-radius:6px;cursor:pointer;font-size:10px;font-family:monospace">🗑️ Clear Log</button>
+    </div>
+
+  </div>
+  <!-- Status bar -->
+  <div style="background:#0a0a0f;padding:6px 12px;font-size:9px;color:#555;border-top:1px solid #222;flex-shrink:0;display:flex;justify-content:space-between">
+    <span id="dpStatusLeft">Consciousness OS Dev Panel</span>
+    <span id="dpStatusRight">landscape mode</span>
+  </div>
 </div>
 
 <!-- ══ MAIN CONTENT ══ -->
@@ -1602,6 +1818,20 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
 ════════════════════════════════════════════ -->
 <div class="tab-panel active" id="tab-log">
   <div class="section-header">📝 <span data-t="daily_log">Daily Consciousness Log</span></div>
+
+  <!-- ══ STREAK WIDGET ══ -->
+  <div class="streak-widget" id="streakWidget" onclick="switchTab('vault')" style="cursor:pointer">
+    <div class="streak-flame" id="streakFlame">🔥</div>
+    <div class="streak-info" style="flex:1">
+      <div class="streak-count"><span id="streakCount">0</span> day streak</div>
+      <div class="streak-label" id="streakLabel">Log today to keep your streak alive!</div>
+      <div class="streak-dots" id="streakDots"></div>
+    </div>
+    <div style="text-align:right">
+      <div style="font-size:10px;color:var(--text3)">Best</div>
+      <div style="font-family:Syne,sans-serif;font-size:16px;font-weight:800;color:var(--primary)" id="streakBest">0</div>
+    </div>
+  </div>
 
   <div class="card">
     <div class="card-title"><span class="emoji">📅</span> <span data-t="entry_info">Entry Info</span></div>
@@ -2077,13 +2307,29 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
     <button class="btn btn-secondary btn-sm btn-block" onclick="buildVaultPatterns()" style="margin-top:10px">🔄 Detect Patterns</button>
   </div>
 
-  <!-- AI Mind Mirror -->
-  <div class="card">
-    <div class="card-title"><span class="emoji">🪞</span> AI Mind Mirror</div>
-    <div style="font-size:12px;color:var(--text3);margin-bottom:12px">Ask the AI to describe you — based entirely on your actual logged data. Not generic advice. A mirror of your specific consciousness.</div>
-    <textarea class="form-textarea" id="mirrorPrompt" placeholder="e.g., 'Who am I based on my data?' / 'What is my cognitive type?' / 'What should I work on?' / 'Describe my consciousness pattern in one paragraph.'" style="min-height:70px;margin-bottom:8px"></textarea>
-    <button class="btn btn-primary btn-block btn-sm" onclick="askMirrorAI()">🪞 Ask the Mirror</button>
-    <div id="mirrorOutput" style="margin-top:10px"></div>
+  <!-- AI Mind Mirror — PRO GATED -->
+  <div class="card" id="mirrorCard">
+    <div class="card-title"><span class="emoji">🪞</span> AI Mind Mirror <span class="pro-badge">PRO</span></div>
+    <div class="pro-gate" id="mirrorGate">
+      <div class="pro-gate-blur">
+        <div style="font-size:12px;color:var(--text3);margin-bottom:12px">Ask the AI to describe you — based entirely on your actual logged data.</div>
+        <textarea class="form-textarea" placeholder="e.g., 'Who am I based on my data?'" style="min-height:70px;margin-bottom:8px"></textarea>
+        <button class="btn btn-primary btn-block btn-sm">🪞 Ask the Mirror</button>
+        <div style="margin-top:10px;background:rgba(124,58,237,.1);border-radius:10px;padding:12px;font-size:12px">Your consciousness type is Analytical Visionary. Your focus score consistently peaks on...</div>
+      </div>
+      <div class="pro-gate-overlay">
+        <div class="pg-icon">🪞</div>
+        <div class="pg-title">AI Mind Mirror is Pro</div>
+        <div class="pg-sub">Get personalized AI insights based on your actual data — not generic advice.</div>
+        <button class="btn btn-primary btn-sm" onclick="openProModal('mirror')">✨ Unlock for ₹25/mo</button>
+      </div>
+    </div>
+    <div id="mirrorUnlocked" style="display:none">
+      <div style="font-size:12px;color:var(--text3);margin-bottom:12px">Ask the AI to describe you — based entirely on your actual logged data. Not generic advice. A mirror of your specific consciousness.</div>
+      <textarea class="form-textarea" id="mirrorPrompt" placeholder="e.g., 'Who am I based on my data?' / 'What is my cognitive type?' / 'What should I work on?' / 'Describe my consciousness pattern in one paragraph.'" style="min-height:70px;margin-bottom:8px"></textarea>
+      <button class="btn btn-primary btn-block btn-sm" onclick="askMirrorAI()">🪞 Ask the Mirror</button>
+      <div id="mirrorOutput" style="margin-top:10px"></div>
+    </div>
   </div>
 
   <!-- Consciousness Preservation Export -->
@@ -11797,6 +12043,430 @@ document.addEventListener('DOMContentLoaded', function() {
   } catch(e) {}
 });
 
+// ═══════════════════════════════════════════════════════════════
+//  PRO SYSTEM — PAYWALL + STREAK + DEVPANEL
+//  Consciousness OS v8.1
+// ═══════════════════════════════════════════════════════════════
+
+// ── PRO STATUS ────────────────────────────────────────────────
+const PRO = {
+  // Read from Firestore if logged in, else localStorage
+  _key: 'cos_pro_status',
+
+  async check() {
+    const user = auth.currentUser;
+    if (user) {
+      try {
+        const doc = await db.collection('users').doc(user.uid).collection('pro').doc('status').get();
+        if (doc.exists) {
+          const d = doc.data();
+          const expiry = d.expiry ? new Date(d.expiry) : null;
+          if (expiry && expiry > new Date()) {
+            localStorage.setItem(PRO._key, JSON.stringify({active:true, expiry:d.expiry, plan:d.plan||'monthly'}));
+            return true;
+          }
+        }
+      } catch(e) { console.warn('Pro Firestore check failed:', e.message); }
+    }
+    // Fallback to localStorage
+    try {
+      const s = JSON.parse(localStorage.getItem(PRO._key) || '{}');
+      if (s.active && s.expiry && new Date(s.expiry) > new Date()) return true;
+    } catch(e) {}
+    return false;
+  },
+
+  async grant(plan, months) {
+    const user = auth.currentUser;
+    const expiry = new Date();
+    expiry.setMonth(expiry.getMonth() + (months || 1));
+    const data = { active: true, expiry: expiry.toISOString(), plan: plan || 'monthly', grantedAt: new Date().toISOString() };
+    localStorage.setItem(PRO._key, JSON.stringify(data));
+    if (user) {
+      await db.collection('users').doc(user.uid).collection('pro').doc('status').set(data);
+    }
+    PRO.applyUI(true);
+    showToast('✨ Pro activated! Enjoy Consciousness OS Pro.');
+  },
+
+  revoke() {
+    localStorage.removeItem(PRO._key);
+    PRO.applyUI(false);
+    showToast('Pro access revoked.');
+  },
+
+  applyUI(isActive) {
+    // Mirror gate
+    const mirrorGate = document.getElementById('mirrorGate');
+    const mirrorUnlocked = document.getElementById('mirrorUnlocked');
+    if (mirrorGate && mirrorUnlocked) {
+      mirrorGate.style.display = isActive ? 'none' : 'block';
+      mirrorUnlocked.style.display = isActive ? 'block' : 'none';
+    }
+    // Pro pill in topbar
+    let pill = document.getElementById('proStatusPill');
+    if (isActive) {
+      if (!pill) {
+        pill = document.createElement('span');
+        pill.id = 'proStatusPill';
+        pill.className = 'pro-status-pill';
+        pill.textContent = 'PRO';
+        const brand = document.querySelector('.topbar-brand');
+        if (brand) brand.appendChild(pill);
+      }
+    } else {
+      if (pill) pill.remove();
+    }
+  },
+
+  async init() {
+    const isActive = await PRO.check();
+    PRO.applyUI(isActive);
+    return isActive;
+  }
+};
+
+// ── PRO MODAL ─────────────────────────────────────────────────
+function openProModal(source) {
+  const modal = document.getElementById('proModal');
+  const sub = document.getElementById('proModalSub');
+  if (source === 'mirror') sub.textContent = 'AI Mind Mirror needs Pro. Unlock deep AI insights about your consciousness.';
+  else if (source === 'vault') sub.textContent = 'Vault Pro unlocks full cognitive fingerprint export and pattern history.';
+  else sub.textContent = 'Unlock your full cognitive potential. One-time UPI payment.';
+  modal.classList.add('open');
+}
+
+function closeProModal() {
+  document.getElementById('proModal').classList.remove('open');
+}
+
+function openUPIPayment(plan) {
+  const amount = plan === 'yearly' ? '199' : '25';
+  const upiId = 'vikramsandhu90341@upi'; // ← your UPI id
+  const note = 'ConsciousnessOS_Pro_' + plan + '_' + (auth.currentUser?.uid || 'guest');
+  // Try to open UPI deeplink (works on Android with GPay/PhonePe)
+  const upiUrl = `upi://pay?pa=${upiId}&pn=ConsciousnessOS&am=${amount}&cu=INR&tn=${note}`;
+  const fallbackUrl = `https://pay.google.com/gp/v/u/0/money/send`;
+  const link = document.createElement('a');
+  link.href = upiUrl;
+  link.target = '_blank';
+  link.click();
+  // Record pending payment
+  const pending = { uid: auth.currentUser?.uid || 'guest', email: auth.currentUser?.email || '', plan, amount, note, requestedAt: new Date().toISOString(), status: 'pending' };
+  if (auth.currentUser) {
+    db.collection('pro_payments').add(pending).catch(e => console.warn('Payment log error:', e));
+  }
+  showToast(`📲 UPI opened for ₹${amount}. Pay then tap "I've Paid".`);
+}
+
+function iHavePaid() {
+  const user = auth.currentUser;
+  if (!user) { showToast('⚠️ Please log in first so we can verify.'); return; }
+  // Mark as pending verification
+  db.collection('pro_payments').add({
+    uid: user.uid, email: user.email, status: 'claimed', claimedAt: new Date().toISOString()
+  }).then(() => {
+    showToast('✅ Claim submitted! Pro will unlock within 1 hour after verification.');
+    closeProModal();
+  }).catch(e => {
+    // Offline — give temp access
+    PRO.grant('pending', 1);
+    closeProModal();
+  });
+}
+
+// ── STREAK ENGINE ──────────────────────────────────────────────
+const STREAK = {
+  _key: 'cos_streak',
+
+  get() {
+    try { return JSON.parse(localStorage.getItem(STREAK._key) || '{"count":0,"best":0,"dates":[]}'); }
+    catch(e) { return {count:0, best:0, dates:[]}; }
+  },
+
+  save(data) { localStorage.setItem(STREAK._key, JSON.stringify(data)); },
+
+  recordToday() {
+    const today = new Date().toISOString().split('T')[0];
+    const data = STREAK.get();
+    if (data.dates.includes(today)) return; // already logged today
+    data.dates = data.dates.filter(d => d >= new Date(Date.now() - 60*24*60*60*1000).toISOString().split('T')[0]);
+    data.dates.push(today);
+    data.dates.sort();
+    // Recalculate streak
+    let streak = 0;
+    const d = new Date();
+    while (true) {
+      const key = d.toISOString().split('T')[0];
+      if (data.dates.includes(key)) { streak++; d.setDate(d.getDate()-1); }
+      else break;
+    }
+    data.count = streak;
+    data.best = Math.max(data.best, streak);
+    STREAK.save(data);
+    STREAK.renderWidget(data);
+    if (streak > 1) showToast(`🔥 ${streak} day streak! Keep going!`);
+  },
+
+  renderWidget(data) {
+    if (!data) data = STREAK.get();
+    const today = new Date().toISOString().split('T')[0];
+    const loggedToday = data.dates.includes(today);
+
+    document.getElementById('streakCount').textContent = data.count;
+    document.getElementById('streakBest').textContent = data.best;
+    document.getElementById('streakFlame').textContent = data.count >= 7 ? '🔥' : data.count >= 3 ? '🔥' : '💨';
+    document.getElementById('streakLabel').textContent = loggedToday
+      ? `✅ Logged today! Keep the chain going tomorrow.`
+      : `⚠️ Log today to keep your ${data.count}-day streak!`;
+
+    // 7-day dots
+    const dotsEl = document.getElementById('streakDots');
+    if (dotsEl) {
+      let html = '';
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date(); d.setDate(d.getDate() - i);
+        const key = d.toISOString().split('T')[0];
+        const cls = i === 0 && loggedToday ? 'today' : data.dates.includes(key) ? 'active' : i < data.count ? 'missed' : '';
+        html += `<div class="streak-dot ${cls}" title="${key}"></div>`;
+      }
+      dotsEl.innerHTML = html;
+    }
+  },
+
+  init() { STREAK.renderWidget(); }
+};
+
+// Hook into save log to record streak
+(function hookStreakOnSave() {
+  document.addEventListener('cos:logSaved', () => STREAK.recordToday());
+  // Also hook the save button
+  const origSaveLog = window.saveLog;
+  if (typeof origSaveLog === 'function') {
+    window.saveLog = async function() {
+      const r = await origSaveLog.apply(this, arguments);
+      STREAK.recordToday();
+      return r;
+    };
+  }
+})();
+
+// ── REFERRAL SYSTEM ───────────────────────────────────────────
+function openReferralModal() {
+  const modal = document.getElementById('referralModal');
+  if (!modal) return;
+  modal.style.display = 'flex';
+  const user = auth.currentUser;
+  const refCode = user ? 'COS_' + user.uid.slice(0,8).toUpperCase() : 'COS_GUEST';
+  const refLink = `https://vikramsandhu90341.github.io/Consciousness-os/?ref=${refCode}`;
+  document.getElementById('referralLinkDisplay').textContent = refLink;
+  // Load referral stats
+  if (user) {
+    db.collection('referrals').where('referrer', '==', user.uid).get().then(snap => {
+      const count = snap.size;
+      const freeMonths = snap.docs.filter(d => d.data().rewarded).length;
+      document.getElementById('referralStats').textContent = `Your referrals: ${count}  |  Free months earned: ${freeMonths}`;
+    }).catch(() => {});
+  }
+}
+
+function closeReferralModal() { document.getElementById('referralModal').style.display = 'none'; }
+
+function copyReferralLink() {
+  const link = document.getElementById('referralLinkDisplay').textContent;
+  navigator.clipboard.writeText(link).then(() => showToast('📋 Referral link copied!')).catch(() => showToast('Copy: ' + link));
+}
+
+function shareReferralLink() {
+  const link = document.getElementById('referralLinkDisplay').textContent;
+  const msg = encodeURIComponent(`I've been tracking my consciousness with this app — it's actually useful. Try it free: ${link}`);
+  window.open('https://wa.me/?text=' + msg, '_blank');
+}
+
+// Check referral on load
+(function checkReferral() {
+  const params = new URLSearchParams(window.location.search);
+  const ref = params.get('ref');
+  if (ref && auth.currentUser) {
+    db.collection('referrals').add({ referrer_code: ref, new_user: auth.currentUser.uid, at: new Date().toISOString(), rewarded: false })
+      .catch(() => {});
+  }
+})();
+
+// ── DEV PANEL ────────────────────────────────────────────────
+let _devPanelOpen = false;
+const _devLogs = [];
+
+// Intercept console for dev panel
+(function patchConsole() {
+  const orig = {log: console.log, warn: console.warn, error: console.error, info: console.info};
+  ['log','warn','error','info'].forEach(level => {
+    console[level] = function() {
+      orig[level].apply(console, arguments);
+      const msg = Array.from(arguments).map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ');
+      const color = level === 'error' ? '#f87171' : level === 'warn' ? '#fbbf24' : level === 'info' ? '#60a5fa' : '#9ca3af';
+      _devLogs.push({level, msg, color, t: new Date().toTimeString().slice(0,8)});
+      if (_devLogs.length > 200) _devLogs.shift();
+      if (_devPanelOpen) {
+        const el = document.getElementById('dpLogsContent');
+        if (el) { el.innerHTML = _devLogs.slice(-80).map(l => `<div style="color:${l.color}">[${l.t}] ${l.level.toUpperCase()}: ${l.msg.slice(0,200)}</div>`).join('');
+          el.scrollTop = el.scrollHeight; }
+      }
+    };
+  });
+})();
+
+function toggleDevPanel() {
+  const panel = document.getElementById('devPanel');
+  _devPanelOpen = !_devPanelOpen;
+  panel.style.display = _devPanelOpen ? 'flex' : 'none';
+  if (_devPanelOpen) devPanelRefresh();
+}
+
+function devTab(btn, panelId) {
+  document.querySelectorAll('.dpTab').forEach(b => { b.style.background = 'transparent'; b.style.color = '#666'; });
+  btn.style.background = 'rgba(124,58,237,.25)'; btn.style.color = '#a78bfa';
+  ['dpInfo','dpStorage','dpFirebase','dpPro','dpLogs'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.style.display = 'none';
+  });
+  const target = document.getElementById(panelId);
+  if (target) target.style.display = 'block';
+  if (panelId === 'dpStorage') devLoadStorage();
+  if (panelId === 'dpFirebase') devLoadFirebase();
+  if (panelId === 'dpPro') { devLoadProStatus(); devLoadPendingPro(); }
+  if (panelId === 'dpLogs') {
+    const el = document.getElementById('dpLogsContent');
+    if (el) el.innerHTML = _devLogs.slice(-80).map(l => `<div style="color:${l.color}">[${l.t}] ${l.level.toUpperCase()}: ${l.msg.slice(0,200)}</div>`).join('');
+  }
+}
+
+function devPanelRefresh() {
+  const u = auth.currentUser;
+  const logs = typeof getLogs === 'function' ? getLogs() : [];
+  document.getElementById('dpInfoContent').innerHTML = [
+    `<span style="color:#7c3aed">version</span>: 8.0.0`,
+    `<span style="color:#7c3aed">user</span>: ${u ? u.email || u.uid.slice(0,12) : 'guest'}`,
+    `<span style="color:#7c3aed">uid</span>: ${u ? u.uid.slice(0,16)+'...' : '—'}`,
+    `<span style="color:#7c3aed">logs</span>: ${logs.length} entries`,
+    `<span style="color:#7c3aed">streak</span>: ${STREAK.get().count} days`,
+    `<span style="color:#7c3aed">pro</span>: ${JSON.stringify(JSON.parse(localStorage.getItem(PRO._key)||'{}').active||false)}`,
+    `<span style="color:#7c3aed">theme</span>: ${document.documentElement.getAttribute('data-theme')||'light'}`,
+    `<span style="color:#7c3aed">orientation</span>: ${window.innerWidth > window.innerHeight ? 'landscape' : 'portrait'}`,
+    `<span style="color:#7c3aed">screen</span>: ${window.innerWidth}×${window.innerHeight}`,
+    `<span style="color:#7c3aed">online</span>: ${navigator.onLine}`,
+    `<span style="color:#7c3aed">storage used</span>: ${(JSON.stringify(localStorage).length / 1024).toFixed(1)} KB`,
+  ].join('<br>');
+  document.getElementById('dpStatusRight').textContent = new Date().toTimeString().slice(0,8);
+}
+
+function devLoadStorage() {
+  const el = document.getElementById('dpStorageContent');
+  const cosKeys = Object.keys(localStorage).filter(k => k.startsWith('cos_')).sort();
+  const otherKeys = Object.keys(localStorage).filter(k => !k.startsWith('cos_')).sort();
+  let html = `<div style="color:#7c3aed;font-weight:700;margin-bottom:4px">COS KEYS (${cosKeys.length})</div>`;
+  cosKeys.forEach(k => {
+    const v = localStorage.getItem(k) || '';
+    const preview = v.length > 80 ? v.slice(0,80)+'…' : v;
+    html += `<div style="margin-bottom:6px"><span style="color:#a78bfa">${k}</span><br><span style="color:#555">${preview}</span></div>`;
+  });
+  html += `<div style="color:#444;font-weight:700;margin:8px 0 4px">OTHER KEYS (${otherKeys.length})</div>`;
+  otherKeys.forEach(k => { html += `<span style="color:#444">${k}</span><br>`; });
+  el.innerHTML = html;
+}
+
+function devLoadFirebase() {
+  const el = document.getElementById('dpFirebaseContent');
+  const u = auth.currentUser;
+  el.innerHTML = [
+    `<span style="color:#f59e0b">auth</span>: ${u ? '✅ signed in' : '❌ guest'}`,
+    `<span style="color:#f59e0b">uid</span>: ${u ? u.uid : '—'}`,
+    `<span style="color:#f59e0b">email</span>: ${u ? u.email||'no email' : '—'}`,
+    `<span style="color:#f59e0b">project</span>: consciousness-os-e44ac`,
+    `<span style="color:#f59e0b">persistence</span>: enabled`,
+  ].join('<br>');
+}
+
+function devLoadProStatus() {
+  const el = document.getElementById('dpProContent');
+  const s = JSON.parse(localStorage.getItem(PRO._key) || '{}');
+  el.innerHTML = [
+    `<span style="color:#f59e0b">active</span>: ${s.active || false}`,
+    `<span style="color:#f59e0b">plan</span>: ${s.plan || '—'}`,
+    `<span style="color:#f59e0b">expiry</span>: ${s.expiry ? new Date(s.expiry).toLocaleDateString() : '—'}`,
+    `<span style="color:#f59e0b">granted</span>: ${s.grantedAt ? new Date(s.grantedAt).toLocaleString() : '—'}`,
+  ].join('<br>');
+}
+
+function devLoadPendingPro() {
+  const el = document.getElementById('dpProPending');
+  el.innerHTML = 'Loading from Firestore...';
+  db.collection('pro_payments').where('status','==','claimed').limit(20).get().then(snap => {
+    if (snap.empty) { el.innerHTML = '<span style="color:#555">No pending claims.</span>'; return; }
+    el.innerHTML = snap.docs.map(d => {
+      const data = d.data();
+      return `<div style="margin-bottom:8px;padding:6px;background:#1a1a2e;border-radius:6px;border:1px solid #333">
+        <div style="color:#a78bfa">${data.email||data.uid||'unknown'}</div>
+        <div style="color:#666">${data.plan||'?'} · ${data.claimedAt ? new Date(data.claimedAt).toLocaleDateString() : '?'}</div>
+        <button onclick="devApprovePro('${d.id}','${data.uid}')" style="margin-top:4px;background:#7c3aed;border:none;color:#fff;padding:3px 10px;border-radius:4px;cursor:pointer;font-size:9px">✅ APPROVE</button>
+      </div>`;
+    }).join('');
+  }).catch(e => { el.innerHTML = `<span style="color:#ef4444">${e.message}</span>`; });
+}
+
+async function devApprovePro(docId, uid) {
+  const expiry = new Date(); expiry.setMonth(expiry.getMonth() + 1);
+  const data = { active: true, expiry: expiry.toISOString(), plan: 'monthly', grantedAt: new Date().toISOString() };
+  await db.collection('pro_payments').doc(docId).update({ status: 'approved', approvedAt: new Date().toISOString() });
+  await db.collection('users').doc(uid).collection('pro').doc('status').set(data);
+  showToast('✅ Pro granted to ' + uid.slice(0,8));
+  devLoadPendingPro();
+}
+
+function devAction(action) {
+  switch(action) {
+    case 'clearCache': localStorage.clear(); showToast('🗑️ Cache cleared. Reloading...'); setTimeout(() => location.reload(), 800); break;
+    case 'reloadApp': location.reload(); break;
+    case 'exportLogs': if (typeof exportConsciousnessProfile === 'function') exportConsciousnessProfile(); break;
+    case 'testToast': showToast('🍞 Toast test — Dev Panel working!'); break;
+    case 'grantPro': PRO.grant('dev', 999); devLoadProStatus(); break;
+    case 'revokePro': PRO.revoke(); devLoadProStatus(); break;
+  }
+}
+
+function devFirebaseSync() {
+  const u = auth.currentUser;
+  if (!u) { showToast('Not logged in'); return; }
+  if (typeof loadLogsFromFirestore === 'function') loadLogsFromFirestore(u.uid);
+  showToast('🔄 Firestore sync triggered');
+}
+
+// Show/hide DevPanel and its trigger button based on orientation
+function handleDevPanelOrientation() {
+  const btn = document.getElementById('devPanelBtn');
+  const isLandscape = window.innerWidth > window.innerHeight;
+  if (btn) btn.style.display = isLandscape ? 'flex' : 'none';
+  if (!isLandscape && _devPanelOpen) {
+    _devPanelOpen = false;
+    const panel = document.getElementById('devPanel');
+    if (panel) panel.style.display = 'none';
+  }
+}
+window.addEventListener('resize', handleDevPanelOrientation);
+window.addEventListener('orientationchange', () => setTimeout(handleDevPanelOrientation, 300));
+document.addEventListener('DOMContentLoaded', () => {
+  handleDevPanelOrientation();
+  PRO.init();
+  STREAK.init();
+  // Hook saveLog for streak if defined
+  const origSaveLog = window.saveLog;
+  if (typeof origSaveLog === 'function') {
+    window.saveLog = async function() {
+      const r = await origSaveLog.apply(this, arguments);
+      STREAK.recordToday();
+      return r;
+    };
+  }
+});
 </script>
 </body>
 </html>
