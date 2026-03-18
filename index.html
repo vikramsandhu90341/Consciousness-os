@@ -1,6 +1,12 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="light">
 <head>
+<script>/* Anti-flash: hide login overlay instantly for returning users */
+if(localStorage.getItem('cos_has_account')){document.documentElement.classList.add('cos-returning');}
+</script>
+<style>/* Hide login overlay before paint for returning users — prevents glitch */
+html.cos-returning #loginOverlay{display:none!important;}
+</style>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Consciousness OS</title>
@@ -11608,6 +11614,7 @@ function _handleAuthUser(fbUser) {
     }
   } else {
     dbg('log', '🔐 Auth state: signed out — showing login screen');
+    document.documentElement.classList.remove('cos-returning'); // remove anti-flash class
     if (overlay)   overlay.style.display = 'flex';
     if (restoreUI) restoreUI.style.display = 'none';
     if (formUI)    formUI.style.display = '';
