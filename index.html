@@ -94,6 +94,14 @@ async function callGroqJSON(prompt,system,maxTokens){
 
 // ─── AUTO-LOAD FIRESTORE DATA WHEN SESSION RESTORES ─────────
 // ── AUTH STATE + RETURNING USER LOGIC ─────────────────────────────────────
+(function showClearedBanner() {
+  if (sessionStorage.getItem('just_cleared') === '1') {
+    sessionStorage.removeItem('just_cleared');
+    var banner = document.getElementById('quickReenterBanner');
+    if (banner) banner.style.display = 'block';
+  }
+})();
+
 (function initAuthState() {
   const hasAccount = !!localStorage.getItem('cos_has_account');
   const overlay    = document.getElementById('loginOverlay');
@@ -124,6 +132,11 @@ async function callGroqJSON(prompt,system,maxTokens){
     if (overlay)   overlay.style.display = 'flex';
     if (restoreUI) restoreUI.style.display = 'none';
     if (formUI)    formUI.style.display = '';
+    // Auto-select Guest tab for new/returning guests — no account = go straight to guest
+    setTimeout(function() {
+      var guestTabBtn = document.querySelectorAll('.login-tab-btn')[2];
+      if (guestTabBtn) guestTabBtn.click();
+    }, 100);
     auth.onAuthStateChanged(_handleAuthUser);
   }
 })();
@@ -169,10 +182,11 @@ function _handleAuthUser(fbUser) {
   }
 }
 </script>
-<!-- DevTools: eruda removed — using built-in Dev Panel instead -->
+<!-- DevTools: Eruda mobile console -->
+<script src="https://cdn.jsdelivr.net/npm/eruda"></script>
 <script>
-// Stub eruda so any lingering references don't crash
-window.eruda = { init:function(){}, show:function(){}, hide:function(){} };
+eruda.init();
+eruda.hide();
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -1290,6 +1304,10 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
 
 <!-- ══ LOGIN OVERLAY ══ -->
 <div class="login-overlay" id="loginOverlay" style="display:flex">
+  <!-- Quick re-entry banner — shown when localStorage was just cleared -->
+  <div id="quickReenterBanner" style="display:none;background:linear-gradient(135deg,#7c3aed,#06b6d4);color:#fff;padding:10px 16px;text-align:center;font-size:13px;font-weight:700;border-radius:12px;margin-bottom:12px">
+    ✅ Data cleared! Tap <b>Continue as Guest</b> to re-enter instantly.
+  </div>
   <div class="login-card">
     <div style="text-align:center;margin-bottom:20px">
       <div style="font-size:48px">🧠</div>
@@ -13994,7 +14012,9 @@ function deleteGuestPermanently() {
   if (confirm('Erase all guest data permanently? This deletes everything from this device.')) {
     localStorage.clear();
     sessionStorage.clear();
-    showToast('✅ All guest data erased permanently.');
+    // Set a flag in sessionStorage (survives reload, not localStorage)
+    sessionStorage.setItem('just_cleared', '1');
+    showToast('✅ All guest data erased. Reloading...');
     setTimeout(() => location.reload(), 1000);
   }
 }
@@ -14010,6 +14030,30 @@ function deleteGuestPermanently() {
   });
 })();
 
+
+
+// ── CLOUDFLARE WORKER HEALTH CHECK ─────────────────────────────
+const _WORKER_URL_CHECK = 'https://hidden-wildflower-3301.vikramsandhu90341.workers.dev';
+async function checkWorkerHealth() {
+  try {
+    const res = await fetch(_WORKER_URL_CHECK, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:1,messages:[{role:'user',content:'hi'}]}),
+      signal: AbortSignal.timeout(6000)
+    });
+    const online = res.ok || res.status===400;
+    document.querySelectorAll('.worker-status').forEach(el=>{
+      el.textContent = online ? '🟢 AI Online' : '🔴 Worker error '+res.status;
+      el.style.color = online ? 'var(--success)' : 'var(--danger)';
+    });
+  } catch(e) {
+    document.querySelectorAll('.worker-status').forEach(el=>{
+      el.textContent='🔴 Cloudflare Worker unreachable';
+      el.style.color='var(--danger)';
+    });
+  }
+}
+setTimeout(checkWorkerHealth, 3000);
 
 </script>
 </body>
