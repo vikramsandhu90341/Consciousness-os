@@ -169,33 +169,10 @@ function _handleAuthUser(fbUser) {
   }
 }
 </script>
-<script src="https://cdn.jsdelivr.net/npm/eruda"></script>
+<!-- DevTools: eruda removed — using built-in Dev Panel instead -->
 <script>
-// 🐛 Eruda DevTools - landscape mode only
-(function() {
-  function initEruda() {
-    eruda.init();
-    eruda.hide(); // start hidden, show via bug button
-  }
-  initEruda();
-  
-  // Show/hide based on orientation
-  function handleOrientation() {
-    var btn = document.getElementById('erudaBugBtn');
-    if (!btn) return;
-    if (window.innerWidth > window.innerHeight) {
-      btn.style.display = 'flex'; // landscape - show
-    } else {
-      btn.style.display = 'none';  // portrait - hide
-      eruda.hide();
-    }
-  }
-  window.addEventListener('resize', handleOrientation);
-  window.addEventListener('orientationchange', function() {
-    setTimeout(handleOrientation, 300);
-  });
-  document.addEventListener('DOMContentLoaded', handleOrientation);
-})();
+// Stub eruda so any lingering references don't crash
+window.eruda = { init:function(){}, show:function(){}, hide:function(){} };
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -840,7 +817,7 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
 
   /* ── Topbar: compact on mobile ── */
   :root {
-    --topbar-h: 52px;
+    --topbar-h: 62px;
     --sidebar-w: 0px;
   }
   .topbar {
@@ -854,16 +831,20 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
     flex: 1;
     border-bottom: none;
     height: 100%;
-    padding: 0;
+    padding: 4px 0;
     justify-content: flex-start;
     border: none;
+    align-items: center;
   }
   .topbar-row2 {
     display: none !important;
   }
   .topbar-brand {
-    font-size: 16px;
-    letter-spacing: 0.3px;
+    font-size: 11px !important;
+    letter-spacing: 0px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: clip;
   }
   .topbar-quick {
     gap: 4px;
@@ -1252,8 +1233,57 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
 /* PRO status pill in topbar */
 .pro-status-pill{font-size:10px;font-weight:800;padding:2px 8px;border-radius:10px;background:linear-gradient(135deg,#f59e0b,#ef4444);color:#fff;margin-left:4px;letter-spacing:.3px}
 
-/* Referral card */
-.referral-card{background:linear-gradient(135deg,rgba(6,182,212,.1),rgba(16,185,129,.08));border:1px solid rgba(6,182,212,.25);border-radius:14px;padding:16px;margin-top:14px}
+/* QUICK SETTINGS POPUP */
+#quickSettingsPopup{
+  display:none;position:fixed;z-index:9800;
+  background:var(--bg2);border:1.5px solid var(--border);
+  border-radius:16px;padding:0;overflow:hidden;
+  box-shadow:0 8px 40px rgba(0,0,0,.25);
+  width:280px;
+  animation:qsPopIn .18s ease;
+}
+@keyframes qsPopIn{from{opacity:0;transform:scale(.9) translateY(-8px)}to{opacity:1;transform:scale(1) translateY(0)}}
+#quickSettingsPopup.open{display:block}
+.qs-header{background:linear-gradient(135deg,#1a0533,#0d1a33);padding:12px 16px;display:flex;align-items:center;justify-content:space-between}
+.qs-header-title{color:#a78bfa;font-weight:800;font-size:13px;letter-spacing:.3px}
+.qs-close{background:none;border:none;color:#666;font-size:18px;cursor:pointer;line-height:1;padding:0}
+.qs-section{padding:10px 14px;border-bottom:1px solid var(--border)}
+.qs-section:last-child{border-bottom:none;padding-bottom:14px}
+.qs-section-title{font-size:9px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px}
+.qs-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.qs-row:last-child{margin-bottom:0}
+.qs-label{font-size:12px;font-weight:600;color:var(--text)}
+.qs-sublabel{font-size:10px;color:var(--text3)}
+.qs-toggle-wrap{display:flex;align-items:center;gap:6px}
+/* small inline toggle */
+.qs-toggle{width:36px;height:20px;border-radius:10px;background:var(--bg3);border:1.5px solid var(--border);cursor:pointer;position:relative;transition:background .2s;flex-shrink:0}
+.qs-toggle.on{background:var(--primary);border-color:var(--primary)}
+.qs-toggle::after{content:'';position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.qs-toggle.on::after{transform:translateX(16px)}
+.qs-lang-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:5px}
+.qs-lang-btn{padding:5px 3px;border-radius:7px;border:1.5px solid var(--border);background:var(--bg3);cursor:pointer;font-size:14px;text-align:center;transition:all .15s;line-height:1.2}
+.qs-lang-btn:active,.qs-lang-btn.active{border-color:var(--primary);background:rgba(124,58,237,.15)}
+.qs-lang-label{font-size:8px;color:var(--text3);display:block;margin-top:1px}
+.qs-backdrop{display:none;position:fixed;inset:0;z-index:9799}
+.qs-backdrop.open{display:block}
+
+@keyframes milestoneBounce {
+  0%   { transform: scale(0.3) rotate(-10deg); opacity:0; }
+  50%  { transform: scale(1.2) rotate(5deg); opacity:1; }
+  75%  { transform: scale(0.9) rotate(-2deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+@keyframes confettiFall {
+  0%   { transform: translateY(-20px) rotate(0deg); opacity:1; }
+  100% { transform: translateY(80px) rotate(360deg); opacity:0; }
+}
+.confetti-piece {
+  position: absolute;
+  width: 8px; height: 8px;
+  border-radius: 2px;
+  animation: confettiFall 1.2s ease forwards;
+}
+
 </style>
 
 <body>
@@ -1371,6 +1401,40 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
   </div>
 </div>
 
+<!-- ══ STREAK MILESTONE CELEBRATION MODAL ══ -->
+<div id="milestoneModal" style="display:none;position:fixed;inset:0;z-index:9600;background:rgba(0,0,0,.8);backdrop-filter:blur(10px);align-items:center;justify-content:center;padding:20px">
+  <div style="background:var(--bg2);border-radius:24px;padding:32px 24px;max-width:320px;width:100%;text-align:center;border:2px solid var(--border);position:relative;overflow:hidden">
+    <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 50% 0%,rgba(124,58,237,.15),transparent 70%);pointer-events:none"></div>
+    <div id="milestoneIcon" style="font-size:64px;margin-bottom:12px;animation:milestoneBounce .6s ease">🔥</div>
+    <div id="milestoneTitle" style="font-family:Syne,sans-serif;font-size:22px;font-weight:900;background:linear-gradient(135deg,#f97316,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:6px">3 Day Streak!</div>
+    <div id="milestoneSub" style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:6px"></div>
+    <div id="milestoneBadgeRow" style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:18px">
+      <div id="milestoneBadgeIcon" style="width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;border:2px solid">🔥</div>
+      <div style="text-align:left">
+        <div id="milestoneBadgeName" style="font-weight:800;font-size:14px;color:var(--text)">Fire Starter</div>
+        <div style="font-size:11px;color:var(--text3)">Badge unlocked</div>
+      </div>
+    </div>
+    <div id="milestonePhilosophy" style="background:rgba(124,58,237,.08);border:1px solid rgba(124,58,237,.15);border-radius:12px;padding:12px;font-size:11px;color:var(--text2);line-height:1.6;margin-bottom:16px;font-style:italic"></div>
+    <button onclick="closeMilestoneModal()" style="background:linear-gradient(135deg,#7c3aed,#ec4899);border:none;color:#fff;border-radius:14px;padding:14px 32px;font-size:15px;font-weight:800;cursor:pointer;width:100%">Keep Going 🔥</button>
+  </div>
+</div>
+
+<!-- ══ DELETE ACCOUNT CONFIRMATION MODAL ══ -->
+<div id="deleteAccountModal" style="display:none;position:fixed;inset:0;z-index:9700;background:rgba(0,0,0,.85);align-items:center;justify-content:center;padding:20px">
+  <div style="background:var(--bg2);border-radius:20px;padding:24px;max-width:340px;width:100%;border:2px solid rgba(239,68,68,.4)">
+    <div style="font-size:36px;text-align:center;margin-bottom:12px">⚠️</div>
+    <div style="font-family:Syne,sans-serif;font-size:17px;font-weight:900;text-align:center;color:var(--danger);margin-bottom:8px">Delete Account?</div>
+    <div style="font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:16px;text-align:center">This will permanently erase ALL your data — logs, dreams, health, Firebase account. This cannot be undone.</div>
+    <div style="margin-bottom:16px">
+      <label style="display:block;font-size:11px;font-weight:700;color:var(--text3);margin-bottom:6px">Type DELETE to confirm:</label>
+      <input type="text" id="deleteConfirmInput" placeholder="DELETE" class="form-input" style="text-align:center;font-size:16px;font-weight:700;letter-spacing:4px">
+    </div>
+    <button class="btn btn-danger btn-block" onclick="executeDeleteAccount()" style="margin-bottom:8px">🗑️ Delete Everything Permanently</button>
+    <button onclick="document.getElementById('deleteAccountModal').style.display='none'" style="width:100%;background:none;border:none;color:var(--text3);font-size:13px;cursor:pointer;padding:8px">Cancel</button>
+  </div>
+</div>
+
 <!-- ══ SHOCK INSIGHT MODAL ══ -->
 <div class="shock-overlay" id="shockOverlay">
   <div class="shock-card">
@@ -1456,6 +1520,71 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
   </div>
 </div>
 
+<!-- ══ QUICK SETTINGS POPUP ══ -->
+<div class="qs-backdrop" id="qsBackdrop" onclick="closeQuickSettingsPopup()"></div>
+<div id="quickSettingsPopup">
+  <div class="qs-header">
+    <span class="qs-header-title">⚙️ Quick Settings</span>
+    <button class="qs-close" onclick="closeQuickSettingsPopup()">✕</button>
+  </div>
+
+  <!-- Appearance -->
+  <div class="qs-section">
+    <div class="qs-section-title">Appearance</div>
+    <div class="qs-row">
+      <div><div class="qs-label">🌙 Dark Mode</div></div>
+      <div class="qs-toggle" id="qsDarkToggle" onclick="qsToggleDark()"></div>
+    </div>
+    <div class="qs-row">
+      <div><div class="qs-label">✨ Pro</div><div class="qs-sublabel" id="qsProStatus">Free plan</div></div>
+      <button onclick="closeQuickSettingsPopup();openProModal('qs')" style="background:linear-gradient(135deg,#f59e0b,#ef4444);border:none;color:#fff;padding:4px 10px;border-radius:8px;font-size:10px;font-weight:800;cursor:pointer">UPGRADE</button>
+    </div>
+  </div>
+
+  <!-- Language — all 25 -->
+  <div class="qs-section">
+    <div class="qs-section-title">🌐 Language</div>
+    <div class="qs-lang-grid" id="qsLangGrid">
+      <button class="qs-lang-btn" onclick="qsSetLang('en')">🌐<span class="qs-lang-label">EN</span></button>
+      <button class="qs-lang-btn" onclick="qsSetLang('hi')">🇮🇳<span class="qs-lang-label">HI</span></button>
+      <button class="qs-lang-btn" onclick="qsSetLang('es')">🇪🇸<span class="qs-lang-label">ES</span></button>
+      <button class="qs-lang-btn" onclick="qsSetLang('fr')">🇫🇷<span class="qs-lang-label">FR</span></button>
+      <button class="qs-lang-btn" onclick="qsSetLang('de')">🇩🇪<span class="qs-lang-label">DE</span></button>
+      <button class="qs-lang-btn" onclick="qsSetLang('pt')">🇧🇷<span class="qs-lang-label">PT</span></button>
+      <button class="qs-lang-btn" onclick="qsSetLang('zh')">🇨🇳<span class="qs-lang-label">ZH</span></button>
+      <button class="qs-lang-btn" onclick="qsSetLang('ar')">🇸🇦<span class="qs-lang-label">AR</span></button>
+      <button class="qs-lang-btn" onclick="qsSetLang('ja')">🇯🇵<span class="qs-lang-label">JA</span></button>
+      <button class="qs-lang-btn" onclick="qsSetLang('ru')">🇷🇺<span class="qs-lang-label">RU</span></button>
+      <button class="qs-lang-btn" onclick="qsSetLang('ko')">🇰🇷<span class="qs-lang-label">KO</span></button>
+      <button class="qs-lang-btn" onclick="qsSetLang('it')">🇮🇹<span class="qs-lang-label">IT</span></button>
+      <button class="qs-lang-btn" onclick="qsSetLang('tr')">🇹🇷<span class="qs-lang-label">TR</span></button>
+      <button class="qs-lang-btn" onclick="qsSetLang('bn')">🇧🇩<span class="qs-lang-label">BN</span></button>
+      <button class="qs-lang-btn" onclick="qsSetLang('id')">🇮🇩<span class="qs-lang-label">ID</span></button>
+      <button class="qs-lang-btn" onclick="qsSetLang('vi')">🇻🇳<span class="qs-lang-label">VI</span></button>
+      <button class="qs-lang-btn" onclick="qsSetLang('th')">🇹🇭<span class="qs-lang-label">TH</span></button>
+      <button class="qs-lang-btn" onclick="qsSetLang('sw')">🌍<span class="qs-lang-label">SW</span></button>
+      <button class="qs-lang-btn" onclick="qsSetLang('nl')">🇳🇱<span class="qs-lang-label">NL</span></button>
+      <button class="qs-lang-btn" onclick="qsSetLang('pl')">🇵🇱<span class="qs-lang-label">PL</span></button>
+      <button class="qs-lang-btn" onclick="qsSetLang('uk')">🇺🇦<span class="qs-lang-label">UK</span></button>
+      <button class="qs-lang-btn" onclick="qsSetLang('ta')">🏛️<span class="qs-lang-label">TA</span></button>
+      <button class="qs-lang-btn" onclick="qsSetLang('te')">🌺<span class="qs-lang-label">TE</span></button>
+      <button class="qs-lang-btn" onclick="qsSetLang('mr')">🪔<span class="qs-lang-label">MR</span></button>
+      <button class="qs-lang-btn" onclick="qsSetLang('gu')">🌅<span class="qs-lang-label">GU</span></button>
+    </div>
+  </div>
+
+  <!-- Quick Nav -->
+  <div class="qs-section">
+    <div class="qs-section-title">Quick Nav</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+      <button onclick="closeQuickSettingsPopup();switchTab('settings')" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:7px;font-size:11px;cursor:pointer;color:var(--text)">⚙️ Full Settings</button>
+      <button onclick="closeQuickSettingsPopup();switchTab('vault')" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:7px;font-size:11px;cursor:pointer;color:var(--text)">🔮 Vault</button>
+      <button onclick="closeQuickSettingsPopup();openReferralModal()" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:7px;font-size:11px;cursor:pointer;color:var(--text)">🎁 Refer & Earn</button>
+      <button onclick="closeQuickSettingsPopup();toggleDevPanel()" style="background:var(--bg3);border:1px solid rgba(124,58,237,.3);border-radius:8px;padding:7px;font-size:11px;cursor:pointer;color:var(--primary)" id="qsDevBtn">🛠️ Dev Panel</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══ LEGAL PAGES OVERLAY ══ -->
 <div class="legal-page-overlay" id="legalPageOverlay">
   <div class="legal-page-card">
@@ -1471,18 +1600,18 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
 <div class="topbar">
   <!-- Row 1: Brand + desktop quick actions -->
   <div class="topbar-row1">
-    <div class="topbar-brand">🧠 Consciousness OS</div>
-    <!-- Mobile-only quick actions in row1 -->
-    <div class="topbar-quick topbar-mobile-only" style="margin-left:auto">
-      <select class="lang-sel" id="langSelMobile" onchange="setLang(this.value)" title="Language">
-        <option value="en">🌐</option><option value="hi">🇮🇳</option><option value="es">🇪🇸</option>
-        <option value="fr">🇫🇷</option><option value="de">🇩🇪</option><option value="pt">🇧🇷</option>
-        <option value="zh">🇨🇳</option><option value="ar">🇸🇦</option><option value="ja">🇯🇵</option><option value="ru">🇷🇺</option>
-      </select>
-      <button class="tb-btn" onclick="toggleTheme()" id="themeBtnMob" title="Toggle theme">🌙</button>
-      <button class="tb-btn" onclick="openProfileSwitcher()" id="profileTopBtnMob" title="Account">👤</button>
-      <button class="tb-btn" onclick="eruda.show()" id="_dbgTopBtnMob" title="DevTools Inspector" style="font-size:15px">🐛</button>
-      <button class="tb-btn" onclick="toggleDevPanel()" id="devPanelBtn" title="Dev Panel" style="font-size:15px;display:none">🛠️</button>
+    <div style="display:flex;flex-direction:column;flex:1 1 0;min-width:0;justify-content:center;overflow:hidden">
+      <div class="topbar-brand" style="line-height:1;font-size:11px;letter-spacing:0px;white-space:nowrap;overflow:hidden;text-overflow:clip">🧠 Consciousness OS</div>
+      <div id="proUpgradeBar" onclick="proBarTap()" style="display:none;margin-top:2px;border-radius:5px;padding:2px 6px;font-size:8px;font-weight:900;color:#fff;letter-spacing:.1px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:linear-gradient(135deg,#f59e0b,#ef4444);max-width:100%">
+        ✨ Upgrade Pro — ₹25/mo
+      </div>
+    </div>
+    <!-- Mobile-only quick actions: lang flag btn + theme + account -->
+    <div class="topbar-quick topbar-mobile-only" style="margin-left:6px;flex-shrink:0;display:flex;align-items:center;gap:3px">
+      <button class="tb-btn" id="langFlagBtn" onclick="toggleLangGrid(event)" title="Language" style="font-size:15px;min-width:30px;width:30px;padding:4px;height:30px">🌐</button>
+      <button class="tb-btn" onclick="toggleTheme()" id="themeBtnMob" title="Toggle theme" style="min-width:30px;width:30px;height:30px;padding:4px">🌙</button>
+      <button class="tb-btn" onclick="openProfileSwitcher()" id="profileTopBtnMob" title="Account" style="min-width:30px;width:30px;height:30px;padding:4px">👤</button>
+      <button class="tb-btn" onclick="toggleDevPanel()" id="devPanelBtn" title="Dev Panel" style="font-size:13px;display:none;min-width:30px;width:30px;height:30px;padding:4px">🛠️</button>
     </div>
   </div>
   <!-- Row 2: Desktop quick action buttons -->
@@ -1490,21 +1619,71 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
     <button class="tb-btn" onclick="switchTab('guide')" title="Guide">❓ Guide</button>
     <button class="tb-btn tour-btn" onclick="showOnboarding()" title="Tour">✨ Tour</button>
     <select class="lang-sel" id="langSel" onchange="setLang(this.value)" title="Language">
-      <option value="en">🌐 EN</option>
-      <option value="hi">🇮🇳 HI</option>
-      <option value="es">🇪🇸 ES</option>
-      <option value="fr">🇫🇷 FR</option>
-      <option value="de">🇩🇪 DE</option>
-      <option value="pt">🇧🇷 PT</option>
-      <option value="zh">🇨🇳 ZH</option>
-      <option value="ar">🇸🇦 AR</option>
-      <option value="ja">🇯🇵 JA</option>
-      <option value="ru">🇷🇺 RU</option>
+      <option value="en">🌐 EN</option><option value="hi">🇮🇳 HI</option><option value="es">🇪🇸 ES</option>
+      <option value="fr">🇫🇷 FR</option><option value="de">🇩🇪 DE</option><option value="pt">🇧🇷 PT</option>
+      <option value="zh">🇨🇳 ZH</option><option value="ar">🇸🇦 AR</option><option value="ja">🇯🇵 JA</option>
+      <option value="ru">🇷🇺 RU</option><option value="ko">🇰🇷 KO</option><option value="it">🇮🇹 IT</option>
+      <option value="tr">🇹🇷 TR</option><option value="bn">🇧🇩 BN</option><option value="id">🇮🇩 ID</option>
+      <option value="vi">🇻🇳 VI</option><option value="th">🇹🇭 TH</option><option value="sw">🌍 SW</option>
+      <option value="nl">🇳🇱 NL</option><option value="pl">🇵🇱 PL</option><option value="uk">🇺🇦 UK</option>
+      <option value="ta">🏛️ TA</option><option value="te">🌺 TE</option><option value="mr">🪔 MR</option>
+      <option value="gu">🌅 GU</option>
     </select>
     <button class="tb-btn" onclick="toggleTheme()" id="themeBtn" title="Toggle theme">🌙</button>
     <button class="tb-btn" onclick="openProfileSwitcher()" id="profileTopBtn" title="Account">👤</button>
   </div>
   <!-- Row 3 removed — nav is now vertical sidebar -->
+</div>
+
+<!-- ── LANGUAGE FLAG GRID POPUP ── -->
+<style>
+#langFlagGrid{display:none;position:fixed;z-index:9900;background:var(--bg2);border:1.5px solid var(--border);border-radius:14px;padding:10px 8px 12px;box-shadow:0 10px 40px rgba(0,0,0,.3);width:252px}
+#langFlagGrid.open{display:block;animation:qsPopIn .15s ease}
+@keyframes lfgIn{from{opacity:0;transform:scale(.92) translateY(-6px)}to{opacity:1;transform:none}}
+.lfg-bd{display:none;position:fixed;inset:0;z-index:9899}
+.lfg-bd.open{display:block}
+.lfg-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;padding:0 2px}
+.lfg-title{font-size:9px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:.8px}
+.lfg-close{background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer;padding:0;line-height:1}
+.lfg-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}
+.lfg-btn{display:flex;flex-direction:column;align-items:center;gap:1px;padding:5px 2px;border-radius:7px;border:1.5px solid var(--border);background:var(--bg3);cursor:pointer;transition:all .12s;font-size:15px;line-height:1.1}
+.lfg-btn:active,.lfg-btn.cur{border-color:var(--primary);background:rgba(124,58,237,.18)}
+.lfg-code{font-size:7.5px;font-weight:800;color:var(--text3);line-height:1;margin-top:1px}
+.lfg-name{font-size:6.5px;color:var(--text3);line-height:1;max-width:42px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;text-align:center}
+</style>
+<div class="lfg-bd" id="lfgBd" onclick="closeLangGrid()"></div>
+<div id="langFlagGrid">
+  <div class="lfg-head">
+    <span class="lfg-title">🌐 Language</span>
+    <button class="lfg-close" onclick="closeLangGrid()">✕</button>
+  </div>
+  <div class="lfg-grid" id="lfgGrid">
+    <button class="lfg-btn" onclick="pickLang('en')">🌐<span class="lfg-code">EN</span><span class="lfg-name">English</span></button>
+    <button class="lfg-btn" onclick="pickLang('hi')">🇮🇳<span class="lfg-code">HI</span><span class="lfg-name">हिन्दी</span></button>
+    <button class="lfg-btn" onclick="pickLang('es')">🇪🇸<span class="lfg-code">ES</span><span class="lfg-name">Español</span></button>
+    <button class="lfg-btn" onclick="pickLang('fr')">🇫🇷<span class="lfg-code">FR</span><span class="lfg-name">Français</span></button>
+    <button class="lfg-btn" onclick="pickLang('de')">🇩🇪<span class="lfg-code">DE</span><span class="lfg-name">Deutsch</span></button>
+    <button class="lfg-btn" onclick="pickLang('pt')">🇧🇷<span class="lfg-code">PT</span><span class="lfg-name">Português</span></button>
+    <button class="lfg-btn" onclick="pickLang('zh')">🇨🇳<span class="lfg-code">ZH</span><span class="lfg-name">中文</span></button>
+    <button class="lfg-btn" onclick="pickLang('ar')">🇸🇦<span class="lfg-code">AR</span><span class="lfg-name">العربية</span></button>
+    <button class="lfg-btn" onclick="pickLang('ja')">🇯🇵<span class="lfg-code">JA</span><span class="lfg-name">日本語</span></button>
+    <button class="lfg-btn" onclick="pickLang('ru')">🇷🇺<span class="lfg-code">RU</span><span class="lfg-name">Русский</span></button>
+    <button class="lfg-btn" onclick="pickLang('ko')">🇰🇷<span class="lfg-code">KO</span><span class="lfg-name">한국어</span></button>
+    <button class="lfg-btn" onclick="pickLang('it')">🇮🇹<span class="lfg-code">IT</span><span class="lfg-name">Italiano</span></button>
+    <button class="lfg-btn" onclick="pickLang('tr')">🇹🇷<span class="lfg-code">TR</span><span class="lfg-name">Türkçe</span></button>
+    <button class="lfg-btn" onclick="pickLang('bn')">🇧🇩<span class="lfg-code">BN</span><span class="lfg-name">বাংলা</span></button>
+    <button class="lfg-btn" onclick="pickLang('id')">🇮🇩<span class="lfg-code">ID</span><span class="lfg-name">Bahasa</span></button>
+    <button class="lfg-btn" onclick="pickLang('vi')">🇻🇳<span class="lfg-code">VI</span><span class="lfg-name">Tiếng Việt</span></button>
+    <button class="lfg-btn" onclick="pickLang('th')">🇹🇭<span class="lfg-code">TH</span><span class="lfg-name">ภาษาไทย</span></button>
+    <button class="lfg-btn" onclick="pickLang('sw')">🌍<span class="lfg-code">SW</span><span class="lfg-name">Swahili</span></button>
+    <button class="lfg-btn" onclick="pickLang('nl')">🇳🇱<span class="lfg-code">NL</span><span class="lfg-name">Nederlands</span></button>
+    <button class="lfg-btn" onclick="pickLang('pl')">🇵🇱<span class="lfg-code">PL</span><span class="lfg-name">Polski</span></button>
+    <button class="lfg-btn" onclick="pickLang('uk')">🇺🇦<span class="lfg-code">UK</span><span class="lfg-name">Українська</span></button>
+    <button class="lfg-btn" onclick="pickLang('ta')">🏛️<span class="lfg-code">TA</span><span class="lfg-name">தமிழ்</span></button>
+    <button class="lfg-btn" onclick="pickLang('te')">🌺<span class="lfg-code">TE</span><span class="lfg-name">తెలుగు</span></button>
+    <button class="lfg-btn" onclick="pickLang('mr')">🪔<span class="lfg-code">MR</span><span class="lfg-name">मराठी</span></button>
+    <button class="lfg-btn" onclick="pickLang('gu')">🌅<span class="lfg-code">GU</span><span class="lfg-name">ગુજરાતી</span></button>
+  </div>
 </div>
 
 <!-- ── VERTICAL SIDEBAR NAV ── -->
@@ -1819,17 +1998,44 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
 <div class="tab-panel active" id="tab-log">
   <div class="section-header">📝 <span data-t="daily_log">Daily Consciousness Log</span></div>
 
-  <!-- ══ STREAK WIDGET ══ -->
-  <div class="streak-widget" id="streakWidget" onclick="switchTab('vault')" style="cursor:pointer">
-    <div class="streak-flame" id="streakFlame">🔥</div>
-    <div class="streak-info" style="flex:1">
-      <div class="streak-count"><span id="streakCount">0</span> day streak</div>
-      <div class="streak-label" id="streakLabel">Log today to keep your streak alive!</div>
-      <div class="streak-dots" id="streakDots"></div>
+  <!-- ══ STREAK WIDGET — swipeable 3 slides ══ -->
+  <div class="streak-widget" id="streakWidget" style="padding:0;overflow:hidden;position:relative;min-height:82px;cursor:grab"
+       ontouchstart="swStreak(event,'start')" ontouchend="swStreak(event,'end')"
+       onmousedown="swStreak(event,'mstart')" onmouseup="swStreak(event,'mend')">
+    <div id="streakSlides" style="display:flex;transition:transform .3s cubic-bezier(.4,0,.2,1);will-change:transform">
+      <!-- Slide 0: Streak counter -->
+      <div style="min-width:100%;padding:14px 16px;display:flex;align-items:center;gap:12px;box-sizing:border-box">
+        <div id="streakFlame" style="font-size:34px;line-height:1;animation:flamePulse 2s ease-in-out infinite;flex-shrink:0">🔥</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-family:Syne,sans-serif;font-size:22px;font-weight:900;color:#f97316;line-height:1"><span id="streakCount">0</span> <span style="font-size:13px;font-weight:700">day streak</span></div>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="streakLabel">Log today to start your streak!</div>
+          <div id="streakDots" style="display:flex;gap:4px;margin-top:6px"></div>
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <div style="font-size:9px;color:var(--text3);font-weight:700">BEST</div>
+          <div style="font-family:Syne,sans-serif;font-size:20px;font-weight:900;color:var(--primary)" id="streakBest">0</div>
+        </div>
+      </div>
+      <!-- Slide 1: Milestone badges -->
+      <div style="min-width:100%;padding:12px 16px;box-sizing:border-box">
+        <div style="font-size:9px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;margin-bottom:8px">🏆 Streak Milestones</div>
+        <div id="streakBadges" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+      </div>
+      <!-- Slide 2: Pro CTA -->
+      <div style="min-width:100%;padding:14px 16px;display:flex;align-items:center;gap:12px;box-sizing:border-box;cursor:pointer" onclick="openProModal('streak')">
+        <div style="font-size:28px;flex-shrink:0">✨</div>
+        <div style="flex:1">
+          <div style="font-weight:800;font-size:13px;color:var(--primary)">Unlock Pro — ₹25/mo</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:2px">AI Mirror · Vault · Patterns · Export</div>
+        </div>
+        <div style="background:linear-gradient(135deg,#7c3aed,#ec4899);color:#fff;border-radius:10px;padding:6px 12px;font-size:11px;font-weight:800;flex-shrink:0">Upgrade</div>
+      </div>
     </div>
-    <div style="text-align:right">
-      <div style="font-size:10px;color:var(--text3)">Best</div>
-      <div style="font-family:Syne,sans-serif;font-size:16px;font-weight:800;color:var(--primary)" id="streakBest">0</div>
+    <!-- Slide dots -->
+    <div id="streakSlideDots" style="position:absolute;bottom:4px;left:50%;transform:translateX(-50%);display:flex;gap:4px">
+      <div style="width:5px;height:5px;border-radius:50%;background:#f97316;transition:background .2s" id="ssd0"></div>
+      <div style="width:5px;height:5px;border-radius:50%;background:rgba(0,0,0,.15);transition:background .2s" id="ssd1"></div>
+      <div style="width:5px;height:5px;border-radius:50%;background:rgba(0,0,0,.15);transition:background .2s" id="ssd2"></div>
     </div>
   </div>
 
@@ -2288,23 +2494,49 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
     <button class="btn btn-secondary btn-sm btn-block" onclick="buildVaultFingerprint()">🔄 Recalculate Fingerprint</button>
   </div>
 
-  <!-- Peak States Archive -->
+  <!-- Peak States Archive — PRO GATED -->
   <div class="card">
-    <div class="card-title"><span class="emoji">⚡</span> Peak States Archive</div>
-    <div style="font-size:12px;color:var(--text3);margin-bottom:12px">Your top 3 highest-performance days ever logged. The conditions that produced your best state.</div>
-    <div id="vaultPeakStates">
+    <div class="card-title"><span class="emoji">⚡</span> Peak States Archive <span class="pro-badge">PRO</span></div>
+    <div class="pro-gate" id="peakStatesGate">
+      <div class="pro-gate-blur">
+        <div style="font-size:12px;color:var(--text3);margin-bottom:10px">Your top 3 highest-performance days ever logged.</div>
+        <div style="background:linear-gradient(135deg,rgba(251,146,60,.15),rgba(239,68,68,.1));border:1px solid rgba(251,146,60,.3);border-radius:10px;padding:10px;margin-bottom:7px"><div style="font-weight:700;font-size:13px">⚡ Peak Day — Score 9.4/10</div><div style="font-size:11px;color:var(--text3);margin-top:3px">Focus 9 · Flow 10 · Mood 9 · Deep Work · Morning</div></div>
+        <div style="background:var(--bg3);border-radius:10px;padding:10px;margin-bottom:7px"><div style="font-weight:700;font-size:13px">⚡ Peak Day — Score 8.9/10</div><div style="font-size:11px;color:var(--text3);margin-top:3px">Focus 9 · Creativity 10 · Meditation · Evening</div></div>
+        <div style="background:var(--bg3);border-radius:10px;padding:10px"><div style="font-weight:700;font-size:13px">⚡ Peak Day — Score 8.7/10</div><div style="font-size:11px;color:var(--text3);margin-top:3px">Flow 9 · Willpower 10 · Exercise · Afternoon</div></div>
+      </div>
+      <div class="pro-gate-overlay">
+        <div class="pg-icon">⚡</div>
+        <div class="pg-title">Peak States is Pro</div>
+        <div class="pg-sub">See exact conditions that produced your best performance days.</div>
+        <button class="btn btn-primary btn-sm" onclick="openProModal('peak')">✨ Unlock ₹25/mo</button>
+      </div>
+    </div>
+    <div id="vaultPeakStates" style="display:none">
       <div class="empty-state"><span class="es-icon">⚡</span><div class="es-text">Log 5+ entries to see your peak states</div></div>
     </div>
   </div>
 
-  <!-- Behavioral Patterns -->
+  <!-- Behavioral Patterns — PRO GATED -->
   <div class="card">
-    <div class="card-title"><span class="emoji">🔍</span> What the AI Learned About You</div>
-    <div style="font-size:12px;color:var(--text3);margin-bottom:12px">Patterns the behavioral engine detected automatically — things you may not have consciously noticed.</div>
-    <div id="vaultBehaviorPatterns">
+    <div class="card-title"><span class="emoji">🔍</span> What the AI Learned About You <span class="pro-badge">PRO</span></div>
+    <div class="pro-gate" id="patternsGate">
+      <div class="pro-gate-blur">
+        <div style="font-size:12px;color:var(--text3);margin-bottom:10px">Patterns detected automatically — things you may not have noticed.</div>
+        <div style="background:rgba(124,58,237,.08);border-left:3px solid var(--primary);padding:8px 10px;border-radius:0 8px 8px 0;margin-bottom:7px;font-size:12px">🧠 Your focus peaks between 9–11am. Morning cognitive performer.</div>
+        <div style="background:rgba(6,182,212,.08);border-left:3px solid var(--accent);padding:8px 10px;border-radius:0 8px 8px 0;margin-bottom:7px;font-size:12px">🌙 Dream recall correlates strongly with meditation evenings.</div>
+        <div style="background:rgba(16,185,129,.08);border-left:3px solid var(--success);padding:8px 10px;border-radius:0 8px 8px 0;font-size:12px">⚡ Highest flow states occur after 7+ hours of sleep.</div>
+      </div>
+      <div class="pro-gate-overlay">
+        <div class="pg-icon">🔍</div>
+        <div class="pg-title">AI Patterns is Pro</div>
+        <div class="pg-sub">The AI has analyzed your data. Upgrade to see what it found about you.</div>
+        <button class="btn btn-primary btn-sm" onclick="openProModal('patterns')">✨ Unlock ₹25/mo</button>
+      </div>
+    </div>
+    <div id="vaultBehaviorPatterns" style="display:none">
       <div class="empty-state"><span class="es-icon">🔍</span><div class="es-text">Patterns emerge after 7+ days of use</div></div>
     </div>
-    <button class="btn btn-secondary btn-sm btn-block" onclick="buildVaultPatterns()" style="margin-top:10px">🔄 Detect Patterns</button>
+    <button class="btn btn-secondary btn-sm btn-block" id="detectPatternsBtn" onclick="buildVaultPatterns()" style="margin-top:10px;display:none">🔄 Detect Patterns</button>
   </div>
 
   <!-- AI Mind Mirror — PRO GATED -->
@@ -2838,17 +3070,32 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
         <div class="setting-title">App Language</div>
         <div class="setting-desc">Choose your preferred language for the interface</div>
       </div>
-      <select class="lang-sel" onchange="setLang(this.value)" id="settingLang">
-        <option value="en">English</option>
-        <option value="hi">हिन्दी</option>
-        <option value="es">Español</option>
-        <option value="fr">Français</option>
-        <option value="de">Deutsch</option>
-        <option value="pt">Português</option>
-        <option value="zh">中文</option>
-        <option value="ar">العربية</option>
-        <option value="ja">日本語</option>
-        <option value="ru">Русский</option>
+      <select class="lang-sel" onchange="setLang(this.value)" id="settingLang" style="font-size:12px">
+        <option value="en">🌐 English</option>
+        <option value="hi">🇮🇳 हिन्दी (Hindi)</option>
+        <option value="es">🇪🇸 Español (Spanish)</option>
+        <option value="fr">🇫🇷 Français (French)</option>
+        <option value="de">🇩🇪 Deutsch (German)</option>
+        <option value="pt">🇧🇷 Português (Portuguese)</option>
+        <option value="zh">🇨🇳 中文 (Chinese)</option>
+        <option value="ar">🇸🇦 العربية (Arabic)</option>
+        <option value="ja">🇯🇵 日本語 (Japanese)</option>
+        <option value="ru">🇷🇺 Русский (Russian)</option>
+        <option value="ko">🇰🇷 한국어 (Korean)</option>
+        <option value="it">🇮🇹 Italiano (Italian)</option>
+        <option value="tr">🇹🇷 Türkçe (Turkish)</option>
+        <option value="bn">🇧🇩 বাংলা (Bengali)</option>
+        <option value="id">🇮🇩 Bahasa Indonesia</option>
+        <option value="vi">🇻🇳 Tiếng Việt (Vietnamese)</option>
+        <option value="th">🇹🇭 ภาษาไทย (Thai)</option>
+        <option value="sw">🌍 Kiswahili (Swahili)</option>
+        <option value="nl">🇳🇱 Nederlands (Dutch)</option>
+        <option value="pl">🇵🇱 Polski (Polish)</option>
+        <option value="uk">🇺🇦 Українська (Ukrainian)</option>
+        <option value="ta">🏛️ தமிழ் (Tamil)</option>
+        <option value="te">🌺 తెలుగు (Telugu)</option>
+        <option value="mr">🪔 मराठी (Marathi)</option>
+        <option value="gu">🌅 ગુજરાતી (Gujarati)</option>
       </select>
     </div>
     <div class="setting-item">
@@ -2921,13 +3168,46 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
     </div>
   </div>
 
+
   <div class="card">
     <div class="card-title"><span class="emoji">🗄️</span> Data Management</div>
     <button class="btn btn-secondary btn-block" onclick="exportData()" style="margin-bottom:8px">📤 Export All Data (JSON)</button>
     <button class="btn btn-secondary btn-block" onclick="document.getElementById('importFile').click()" style="margin-bottom:8px">📥 Import Data</button>
     <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
-    <button class="btn btn-danger btn-block" onclick="clearAllData()">🗑 Clear All Data</button>
-    <div style="font-size:11px;color:var(--text3);text-align:center;margin-top:10px">All data is stored locally on your device only. Nothing is sent to servers.</div>
+    <button class="btn btn-danger btn-block" onclick="clearAllData()">🗑️ Clear All Local Data</button>
+    <div style="font-size:11px;color:var(--text3);text-align:center;margin-top:10px">Guest data: stored on this device only. Signed-in data: synced to Firebase under your private account.</div>
+  </div>
+
+  <!-- Account Deletion -->
+  <div class="card" style="border:1px solid rgba(239,68,68,.3)">
+    <div class="card-title"><span class="emoji">⚠️</span> Account & Privacy</div>
+
+    <div id="guestDeleteSection" style="display:none">
+      <div style="font-size:12px;color:var(--text2);line-height:1.6;margin-bottom:12px">
+        <strong>Guest mode:</strong> Your data exists only on this device in localStorage. No account was created. To permanently erase everything:
+      </div>
+      <button class="btn btn-danger btn-block" onclick="deleteGuestPermanently()" style="margin-bottom:8px">🗑️ Erase All Guest Data Permanently</button>
+    </div>
+
+    <div id="accountDeleteSection" style="display:none">
+      <div style="font-size:12px;color:var(--text2);line-height:1.6;margin-bottom:12px">
+        <strong>Signed-in account:</strong> Deleting your account will permanently erase all your Firestore data, authentication record, and local data. This cannot be undone.
+      </div>
+      <div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:10px;padding:12px;margin-bottom:12px;font-size:11px;color:var(--text2);line-height:1.6">
+        ⚠️ <strong>What gets deleted:</strong><br>
+        • All your consciousness logs<br>
+        • Dreams, health profile, media<br>
+        • Firebase account + authentication<br>
+        • Pro status and streak data<br>
+        • Everything in localStorage on this device
+      </div>
+      <button class="btn btn-secondary btn-block" onclick="signOutOnly()" style="margin-bottom:8px">🚪 Sign Out Only (keep data)</button>
+      <button class="btn btn-danger btn-block" onclick="confirmDeleteAccount()">🗑️ Delete Account Permanently</button>
+    </div>
+
+    <div style="font-size:10px;color:var(--text3);text-align:center;margin-top:10px">
+      🔒 Privacy: No other user can see your data. Each account is isolated by unique ID.
+    </div>
   </div>
 
   <div class="card">
@@ -3893,7 +4173,141 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
   <div id="escapeCalcResult" style="display:none;background:var(--bg3);border-radius:12px;padding:14px;font-size:13px;line-height:1.8"></div>
 </div>
 
-</div><!-- /tab-wealth -->
+</div>
+<!-- ════════════════════════════════════════════
+     ORACLE TAB — QUANTUM CONSCIOUSNESS PREDICTOR
+════════════════════════════════════════════ -->
+<div class="tab-panel" id="tab-oracle">
+
+  <!-- Hero -->
+  <div style="background:linear-gradient(135deg,#0a001a,#001a2e,#0d0a1a);border-radius:18px;padding:20px;margin-bottom:14px;text-align:center;border:1px solid rgba(124,58,237,.3);position:relative;overflow:hidden">
+    <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 50% 0%,rgba(124,58,237,.18),transparent 70%);pointer-events:none"></div>
+    <div style="font-size:48px;margin-bottom:8px;animation:oraclePulse 3s ease-in-out infinite">🌀</div>
+    <div style="font-family:Syne,sans-serif;font-size:20px;font-weight:900;background:linear-gradient(135deg,#a78bfa,#06b6d4,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:6px">Consciousness Oracle</div>
+    <div style="font-size:12px;color:#8b7aa8;line-height:1.6;max-width:320px;margin:0 auto">A quantum-probabilistic engine that predicts your next decisions, behaviors, and mental states — from your own logged data. Schrödinger's You: alive in all possible futures simultaneously, until you act.</div>
+  </div>
+
+  <!-- Quantum State Meter -->
+  <div class="card" style="background:linear-gradient(135deg,rgba(6,182,212,.06),rgba(124,58,237,.06));border:1px solid rgba(6,182,212,.25)">
+    <div class="card-title"><span class="emoji">⚛️</span> Current Quantum State</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px" id="oracleStateGrid">
+      <div style="background:var(--bg3);border-radius:10px;padding:10px;text-align:center">
+        <div style="font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Cognitive Entropy</div>
+        <div id="oEntropy" style="font-family:Syne,sans-serif;font-size:22px;font-weight:900;color:var(--accent)">—</div>
+        <div style="font-size:9px;color:var(--text3)">bits/state</div>
+      </div>
+      <div style="background:var(--bg3);border-radius:10px;padding:10px;text-align:center">
+        <div style="font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Behavioral Momentum</div>
+        <div id="oMomentum" style="font-family:Syne,sans-serif;font-size:22px;font-weight:900;color:var(--primary)">—</div>
+        <div style="font-size:9px;color:var(--text3)">pattern strength</div>
+      </div>
+      <div style="background:var(--bg3);border-radius:10px;padding:10px;text-align:center">
+        <div style="font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">State Coherence</div>
+        <div id="oCoherence" style="font-family:Syne,sans-serif;font-size:22px;font-weight:900;color:var(--success)">—</div>
+        <div style="font-size:9px;color:var(--text3)">% stability</div>
+      </div>
+      <div style="background:var(--bg3);border-radius:10px;padding:10px;text-align:center">
+        <div style="font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Collapse Probability</div>
+        <div id="oCollapse" style="font-family:Syne,sans-serif;font-size:22px;font-weight:900;color:var(--pink)">—</div>
+        <div style="font-size:9px;color:var(--text3)">state change risk</div>
+      </div>
+    </div>
+    <button class="btn btn-secondary btn-sm btn-block" onclick="computeOracleState()">⚛️ Compute Quantum State</button>
+  </div>
+
+  <!-- Schrödinger Probability Dial -->
+  <div class="card" style="border:1px solid rgba(124,58,237,.3)">
+    <div class="card-title"><span class="emoji">🐈</span> Schrödinger Probability Dial</div>
+    <div style="font-size:11px;color:var(--text3);margin-bottom:14px;line-height:1.5">Like Schrödinger's cat — you simultaneously exist in all future states until you act. This dial shows the probability distribution of your next mental state.</div>
+    <div style="position:relative;width:200px;height:200px;margin:0 auto 14px">
+      <canvas id="oracleDialCanvas" width="200" height="200"></canvas>
+      <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none">
+        <div id="oDialLabel" style="font-family:Syne,sans-serif;font-size:13px;font-weight:800;color:var(--text);text-align:center;line-height:1.3">Tap Compute</div>
+        <div id="oDialPct" style="font-size:11px;color:var(--text3)"></div>
+      </div>
+    </div>
+    <div id="oDialLegend" style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center"></div>
+  </div>
+
+  <!-- Pro Gate for Deep Prediction -->
+  <div class="card" style="border:1px solid rgba(239,68,68,.25)" id="oraclePredictCard">
+    <div class="card-title"><span class="emoji">🔮</span> Deep Behavioral Prediction <span class="pro-badge">PRO</span></div>
+    <div id="oraclePredictGate">
+      <div style="filter:blur(3px);pointer-events:none;opacity:.4;user-select:none">
+        <div style="background:var(--bg3);border-radius:10px;padding:12px;margin-bottom:8px;font-size:12px">
+          <div style="font-weight:700;color:var(--primary);margin-bottom:4px">🎯 Next Decision (87% confidence)</div>
+          <div style="color:var(--text2)">You will choose rest over work in the next 4 hours. Pattern detected across 12 similar data points.</div>
+        </div>
+        <div style="background:var(--bg3);border-radius:10px;padding:12px;font-size:12px">
+          <div style="font-weight:700;color:var(--accent);margin-bottom:4px">⚠️ Behavioral Trap (73% probability)</div>
+          <div style="color:var(--text2)">Your data shows you are heading into a low-focus spiral starting tomorrow morning.</div>
+        </div>
+      </div>
+      <div style="text-align:center;margin-top:-60px;position:relative;z-index:2;padding-bottom:8px">
+        <div style="font-size:24px;margin-bottom:6px">🔮</div>
+        <div style="font-weight:800;font-size:14px;color:var(--text);margin-bottom:4px">Deep Prediction is Pro</div>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:10px">Unlock AI-powered behavioral forecasting based on your consciousness data</div>
+        <button class="btn btn-primary btn-sm" onclick="openProModal('oracle')">✨ Unlock for ₹25/mo</button>
+      </div>
+    </div>
+    <div id="oraclePredictUnlocked" style="display:none">
+      <div style="font-size:11px;color:var(--text3);margin-bottom:12px">Select prediction horizon and what to predict:</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+        <select class="form-select" id="oHorizon" style="font-size:12px">
+          <option value="next_4h">Next 4 hours</option>
+          <option value="tomorrow">Tomorrow</option>
+          <option value="next_week">Next 7 days</option>
+          <option value="next_month">Next 30 days</option>
+        </select>
+        <select class="form-select" id="oDomain" style="font-size:12px">
+          <option value="behavior">Behavior & Decisions</option>
+          <option value="mood">Mood & Emotions</option>
+          <option value="focus">Focus & Productivity</option>
+          <option value="patterns">Pattern Breaks</option>
+          <option value="freewill">Free Will Test</option>
+        </select>
+      </div>
+      <button class="btn btn-primary btn-block btn-sm" onclick="runDeepPrediction()">🌀 Run Oracle Prediction</button>
+      <div id="oraclePredictResult" style="margin-top:12px"></div>
+    </div>
+  </div>
+
+  <!-- Free Will Challenge -->
+  <div class="card" style="background:linear-gradient(135deg,rgba(239,68,68,.06),rgba(124,58,237,.06));border:1px solid rgba(239,68,68,.2)">
+    <div class="card-title"><span class="emoji">⚡</span> Free Will Challenge</div>
+    <div style="font-size:12px;color:var(--text2);line-height:1.6;margin-bottom:12px">The Oracle predicts your next choice. If it's right, your pattern is stronger than your will. If it's wrong — you broke the chain. Can you surprise yourself?</div>
+    <div id="freeWillQuestion" style="background:var(--bg3);border-radius:10px;padding:14px;margin-bottom:10px;font-size:13px;font-weight:700;color:var(--text);text-align:center;min-height:50px;display:flex;align-items:center;justify-content:center">
+      Tap below to generate your prediction challenge
+    </div>
+    <button class="btn btn-secondary btn-sm btn-block" onclick="generateFreeWillChallenge()" style="margin-bottom:8px">⚡ Generate My Prediction</button>
+    <div id="freeWillResult" style="display:none">
+      <div style="font-size:11px;color:var(--text3);text-align:center;margin-bottom:8px">Did the Oracle predict correctly?</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <button class="btn btn-secondary btn-sm" onclick="freeWillOutcome(true)" style="border-color:var(--danger);color:var(--danger)">😱 Yes it was right</button>
+        <button class="btn btn-secondary btn-sm" onclick="freeWillOutcome(false)" style="border-color:var(--success);color:var(--success)">🎯 No, I surprised it</button>
+      </div>
+    </div>
+    <div id="freeWillScore" style="margin-top:10px;text-align:center;font-size:11px;color:var(--text3)"></div>
+  </div>
+
+  <!-- Behavioral Trajectory -->
+  <div class="card">
+    <div class="card-title"><span class="emoji">📈</span> Behavioral Trajectory</div>
+    <div style="font-size:11px;color:var(--text3);margin-bottom:12px">Based on your historical patterns — where is your consciousness heading over the next 7 days?</div>
+    <button class="btn btn-secondary btn-sm btn-block" onclick="computeTrajectory()">📈 Compute 7-Day Trajectory</button>
+    <div id="trajectoryResult" style="margin-top:12px"></div>
+  </div>
+
+  <!-- Philosophy Engine -->
+  <div class="card" style="background:linear-gradient(135deg,rgba(124,58,237,.06),rgba(0,0,0,0));border:1px solid rgba(124,58,237,.2)">
+    <div class="card-title"><span class="emoji">🧬</span> Determinism vs Free Will — Your Data's Verdict</div>
+    <div style="font-size:12px;color:var(--text2);line-height:1.6;margin-bottom:12px">After analyzing your patterns, the Oracle delivers a philosophical verdict: how much of your behavior is determined vs freely chosen.</div>
+    <button class="btn btn-accent btn-sm btn-block" onclick="computeDeterminismScore()">🧬 Compute My Determinism Score</button>
+    <div id="determinismResult" style="margin-top:12px"></div>
+  </div>
+
+</div>
+<!-- /tab-oracle -->
 
 </div><!-- /.main -->
 
@@ -4045,9 +4459,9 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
 const LANGS = {
   en:{
     // Nav
-    nav_log:"Log",nav_waves:"Waves",nav_ai:"AI Hub",nav_analysis:"Analysis",nav_health:"Health",
+    nav_log:"Log",nav_waves:"Neural Beats",nav_ai:"AI Hub",nav_analysis:"Analysis",nav_health:"Health",
     nav_games:"Games",nav_dreams:"Dreams",nav_memory:"Memory",nav_calendar:"Calendar",
-    nav_settings:"Settings",nav_world:"World",nav_path:"Path",nav_career:"Career",nav_science:"Science",nav_system:"System",nav_guide:"Guide",nav_vault:"Vault",
+    nav_settings:"Settings",nav_world:"World",nav_path:"Path",nav_career:"Career",nav_science:"Science",nav_system:"System",nav_guide:"Guide",nav_vault:"Vault",nav_wealth:"Wealth",nav_oracle:"Oracle",
     // Daily Log
     daily_log:"Daily Consciousness Log",entry_info:"Entry Info",date:"Date",time_of_day:"Time of Day",
     activity:"Activity",consciousness_metrics:"Consciousness Metrics",save_entry:"Save Entry",
@@ -4088,9 +4502,9 @@ const LANGS = {
     creative:"Creative",meditation:"Meditation",entertainment:"Entertainment",
   },
   hi:{
-    nav_log:"लॉग",nav_waves:"तरंगें",nav_ai:"AI हब",nav_analysis:"विश्लेषण",nav_health:"स्वास्थ्य",
+    nav_log:"लॉग",nav_waves:"न्यूरल बीट्स",nav_ai:"AI हब",nav_analysis:"विश्लेषण",nav_health:"स्वास्थ्य",
     nav_games:"खेल",nav_dreams:"सपने",nav_memory:"स्मृति",nav_calendar:"कैलेंडर",
-    nav_settings:"सेटिंग्स",nav_world:"दुनिया",nav_path:"पथ",nav_science:"विज्ञान",nav_system:"सिस्टम",
+    nav_settings:"सेटिंग्स",nav_world:"दुनिया",nav_path:"पथ",nav_science:"विज्ञान",nav_system:"सिस्टम",nav_oracle:"ओरेकल",nav_wealth:"संपत्ति",nav_vault:"वॉल्ट",
     daily_log:"दैनिक चेतना लॉग",entry_info:"प्रविष्टि जानकारी",date:"तारीख",time_of_day:"दिन का समय",
     activity:"गतिविधि",consciousness_metrics:"चेतना मेट्रिक्स",save_entry:"सहेजें",
     inner_state:"आंतरिक अवस्था",reflections:"विचार",recent_entries:"हाल की प्रविष्टियां",
@@ -4299,7 +4713,224 @@ const LANGS = {
     recurring_pattern:"Повторяющийся паттерн",key_action:"Ключевое действие",
     brainwave_state:"Состояние мозговых волн",dominant_emotion:"Доминирующая эмоция",physical_sensation:"Физические ощущения",
     saved:"Сохранено!",cleared:"Очищено",save:"Сохранить",morning:"Утро",afternoon:"День",evening:"Вечер",night:"Ночь",
-  }
+  },
+  ko:{
+    nav_log:"기록",nav_waves:"뇌파",nav_ai:"AI 허브",nav_analysis:"분석",nav_health:"건강",
+    nav_games:"게임",nav_dreams:"꿈",nav_memory:"기억",nav_calendar:"캘린더",
+    nav_settings:"설정",nav_world:"세계",nav_path:"경로",nav_science:"과학",nav_system:"시스템",nav_vault:"금고",
+    daily_log:"일일 의식 기록",entry_info:"항목 정보",date:"날짜",time_of_day:"시간대",
+    activity:"활동",consciousness_metrics:"의식 지표",save_entry:"저장",
+    inner_state:"내면 상태",reflections:"성찰",recent_entries:"최근 항목",
+    raw_thoughts:"원초적 생각 / 의식의 흐름",key_insight:"오늘의 핵심 통찰",
+    current_goal:"현재 목표",main_obstacle:"주요 장애물",gratitude:"감사",
+    recurring_pattern:"반복 패턴",key_action:"핵심 행동",
+    brainwave_state:"뇌파 상태",dominant_emotion:"지배적 감정",physical_sensation:"신체 감각",
+    save:"저장",cancel:"취소",close:"닫기",next:"다음",back:"뒤로",
+    saved:"저장됨!",cleared:"지워짐",morning:"아침",afternoon:"오후",evening:"저녁",night:"밤",
+    loading:"로딩 중...",analyzing:"분석 중...",
+    placeholder_thoughts:"지금 무슨 생각을 하고 있나요?",placeholder_chat:"의식에 대해 무엇이든 물어보세요...",
+    placeholder_world_ask:"지정학적 또는 경제적 힘에 대해 물어보세요...",
+    placeholder_science_ask:"최전선 과학에 대해 무엇이든 물어보세요...",
+    deep_work:"깊은 작업",exercise:"운동",rest:"휴식",social:"사회",learning:"학습",creative:"창의",meditation:"명상",entertainment:"엔터테인먼트",
+  },
+  it:{
+    nav_log:"Diario",nav_waves:"Onde",nav_ai:"Hub IA",nav_analysis:"Analisi",nav_health:"Salute",
+    nav_games:"Giochi",nav_dreams:"Sogni",nav_memory:"Memoria",nav_calendar:"Calendario",
+    nav_settings:"Impostazioni",nav_world:"Mondo",nav_path:"Percorso",nav_science:"Scienza",nav_system:"Sistema",nav_vault:"Vault",
+    daily_log:"Diario della Coscienza",entry_info:"Info Voce",date:"Data",time_of_day:"Ora del Giorno",
+    activity:"Attività",consciousness_metrics:"Metriche di Coscienza",save_entry:"Salva",
+    inner_state:"Stato Interiore",reflections:"Riflessioni",recent_entries:"Voci Recenti",
+    raw_thoughts:"Pensieri Grezzi / Flusso di Coscienza",key_insight:"Intuizione Chiave di Oggi",
+    current_goal:"Obiettivo Attuale",main_obstacle:"Ostacolo Principale",gratitude:"Gratitudine",
+    recurring_pattern:"Schema Ricorrente",key_action:"Azione Chiave",
+    brainwave_state:"Stato delle Onde Cerebrali",dominant_emotion:"Emozione Dominante",physical_sensation:"Sensazione Fisica",
+    save:"Salva",cancel:"Annulla",close:"Chiudi",next:"Avanti",back:"Indietro",
+    saved:"Salvato!",cleared:"Cancellato",morning:"Mattina",afternoon:"Pomeriggio",evening:"Sera",night:"Notte",
+    loading:"Caricamento...",analyzing:"Analisi...",
+    placeholder_thoughts:"Cosa hai in mente adesso?",placeholder_chat:"Chiedimi qualcosa sulla tua coscienza...",
+    deep_work:"Lavoro Profondo",exercise:"Esercizio",rest:"Riposo",social:"Sociale",learning:"Apprendimento",creative:"Creativo",meditation:"Meditazione",entertainment:"Intrattenimento",
+  },
+  tr:{
+    nav_log:"Günlük",nav_waves:"Dalgalar",nav_ai:"YZ Merkezi",nav_analysis:"Analiz",nav_health:"Sağlık",
+    nav_games:"Oyunlar",nav_dreams:"Rüyalar",nav_memory:"Bellek",nav_calendar:"Takvim",
+    nav_settings:"Ayarlar",nav_world:"Dünya",nav_path:"Yol",nav_science:"Bilim",nav_system:"Sistem",nav_vault:"Kasa",
+    daily_log:"Günlük Bilinç Günlüğü",entry_info:"Giriş Bilgisi",date:"Tarih",time_of_day:"Günün Saati",
+    activity:"Aktivite",consciousness_metrics:"Bilinç Metrikleri",save_entry:"Kaydet",
+    inner_state:"İç Durum",reflections:"Yansımalar",recent_entries:"Son Girişler",
+    raw_thoughts:"Ham Düşünceler / Bilinç Akışı",key_insight:"Bugünün Temel İçgörüsü",
+    current_goal:"Mevcut Hedef",main_obstacle:"Ana Engel",gratitude:"Minnettarlık",
+    brainwave_state:"Beyin Dalgası Durumu",dominant_emotion:"Baskın Duygu",physical_sensation:"Fiziksel His",
+    save:"Kaydet",cancel:"İptal",close:"Kapat",next:"İleri",back:"Geri",
+    saved:"Kaydedildi!",cleared:"Temizlendi",morning:"Sabah",afternoon:"Öğleden sonra",evening:"Akşam",night:"Gece",
+    loading:"Yükleniyor...",analyzing:"Analiz ediliyor...",
+    placeholder_thoughts:"Şu an aklınızda ne var?",placeholder_chat:"Bilincin hakkında her şeyi sor...",
+    deep_work:"Derin Çalışma",exercise:"Egzersiz",rest:"Dinlenme",social:"Sosyal",learning:"Öğrenme",creative:"Yaratıcı",meditation:"Meditasyon",entertainment:"Eğlence",
+  },
+  bn:{
+    nav_log:"লগ",nav_waves:"তরঙ্গ",nav_ai:"AI হাব",nav_analysis:"বিশ্লেষণ",nav_health:"স্বাস্থ্য",
+    nav_games:"গেমস",nav_dreams:"স্বপ্ন",nav_memory:"স্মৃতি",nav_calendar:"ক্যালেন্ডার",
+    nav_settings:"সেটিংস",nav_world:"বিশ্ব",nav_path:"পথ",nav_science:"বিজ্ঞান",nav_system:"সিস্টেম",nav_vault:"ভল্ট",
+    daily_log:"দৈনিক চেতনা লগ",entry_info:"এন্ট্রি তথ্য",date:"তারিখ",time_of_day:"দিনের সময়",
+    activity:"কার্যকলাপ",consciousness_metrics:"চেতনা মেট্রিক্স",save_entry:"সংরক্ষণ করুন",
+    inner_state:"অভ্যন্তরীণ অবস্থা",reflections:"প্রতিফলন",recent_entries:"সাম্প্রতিক এন্ট্রি",
+    raw_thoughts:"কাঁচা চিন্তা / চেতনার প্রবাহ",key_insight:"আজকের মূল অন্তর্দৃষ্টি",
+    current_goal:"বর্তমান লক্ষ্য",main_obstacle:"প্রধান বাধা",gratitude:"কৃতজ্ঞতা",
+    save:"সংরক্ষণ",cancel:"বাতিল",close:"বন্ধ",
+    saved:"সংরক্ষিত!",morning:"সকাল",afternoon:"বিকেল",evening:"সন্ধ্যা",night:"রাত",
+    loading:"লোড হচ্ছে...",placeholder_thoughts:"এখন আপনার মনে কী আছে?",
+    deep_work:"গভীর কাজ",exercise:"ব্যায়াম",rest:"বিশ্রাম",meditation:"ধ্যান",
+  },
+  id:{
+    nav_log:"Jurnal",nav_waves:"Gelombang",nav_ai:"Hub AI",nav_analysis:"Analisis",nav_health:"Kesehatan",
+    nav_games:"Permainan",nav_dreams:"Mimpi",nav_memory:"Memori",nav_calendar:"Kalender",
+    nav_settings:"Pengaturan",nav_world:"Dunia",nav_path:"Jalur",nav_science:"Sains",nav_system:"Sistem",nav_vault:"Vault",
+    daily_log:"Jurnal Kesadaran Harian",entry_info:"Info Entri",date:"Tanggal",time_of_day:"Waktu Hari",
+    activity:"Aktivitas",consciousness_metrics:"Metrik Kesadaran",save_entry:"Simpan",
+    inner_state:"Keadaan Batin",reflections:"Refleksi",recent_entries:"Entri Terbaru",
+    raw_thoughts:"Pikiran Mentah / Aliran Kesadaran",key_insight:"Wawasan Kunci Hari Ini",
+    current_goal:"Tujuan Saat Ini",main_obstacle:"Hambatan Utama",gratitude:"Rasa Syukur",
+    brainwave_state:"Keadaan Gelombang Otak",dominant_emotion:"Emosi Dominan",physical_sensation:"Sensasi Fisik",
+    save:"Simpan",cancel:"Batal",close:"Tutup",next:"Berikutnya",back:"Kembali",
+    saved:"Tersimpan!",cleared:"Dibersihkan",morning:"Pagi",afternoon:"Siang",evening:"Sore",night:"Malam",
+    loading:"Memuat...",analyzing:"Menganalisis...",
+    placeholder_thoughts:"Apa yang ada di pikiran Anda sekarang?",placeholder_chat:"Tanyakan apa saja tentang kesadaran Anda...",
+    deep_work:"Kerja Mendalam",exercise:"Olahraga",rest:"Istirahat",social:"Sosial",learning:"Belajar",creative:"Kreatif",meditation:"Meditasi",entertainment:"Hiburan",
+  },
+  vi:{
+    nav_log:"Nhật ký",nav_waves:"Sóng",nav_ai:"Hub AI",nav_analysis:"Phân tích",nav_health:"Sức khỏe",
+    nav_games:"Trò chơi",nav_dreams:"Giấc mơ",nav_memory:"Ký ức",nav_calendar:"Lịch",
+    nav_settings:"Cài đặt",nav_world:"Thế giới",nav_path:"Con đường",nav_science:"Khoa học",nav_system:"Hệ thống",nav_vault:"Kho lưu trữ",
+    daily_log:"Nhật ký Ý thức Hàng ngày",entry_info:"Thông tin Mục",date:"Ngày",time_of_day:"Thời gian trong ngày",
+    activity:"Hoạt động",consciousness_metrics:"Chỉ số Ý thức",save_entry:"Lưu",
+    inner_state:"Trạng thái Nội tâm",reflections:"Suy ngẫm",recent_entries:"Mục Gần đây",
+    raw_thoughts:"Suy nghĩ thô / Dòng ý thức",key_insight:"Hiểu biết chính hôm nay",
+    current_goal:"Mục tiêu Hiện tại",main_obstacle:"Trở ngại Chính",gratitude:"Lòng biết ơn",
+    save:"Lưu",cancel:"Hủy",close:"Đóng",
+    saved:"Đã lưu!",morning:"Sáng",afternoon:"Chiều",evening:"Tối",night:"Đêm",
+    loading:"Đang tải...",placeholder_thoughts:"Bạn đang nghĩ gì bây giờ?",
+    deep_work:"Làm việc Sâu",exercise:"Tập thể dục",rest:"Nghỉ ngơi",meditation:"Thiền định",
+  },
+  th:{
+    nav_log:"บันทึก",nav_waves:"คลื่น",nav_ai:"ศูนย์ AI",nav_analysis:"วิเคราะห์",nav_health:"สุขภาพ",
+    nav_games:"เกม",nav_dreams:"ความฝัน",nav_memory:"ความทรงจำ",nav_calendar:"ปฏิทิน",
+    nav_settings:"การตั้งค่า",nav_world:"โลก",nav_path:"เส้นทาง",nav_science:"วิทยาศาสตร์",nav_system:"ระบบ",nav_vault:"คลัง",
+    daily_log:"บันทึกจิตสำนึกประจำวัน",entry_info:"ข้อมูลรายการ",date:"วันที่",time_of_day:"เวลาของวัน",
+    activity:"กิจกรรม",consciousness_metrics:"ตัวชี้วัดจิตสำนึก",save_entry:"บันทึก",
+    inner_state:"สภาวะภายใน",reflections:"การสะท้อน",recent_entries:"รายการล่าสุด",
+    save:"บันทึก",cancel:"ยกเลิก",close:"ปิด",
+    saved:"บันทึกแล้ว!",morning:"เช้า",afternoon:"บ่าย",evening:"เย็น",night:"กลางคืน",
+    loading:"กำลังโหลด...",placeholder_thoughts:"คุณกำลังคิดอะไรอยู่ตอนนี้?",
+    deep_work:"งานเชิงลึก",exercise:"ออกกำลังกาย",rest:"พักผ่อน",meditation:"ทำสมาธิ",
+  },
+  sw:{
+    nav_log:"Kumbukumbu",nav_waves:"Mawimbi",nav_ai:"Kituo AI",nav_analysis:"Uchambuzi",nav_health:"Afya",
+    nav_games:"Michezo",nav_dreams:"Ndoto",nav_memory:"Kumbukumbu",nav_calendar:"Kalenda",
+    nav_settings:"Mipangilio",nav_world:"Ulimwengu",nav_path:"Njia",nav_science:"Sayansi",nav_system:"Mfumo",nav_vault:"Hazina",
+    daily_log:"Kumbukumbu ya Fahamu ya Kila Siku",entry_info:"Maelezo ya Kuingia",date:"Tarehe",time_of_day:"Wakati wa Siku",
+    activity:"Shughuli",consciousness_metrics:"Vipimo vya Fahamu",save_entry:"Hifadhi",
+    inner_state:"Hali ya Ndani",reflections:"Tafakuri",recent_entries:"Maingizo ya Hivi Karibuni",
+    save:"Hifadhi",cancel:"Ghairi",close:"Funga",
+    saved:"Imehifadhiwa!",morning:"Asubuhi",afternoon:"Mchana",evening:"Jioni",night:"Usiku",
+    loading:"Inapakia...",placeholder_thoughts:"Unafikiria nini sasa hivi?",
+    deep_work:"Kazi ya Kina",exercise:"Mazoezi",rest:"Pumzika",meditation:"Kutafakuri",
+  },
+  nl:{
+    nav_log:"Logboek",nav_waves:"Golven",nav_ai:"AI Hub",nav_analysis:"Analyse",nav_health:"Gezondheid",
+    nav_games:"Spellen",nav_dreams:"Dromen",nav_memory:"Geheugen",nav_calendar:"Kalender",
+    nav_settings:"Instellingen",nav_world:"Wereld",nav_path:"Pad",nav_science:"Wetenschap",nav_system:"Systeem",nav_vault:"Kluis",
+    daily_log:"Dagelijks Bewustzijnslogboek",entry_info:"Invoerinfo",date:"Datum",time_of_day:"Tijd van de dag",
+    activity:"Activiteit",consciousness_metrics:"Bewustzijnsmetrieken",save_entry:"Opslaan",
+    inner_state:"Innerlijke Staat",reflections:"Reflecties",recent_entries:"Recente Invoeren",
+    raw_thoughts:"Ruwe Gedachten / Bewustzijnsstroom",key_insight:"Kerngevoel van Vandaag",
+    current_goal:"Huidig Doel",main_obstacle:"Belangrijkste Obstakel",gratitude:"Dankbaarheid",
+    save:"Opslaan",cancel:"Annuleren",close:"Sluiten",next:"Volgende",back:"Terug",
+    saved:"Opgeslagen!",cleared:"Gewist",morning:"Ochtend",afternoon:"Middag",evening:"Avond",night:"Nacht",
+    loading:"Laden...",analyzing:"Analyseren...",
+    placeholder_thoughts:"Wat speelt er nu door uw hoofd?",placeholder_chat:"Stel mij alles over uw bewustzijn...",
+    deep_work:"Diep Werk",exercise:"Lichaamsbeweging",rest:"Rust",social:"Sociaal",learning:"Leren",creative:"Creatief",meditation:"Meditatie",entertainment:"Vermaak",
+  },
+  pl:{
+    nav_log:"Dziennik",nav_waves:"Fale",nav_ai:"Hub AI",nav_analysis:"Analiza",nav_health:"Zdrowie",
+    nav_games:"Gry",nav_dreams:"Sny",nav_memory:"Pamięć",nav_calendar:"Kalendarz",
+    nav_settings:"Ustawienia",nav_world:"Świat",nav_path:"Ścieżka",nav_science:"Nauka",nav_system:"System",nav_vault:"Skarbiec",
+    daily_log:"Codzienny Dziennik Świadomości",entry_info:"Informacje o Wpisie",date:"Data",time_of_day:"Pora Dnia",
+    activity:"Aktywność",consciousness_metrics:"Metryki Świadomości",save_entry:"Zapisz",
+    inner_state:"Stan Wewnętrzny",reflections:"Refleksje",recent_entries:"Ostatnie Wpisy",
+    raw_thoughts:"Surowe Myśli / Strumień Świadomości",key_insight:"Kluczowy Wgląd Dzisiaj",
+    current_goal:"Obecny Cel",main_obstacle:"Główna Przeszkoda",gratitude:"Wdzięczność",
+    save:"Zapisz",cancel:"Anuluj",close:"Zamknij",next:"Następny",back:"Wstecz",
+    saved:"Zapisano!",cleared:"Wyczyszczono",morning:"Rano",afternoon:"Południe",evening:"Wieczór",night:"Noc",
+    loading:"Ładowanie...",analyzing:"Analiza...",
+    placeholder_thoughts:"Co teraz masz na myśli?",placeholder_chat:"Zapytaj mnie o swoją świadomość...",
+    deep_work:"Głęboka Praca",exercise:"Ćwiczenia",rest:"Odpoczynek",social:"Społeczny",learning:"Nauka",creative:"Twórczy",meditation:"Medytacja",entertainment:"Rozrywka",
+  },
+  uk:{
+    nav_log:"Журнал",nav_waves:"Хвилі",nav_ai:"ШІ Хаб",nav_analysis:"Аналіз",nav_health:"Здоров'я",
+    nav_games:"Ігри",nav_dreams:"Сни",nav_memory:"Пам'ять",nav_calendar:"Календар",
+    nav_settings:"Налаштування",nav_world:"Світ",nav_path:"Шлях",nav_science:"Наука",nav_system:"Система",nav_vault:"Сховище",
+    daily_log:"Щоденник Свідомості",entry_info:"Інформація",date:"Дата",time_of_day:"Час доби",
+    activity:"Активність",consciousness_metrics:"Метрики Свідомості",save_entry:"Зберегти",
+    inner_state:"Внутрішній стан",reflections:"Роздуми",recent_entries:"Останні записи",
+    raw_thoughts:"Сирі думки / Потік свідомості",key_insight:"Ключове відкриття дня",
+    current_goal:"Поточна мета",main_obstacle:"Головна перешкода",gratitude:"Вдячність",
+    save:"Зберегти",cancel:"Скасувати",close:"Закрити",next:"Далі",back:"Назад",
+    saved:"Збережено!",cleared:"Очищено",morning:"Ранок",afternoon:"День",evening:"Вечір",night:"Ніч",
+    loading:"Завантаження...",analyzing:"Аналіз...",
+    placeholder_thoughts:"Що у вас зараз на думці?",placeholder_chat:"Запитайте мене про свою свідомість...",
+    deep_work:"Глибока Робота",exercise:"Вправи",rest:"Відпочинок",meditation:"Медитація",
+  },
+  ta:{
+    nav_log:"பதிவு",nav_waves:"அலைகள்",nav_ai:"AI மையம்",nav_analysis:"பகுப்பாய்வு",nav_health:"உடல்நலம்",
+    nav_games:"விளையாட்டுகள்",nav_dreams:"கனவுகள்",nav_memory:"நினைவகம்",nav_calendar:"நாட்காட்டி",
+    nav_settings:"அமைப்புகள்",nav_world:"உலகம்",nav_path:"பாதை",nav_science:"அறிவியல்",nav_system:"அமைப்பு",nav_vault:"கோட்டை",
+    daily_log:"தினசரி நனவு பதிவு",entry_info:"நுழைவு தகவல்",date:"தேதி",time_of_day:"நாளின் நேரம்",
+    activity:"செயல்பாடு",save_entry:"சேமி",
+    inner_state:"உள் நிலை",reflections:"சிந்தனைகள்",recent_entries:"சமீபத்திய உள்ளீடுகள்",
+    current_goal:"தற்போதைய இலக்கு",gratitude:"நன்றி",
+    save:"சேமி",cancel:"ரத்து",close:"மூடு",
+    saved:"சேமிக்கப்பட்டது!",morning:"காலை",afternoon:"மதியம்",evening:"மாலை",night:"இரவு",
+    loading:"ஏற்றுகிறது...",placeholder_thoughts:"இப்போது உங்கள் மனதில் என்ன உள்ளது?",
+    deep_work:"ஆழமான வேலை",exercise:"உடற்பயிற்சி",rest:"ஓய்வு",meditation:"தியானம்",
+  },
+  te:{
+    nav_log:"లాగ్",nav_waves:"తరంగాలు",nav_ai:"AI హబ్",nav_analysis:"విశ్లేషణ",nav_health:"ఆరోగ్యం",
+    nav_games:"ఆటలు",nav_dreams:"కలలు",nav_memory:"జ్ఞాపకశక్తి",nav_calendar:"క్యాలెండర్",
+    nav_settings:"సెట్టింగ్‌లు",nav_world:"ప్రపంచం",nav_path:"మార్గం",nav_science:"సైన్స్",nav_system:"సిస్టమ్",nav_vault:"వాల్ట్",
+    daily_log:"రోజువారీ స్పృహ లాగ్",entry_info:"ఎంట్రీ సమాచారం",date:"తేదీ",time_of_day:"రోజు సమయం",
+    activity:"కార్యాచరణ",save_entry:"సేవ్",
+    inner_state:"అంతర్గత స్థితి",reflections:"ప్రతిబింబాలు",recent_entries:"ఇటీవలి ఎంట్రీలు",
+    current_goal:"ప్రస్తుత లక్ష్యం",gratitude:"కృతజ్ఞత",
+    save:"సేవ్",cancel:"రద్దు",close:"మూసివేయి",
+    saved:"సేవ్ చేయబడింది!",morning:"ఉదయం",afternoon:"మధ్యాహ్నం",evening:"సాయంత్రం",night:"రాత్రి",
+    loading:"లోడవుతోంది...",placeholder_thoughts:"ఇప్పుడు మీ మనసులో ఏముంది?",
+    deep_work:"లోతైన పని",exercise:"వ్యాయామం",rest:"విశ్రాంతి",meditation:"ధ్యానం",
+  },
+  mr:{
+    nav_log:"नोंद",nav_waves:"लहरी",nav_ai:"AI केंद्र",nav_analysis:"विश्लेषण",nav_health:"आरोग्य",
+    nav_games:"खेळ",nav_dreams:"स्वप्ने",nav_memory:"स्मृती",nav_calendar:"दिनदर्शिका",
+    nav_settings:"सेटिंग्ज",nav_world:"जग",nav_path:"मार्ग",nav_science:"विज्ञान",nav_system:"प्रणाली",nav_vault:"तिजोरी",
+    daily_log:"दैनिक चेतना नोंद",entry_info:"नोंद माहिती",date:"तारीख",time_of_day:"दिवसाची वेळ",
+    activity:"क्रियाकलाप",save_entry:"जतन करा",
+    inner_state:"आंतरिक अवस्था",reflections:"विचार",recent_entries:"अलीकडील नोंदी",
+    current_goal:"सद्यस्थिती लक्ष्य",gratitude:"कृतज्ञता",
+    save:"जतन करा",cancel:"रद्द करा",close:"बंद करा",
+    saved:"जतन केले!",morning:"सकाळ",afternoon:"दुपार",evening:"संध्याकाळ",night:"रात्र",
+    loading:"लोड होत आहे...",placeholder_thoughts:"आता तुमच्या मनात काय आहे?",
+    deep_work:"सखोल काम",exercise:"व्यायाम",rest:"विश्रांती",meditation:"ध्यान",
+  },
+  gu:{
+    nav_log:"નોંધ",nav_waves:"તરંગો",nav_ai:"AI હબ",nav_analysis:"વિશ્લેષણ",nav_health:"આરોગ્ય",
+    nav_games:"રમતો",nav_dreams:"સ્વપ્ન",nav_memory:"સ્મૃતિ",nav_calendar:"કૅલેન્ડર",
+    nav_settings:"સેટિંગ્સ",nav_world:"વિશ્વ",nav_path:"માર્ગ",nav_science:"વિજ્ઞાન",nav_system:"સિસ્ટમ",nav_vault:"તિજોરી",
+    daily_log:"દૈનિક ચેતના નોંધ",entry_info:"નોંધ માહિતી",date:"તારીખ",time_of_day:"દિવસનો સમય",
+    activity:"પ્રવૃત્તિ",save_entry:"સાચવો",
+    inner_state:"આંતરિક સ્થિતિ",reflections:"વિચારો",recent_entries:"તાજેતરની નોંધો",
+    current_goal:"વર્તમાન ધ્યેય",gratitude:"કૃતજ્ઞતા",
+    save:"સાચવો",cancel:"રદ",close:"બંધ",
+    saved:"સાચવ્યું!",morning:"સવાર",afternoon:"બપોર",evening:"સાંજ",night:"રાત",
+    loading:"લોડ થઈ રહ્યું છે...",placeholder_thoughts:"અત્યારે તમારા મનમાં શું છે?",
+    deep_work:"ઊંડું કામ",exercise:"વ્યાયામ",rest:"આરામ",meditation:"ધ્યાન",
+  },
 };
 let curLang=localStorage.getItem('cos_lang')||'en';
 function t(key){return(LANGS[curLang]||LANGS.en)[key]||LANGS.en[key]||key;}
@@ -4612,15 +5243,23 @@ function translateFormLabels(dict){
   });
 }
 const NAV_ITEMS=[
-  {id:'log',icon:'📝',key:'nav_log'},{id:'analysis',icon:'📊',key:'nav_analysis'},
-  {id:'ai',icon:'🤖',key:'nav_ai'},{id:'dreams',icon:'🌙',key:'nav_dreams'},
-  {id:'waves',icon:'🎵',key:'nav_waves'},{id:'health',icon:'❤️',key:'nav_health'},
-  {id:'path',icon:'💼',key:'nav_career'},{id:'games',icon:'🎮',key:'nav_games'},
-  {id:'science',icon:'🔬',key:'nav_science'},{id:'world',icon:'🌍',key:'nav_world'},
+  {id:'log',icon:'📝',key:'nav_log'},
+  {id:'analysis',icon:'📊',key:'nav_analysis'},
   {id:'vault',icon:'🔮',key:'nav_vault'},
-  {id:'media',icon:'📸',key:'nav_memory'},{id:'calendar',icon:'📅',key:'nav_calendar'},
+  {id:'oracle',icon:'🌀',key:'nav_oracle'},
+  {id:'ai',icon:'🤖',key:'nav_ai'},
+  {id:'waves',icon:'🎵',key:'nav_waves'},
+  {id:'dreams',icon:'🌙',key:'nav_dreams'},
+  {id:'health',icon:'❤️',key:'nav_health'},
   {id:'wealth',icon:'💰',key:'nav_wealth'},
-  {id:'settings',icon:'⚙️',key:'nav_settings'},{id:'system',icon:'🧩',key:'nav_system'},
+  {id:'path',icon:'💼',key:'nav_career'},
+  {id:'games',icon:'🎮',key:'nav_games'},
+  {id:'science',icon:'🔬',key:'nav_science'},
+  {id:'media',icon:'📸',key:'nav_memory'},
+  {id:'calendar',icon:'📅',key:'nav_calendar'},
+  {id:'world',icon:'🌍',key:'nav_world'},
+  {id:'settings',icon:'⚙️',key:'nav_settings'},
+  {id:'system',icon:'🧩',key:'nav_system'},
 ];
 let activeTab='log';
 function buildNav(){
@@ -5083,14 +5722,8 @@ function dbg(level, ...args){
   else if(level === 'warn') console.warn(`[COS] ${msg}`);
   else                    console.log(`[COS] ${msg}`);
 
-  // Update panel if open
+  // Update panel if open (never auto-show on errors)
   _refreshDebugPanel();
-
-  // Auto-show panel on errors
-  if(level === 'error'){
-    const p = document.getElementById('_dbgPanel');
-    if(p) p.style.display = 'flex';
-  }
 }
 function _refreshDebugPanel(){
   const list = document.getElementById('_dbgList');
@@ -7225,12 +7858,57 @@ const DISCOVERIES=[
 ];
 let sciRefreshIdx=0;
 const SUPER_FACTS=[
-  {num:'10¹⁴',text:'Synaptic connections in your brain — more than all stars in the Milky Way. Every thought activates billions of these connections simultaneously.'},
-  {num:'1s',text:'Your conscious experience lags reality by ~0.5 seconds. Your brain predicts the future and constructs the present retroactively. You never see "now".'},
-  {num:'40 Hz',text:'Gamma waves (40Hz oscillations) appear to bind fragmented neural activity into unified conscious experience. Meditators show dramatically more gamma.'},
-  {num:'99.9%',text:'The universe is dark — 96% dark matter and dark energy we cannot detect, plus 99.9% of atoms are empty space. Physical reality as we experience it is an illusion.'},
-  {num:'3 lbs',text:'Your 3-pound brain consumes 20% of your total energy. Most of this energy is not for thinking — it\'s for maintaining the coherent field of consciousness itself.'},
-  {num:'∞',text:'Information, according to the holographic principle, may be fundamentally 2D — projected into 3D. The universe might be a hologram running on a 2D surface.'},
+  {num:'10¹⁴',text:'Synaptic connections in your brain — more than all stars in the Milky Way. Every thought activates billions simultaneously.'},
+  {num:'0.5s',text:'Your conscious experience lags reality by ~0.5 seconds. Your brain predicts the future and constructs the present retroactively. You never see "now".'},
+  {num:'40Hz',text:'Gamma waves at 40Hz bind fragmented neural activity into unified conscious experience. Meditators produce dramatically more gamma than average people.'},
+  {num:'99.9%',text:'The universe is 96% dark matter/energy we cannot detect. Plus 99.9% of atoms are empty space. Physical "solid" reality is almost entirely nothing.'},
+  {num:'3lbs',text:'Your 3-pound brain consumes 20% of body energy. Most is not for thinking — it maintains the coherent field of consciousness itself.'},
+  {num:'∞',text:'The holographic principle suggests the universe may be fundamentally 2D — projected into 3D. Every cubic meter of space may encode infinite information.'},
+  {num:'70,000',text:'The average human brain generates 70,000 thoughts per day. Most are unconscious. You are aware of approximately 0.001% of your own mental activity.'},
+  {num:'11M',text:'Your senses send 11 million bits of information per second to your brain. Your conscious mind processes only 40–50 of them. Reality is a heavily edited film.'},
+  {num:'528Hz',text:'The 528Hz frequency is called the Love Frequency. Studies link it to reduced cortisol and increased oxytocin — measurably changing your stress chemistry.'},
+  {num:'1400ms',text:'Your brain makes a decision up to 1400ms before you are consciously aware of it. Free will may be a story your brain tells after the fact.'},
+  {num:'86B',text:'You have ~86 billion neurons, each connected to ~7,000 others. The number of possible brain states exceeds the number of atoms in the observable universe.'},
+  {num:'∅',text:'There is no colour in the physical world. Photons have wavelength, not colour. Your brain creates all colour from scratch. The redness of red exists only inside you.'},
+  {num:'2.5PB',text:'Human brain storage capacity is estimated at 2.5 petabytes — equivalent to 3 million hours of HD video. You are nowhere near full.'},
+  {num:'60%',text:'You share 60% of your DNA with a banana and 98.8% with chimpanzees. The difference between you and a chimp is smaller than between two species of frog.'},
+  {num:'7yrs',text:'Your body replaces most of its atoms every 7 years. The atoms in your body were forged in exploding stars. You are literally made of ancient stardust.'},
+  {num:'0K',text:'Absolute zero (−273.15°C) is theoretically unreachable — the third law of thermodynamics. Total stillness is impossible. The universe cannot fully stop.'},
+  {num:'4M t/s',text:'Every second, the sun converts 4 million tonnes of mass into pure energy via E=mc². The light reaching your eyes right now left the sun 8.3 minutes ago.'},
+  {num:'10⁸⁰',text:'The observable universe contains ~10⁸⁰ atoms. Yet quantum mechanics suggests each particle exists in superposition of all possible states until observed.'},
+  {num:'37°C',text:'Your body temperature fluctuates by 2°C daily — lowest at 4am, highest at 6pm. This rhythm controls memory, metabolism, and cognitive performance.'},
+  {num:'Ψ',text:'Quantum entanglement allows two particles to affect each other instantly across any distance. Einstein called it "spooky action at a distance." Now confirmed.'},
+  {num:'0.1%',text:'Only 0.1% of your genome differs from any other human. Yet that 0.1% creates the entire spectrum of human variation — personality, appearance, intelligence.'},
+  {num:'∞²',text:'Cantor proved that some infinities are larger than others. The infinity of real numbers is strictly larger than the infinity of integers. Infinities have hierarchies.'},
+  {num:'100M',text:'Your gut contains more neurons than your spinal cord — the enteric nervous system. Your gut literally thinks. Gut bacteria directly produce serotonin and dopamine.'},
+  {num:'13.8By',text:'The universe is 13.8 billion years old. But the observable universe is 93 billion light-years wide — space expanded faster than light after the Big Bang.'},
+  {num:'Δt→0',text:'Heisenberg\'s uncertainty principle: the more precisely you know a particle\'s position, the less you can know its momentum. This is reality itself, not measurement error.'},
+  {num:'2.7K',text:'The cosmic microwave background radiation permeates all space at −270°C — the afterglow of the Big Bang, still detectable 13.8 billion years later.'},
+  {num:'10²²',text:'There are ~10²² stars in the observable universe — more than all grains of sand on all of Earth\'s beaches. The observable universe may be a tiny fraction of all.'},
+  {num:'10⁻³⁵m',text:'The Planck length (10⁻³⁵ m) is the smallest meaningful distance — below it, space loses structure. Reality is quantized at its deepest level.'},
+  {num:'c',text:'The speed of light is not just fast — it is a cosmic speed limit enforced by spacetime itself. Nothing with mass can reach it. Only approach it asymptotically.'},
+  {num:'≥11',text:'String theory requires at least 11 dimensions. The extra 7 are compactified at the Planck scale. You may live in an 11-dimensional universe folded too small to see.'},
+  {num:'20W',text:'The human brain operates on ~20 watts — less than a dim light bulb. The world\'s most powerful AI supercomputers use megawatts to approximate a fraction of it.'},
+  {num:'0.04%',text:'CO₂ is just 0.04% of the atmosphere — yet this trace gas keeps Earth 33°C warmer than it would otherwise be. Trace concentrations govern planetary fate.'},
+  {num:'22h',text:'The Voyager 1 probe, launched 1977, is now in interstellar space — 23 billion km away. Its signal takes 22 hours to reach Earth. It still communicates.'},
+  {num:'Ω',text:'The universe\'s density parameter Ω appears extremely close to 1.0 — the critical density for flat geometry. This fine-tuning implies either a multiverse or design.'},
+  {num:'10⁻¹²²',text:'The cosmological constant — dark energy — is 10⁻¹²² times smaller than quantum theory predicts. This is the worst prediction in all of physics. Nobody knows why.'},
+  {num:'ATP',text:'Every cell continuously converts ADP back to ATP to store energy. You produce and consume your own body weight in ATP every single day. You are a chemical engine.'},
+  {num:'8min',text:'If the sun switched off, you would not know for 8 minutes. Gravity would disappear instantly — because in relativity, gravity is the geometry of spacetime itself.'},
+  {num:'Gödel',text:'Gödel proved any sufficiently complex mathematical system contains true statements that cannot be proven within that system. Mathematics is fundamentally incomplete.'},
+  {num:'4°C',text:'Water is most dense at 4°C, not 0°C. This anomaly allows lake life to survive winter — ice floats and insulates the liquid water beneath. Life depends on this quirk.'},
+  {num:'100ms',text:'Elite athletes\' brains predict events before they happen, responding to patterns before consciously registering them. Skill at the highest level is prophecy, not reaction.'},
+  {num:'CRISPR',text:'CRISPR-Cas9 allows genetic code to be edited with word-processor precision. Gene-edited humans have already been born. Evolution now has a competitor.'},
+  {num:'1B/ml',text:'Your gut contains ~1 billion microorganisms per ml — more microbial cells than human cells in your body. You are more ecosystem than individual organism.'},
+  {num:'Φ',text:'The golden ratio (1.618...) appears in nautilus shells, galaxy spirals, DNA structure, and facial symmetry. Whether this is physics, perception, or something deeper is debated.'},
+  {num:'10⁻⁴³s',text:'The Planck time — 10⁻⁴³ seconds — is the smallest meaningful unit of time. Before it, the concept of "before" does not exist. Time itself had a beginning.'},
+  {num:'4%',text:'Normal matter — everything you can see, touch, and measure — makes up only 4% of the universe. The other 96% is invisible and unknown to modern physics.'},
+  {num:'π',text:'Pi (3.14159...) is irrational and transcendental — its digits never repeat and never end. Yet it perfectly describes every circle that has ever existed or will exist.'},
+  {num:'e',text:'Euler\'s identity: e^(iπ) + 1 = 0. It connects five fundamental constants in one equation. Many mathematicians consider it the most beautiful formula in existence.'},
+  {num:'1/137',text:'The fine-structure constant (≈1/137) governs how electrons interact with light. If it were slightly different, atoms, chemistry, and life would be impossible. Nobody knows why it is 1/137.'},
+  {num:'Mirror',text:'When you look in a mirror, you see yourself 0.0000000003 seconds in the past — the time light takes to travel. Even self-perception is delayed by physics.'},
+  {num:'Sleep',text:'During REM sleep your brain is MORE active than when awake — consuming more oxygen, firing more neurons. Sleep is not rest. It is a parallel reality your brain runs every night.'},
+  {num:'Now',text:'Neuroscience cannot locate "the present moment" in the brain. Consciousness is assembled from memories of the recent past, projected as "now." The present is a construction.'},
 ];
 let currentSciCat='all';
 function switchSciCat(cat,btn){
@@ -10356,16 +11034,16 @@ if (_origSwitchTab) {
     cosBrainSync();
     if (id === 'world') {
       const cached = liveCache('cos_live_world_news');
-      if (!cached) setTimeout(() => refreshWorldFeed(false), 200);
-      setTimeout(loadGeoNews, 400); // live RSS headlines
+      if (!cached) setTimeout(() => { if(typeof refreshWorldFeed==='function') refreshWorldFeed(false); }, 200);
+      setTimeout(() => { if(typeof loadGeoNews==='function') loadGeoNews(window._geoRefreshTier||0); }, 400);
     }
     if (id === 'science') {
       const cached = liveCache('cos_live_science_news');
-      if (!cached) setTimeout(() => buildScienceDisplay(false), 200);
-      setTimeout(fetchScienceNews, 400); // live RSS headlines
+      if (!cached) setTimeout(() => { if(typeof buildScienceDisplay==='function') buildScienceDisplay(false); }, 200);
+      setTimeout(() => { if(typeof fetchScienceNews==='function') fetchScienceNews(window._sciRefreshTier||0); }, 400);
     }
     // Update CIL pulse on every tab switch
-    setTimeout(updateCILPulse, 300);
+    setTimeout(() => { if(typeof updateCILPulse==='function') updateCILPulse(); }, 300);
   };
 }
 
@@ -12096,26 +12774,15 @@ const PRO = {
   },
 
   applyUI(isActive) {
-    // Mirror gate
-    const mirrorGate = document.getElementById('mirrorGate');
-    const mirrorUnlocked = document.getElementById('mirrorUnlocked');
-    if (mirrorGate && mirrorUnlocked) {
-      mirrorGate.style.display = isActive ? 'none' : 'block';
-      mirrorUnlocked.style.display = isActive ? 'block' : 'none';
-    }
-    // Pro pill in topbar
-    let pill = document.getElementById('proStatusPill');
-    if (isActive) {
-      if (!pill) {
-        pill = document.createElement('span');
-        pill.id = 'proStatusPill';
-        pill.className = 'pro-status-pill';
-        pill.textContent = 'PRO';
-        const brand = document.querySelector('.topbar-brand');
-        if (brand) brand.appendChild(pill);
-      }
+    // Delegate to the unified gate applier (defined later in file)
+    if (typeof applyProGates === 'function') {
+      applyProGates(isActive);
     } else {
-      if (pill) pill.remove();
+      // Fallback inline for mirror only
+      const mg = document.getElementById('mirrorGate');
+      const mu = document.getElementById('mirrorUnlocked');
+      if (mg) mg.style.display = isActive ? 'none' : 'block';
+      if (mu) mu.style.display = isActive ? 'block' : 'none';
     }
   },
 
@@ -12175,82 +12842,209 @@ function iHavePaid() {
   });
 }
 
-// ── STREAK ENGINE ──────────────────────────────────────────────
+// ── STREAK ENGINE — 24h rolling window ────────────────────────
 const STREAK = {
   _key: 'cos_streak',
 
+  MILESTONES: [
+    {days:3,  icon:'🔥', label:'3 Days',   color:'#f97316'},
+    {days:7,  icon:'⚡', label:'1 Week',   color:'#eab308'},
+    {days:14, icon:'🌟', label:'2 Weeks',  color:'#06b6d4'},
+    {days:21, icon:'💎', label:'21 Days',  color:'#8b5cf6'},
+    {days:30, icon:'🏆', label:'30 Days',  color:'#ec4899'},
+    {days:60, icon:'🚀', label:'60 Days',  color:'#10b981'},
+    {days:100,icon:'👑', label:'100 Days', color:'#f59e0b'},
+    {days:365,icon:'🌌', label:'1 Year',   color:'#7c3aed'},
+  ],
+
   get() {
-    try { return JSON.parse(localStorage.getItem(STREAK._key) || '{"count":0,"best":0,"dates":[]}'); }
-    catch(e) { return {count:0, best:0, dates:[]}; }
+    try { return JSON.parse(localStorage.getItem(STREAK._key) || '{"count":0,"best":0,"timestamps":[]}'); }
+    catch(e) { return {count:0, best:0, timestamps:[]}; }
   },
 
   save(data) { localStorage.setItem(STREAK._key, JSON.stringify(data)); },
 
-  recordToday() {
-    const today = new Date().toISOString().split('T')[0];
+  recordNow() {
+    const now = Date.now();
     const data = STREAK.get();
-    if (data.dates.includes(today)) return; // already logged today
-    data.dates = data.dates.filter(d => d >= new Date(Date.now() - 60*24*60*60*1000).toISOString().split('T')[0]);
-    data.dates.push(today);
-    data.dates.sort();
-    // Recalculate streak
-    let streak = 0;
-    const d = new Date();
-    while (true) {
-      const key = d.toISOString().split('T')[0];
-      if (data.dates.includes(key)) { streak++; d.setDate(d.getDate()-1); }
-      else break;
+    if (!data.timestamps) data.timestamps = [];
+
+    // 24h rolling: drop anything older than 25h (buffer)
+    const window25h = now - 25 * 60 * 60 * 1000;
+    data.timestamps = data.timestamps.filter(t => t > window25h);
+
+    // Already logged in last 20h? skip (debounce)
+    const last = data.timestamps[data.timestamps.length - 1];
+    if (last && (now - last) < 20 * 60 * 60 * 1000) {
+      STREAK.renderWidget(data);
+      return;
     }
+
+    data.timestamps.push(now);
+
+    // Count consecutive 24h windows
+    let streak = 0;
+    let windowEnd = now;
+    // Keep all timestamps sorted desc
+    const sorted = [...data.timestamps].sort((a,b) => b - a);
+    for (const ts of sorted) {
+      if (ts <= windowEnd && ts > windowEnd - 24 * 60 * 60 * 1000) {
+        streak++;
+        windowEnd = ts; // slide window back
+      }
+    }
+    // More accurate: just count how many entries, each within 24h of the previous
+    const sortedAsc = [...data.timestamps].sort((a,b) => a - b);
+    let cnt = 1;
+    for (let i = 1; i < sortedAsc.length; i++) {
+      if (sortedAsc[i] - sortedAsc[i-1] <= 24 * 60 * 60 * 1000) cnt++;
+      else cnt = 1;
+    }
+    streak = cnt;
+
     data.count = streak;
-    data.best = Math.max(data.best, streak);
+    data.best = Math.max(data.best || 0, streak);
     STREAK.save(data);
     STREAK.renderWidget(data);
-    if (streak > 1) showToast(`🔥 ${streak} day streak! Keep going!`);
+
+    // Milestone toast
+    const hit = STREAK.MILESTONES.find(m => m.days === streak);
+    if (hit) {
+      setTimeout(() => showToast(`${hit.icon} ${hit.label} streak unlocked! Keep going!`), 500);
+    } else if (streak > 1) {
+      showToast(`🔥 ${streak} day streak!`);
+    }
   },
+
+  // Legacy alias
+  recordToday() { STREAK.recordNow(); },
 
   renderWidget(data) {
     if (!data) data = STREAK.get();
-    const today = new Date().toISOString().split('T')[0];
-    const loggedToday = data.dates.includes(today);
+    const count = data.count || 0;
+    const best  = data.best  || 0;
 
-    document.getElementById('streakCount').textContent = data.count;
-    document.getElementById('streakBest').textContent = data.best;
-    document.getElementById('streakFlame').textContent = data.count >= 7 ? '🔥' : data.count >= 3 ? '🔥' : '💨';
-    document.getElementById('streakLabel').textContent = loggedToday
-      ? `✅ Logged today! Keep the chain going tomorrow.`
-      : `⚠️ Log today to keep your ${data.count}-day streak!`;
+    // Has logged in last 24h?
+    const now = Date.now();
+    const ts = (data.timestamps || []);
+    const loggedRecently = ts.some(t => (now - t) < 24 * 60 * 60 * 1000);
 
-    // 7-day dots
-    const dotsEl = document.getElementById('streakDots');
+    const countEl = document.getElementById('streakCount');
+    const bestEl  = document.getElementById('streakBest');
+    const flamEl  = document.getElementById('streakFlame');
+    const lblEl   = document.getElementById('streakLabel');
+    const dotsEl  = document.getElementById('streakDots');
+
+    if (countEl) countEl.textContent = count;
+    if (bestEl)  bestEl.textContent  = best;
+    if (flamEl)  flamEl.textContent  = count >= 30 ? '👑' : count >= 14 ? '💎' : count >= 7 ? '⚡' : count >= 3 ? '🔥' : '💨';
+    if (lblEl)   lblEl.textContent   = loggedRecently
+      ? `✅ Logged! Next window opens in ${STREAK._nextWindowHrs(ts)}h`
+      : `⚠️ Log within 24h to keep your ${count}-day streak!`;
+
+    // 7-day dots (one per 24h window, most recent right)
     if (dotsEl) {
+      const now2 = Date.now();
       let html = '';
       for (let i = 6; i >= 0; i--) {
-        const d = new Date(); d.setDate(d.getDate() - i);
-        const key = d.toISOString().split('T')[0];
-        const cls = i === 0 && loggedToday ? 'today' : data.dates.includes(key) ? 'active' : i < data.count ? 'missed' : '';
-        html += `<div class="streak-dot ${cls}" title="${key}"></div>`;
+        const windowStart = now2 - (i+1) * 24*60*60*1000;
+        const windowEnd2  = now2 - i     * 24*60*60*1000;
+        const logged = ts.some(t => t >= windowStart && t < windowEnd2);
+        const isNow  = i === 0;
+        const color  = isNow && loggedRecently ? '#22c55e' : logged ? '#f97316' : 'var(--bg3)';
+        html += `<div style="width:8px;height:8px;border-radius:50%;background:${color};border:1.5px solid ${logged||isNow?color:'var(--border)'}"></div>`;
       }
       dotsEl.innerHTML = html;
     }
+
+    // Badges slide
+    const badgesEl = document.getElementById('streakBadges');
+    if (badgesEl) {
+      badgesEl.innerHTML = STREAK.MILESTONES.map(m => {
+        const unlocked = best >= m.days;
+        return `<div style="display:flex;flex-direction:column;align-items:center;gap:2px;opacity:${unlocked?1:.3}">
+          <div style="width:36px;height:36px;border-radius:10px;background:${unlocked?m.color+'22':'var(--bg3)'};border:2px solid ${unlocked?m.color:'var(--border)'};display:flex;align-items:center;justify-content:center;font-size:16px">${m.icon}</div>
+          <div style="font-size:8px;font-weight:700;color:${unlocked?m.color:'var(--text3)'}">${m.label}</div>
+        </div>`;
+      }).join('');
+    }
+  },
+
+  _nextWindowHrs(ts) {
+    if (!ts || !ts.length) return 24;
+    const last = Math.max(...ts);
+    const hrs = Math.ceil((24*60*60*1000 - (Date.now()-last)) / (60*60*1000));
+    return Math.max(1, hrs);
   },
 
   init() { STREAK.renderWidget(); }
 };
 
-// Hook into save log to record streak
+// Streak swipe logic
+let _swX = 0, _swSlide = 0;
+function swStreak(e, phase) {
+  if (phase === 'start' || phase === 'mstart') {
+    _swX = (e.touches ? e.touches[0].clientX : e.clientX);
+  } else {
+    const dx = (e.changedTouches ? e.changedTouches[0].clientX : e.clientX) - _swX;
+    if (Math.abs(dx) > 30) {
+      _swSlide = Math.max(0, Math.min(2, _swSlide + (dx < 0 ? 1 : -1)));
+      const slides = document.getElementById('streakSlides');
+      if (slides) slides.style.transform = `translateX(-${_swSlide*100}%)`;
+      [0,1,2].forEach(i => {
+        const d = document.getElementById('ssd'+i);
+        if (d) d.style.background = i===_swSlide ? '#f97316' : 'rgba(0,0,0,.15)';
+      });
+    }
+  }
+}
+
+// Hook into saveLog for streak
 (function hookStreakOnSave() {
-  document.addEventListener('cos:logSaved', () => STREAK.recordToday());
-  // Also hook the save button
+  document.addEventListener('cos:logSaved', () => STREAK.recordNow());
   const origSaveLog = window.saveLog;
   if (typeof origSaveLog === 'function') {
     window.saveLog = async function() {
       const r = await origSaveLog.apply(this, arguments);
-      STREAK.recordToday();
+      STREAK.recordNow();
       return r;
     };
   }
 })();
 
+// ── PRO GATE APPLIER — shows/hides gated content ──────────────
+function applyProGates(isActive) {
+  // Mirror
+  const mg = document.getElementById('mirrorGate');
+  const mu = document.getElementById('mirrorUnlocked');
+  if (mg) mg.style.display = isActive ? 'none' : 'block';
+  if (mu) mu.style.display = isActive ? 'block' : 'none';
+
+  // Peak States
+  const pg = document.getElementById('peakStatesGate');
+  const pv = document.getElementById('vaultPeakStates');
+  if (pg) pg.style.display = isActive ? 'none' : 'block';
+  if (pv) pv.style.display = isActive ? 'block' : 'none';
+
+  // Patterns
+  const ptg = document.getElementById('patternsGate');
+  const ptv = document.getElementById('vaultBehaviorPatterns');
+  const ptb = document.getElementById('detectPatternsBtn');
+  if (ptg) ptg.style.display = isActive ? 'none' : 'block';
+  if (ptv) ptv.style.display = isActive ? 'block' : 'none';
+  if (ptb) ptb.style.display = isActive ? '' : 'none';
+
+  // Pro upgrade bar — show when free, hide when Pro
+  const upgradeBar = document.getElementById('proUpgradeBar');
+  if (upgradeBar) {
+    upgradeBar.style.display = isActive ? 'none' : 'block';
+  }
+  // Remove old pill if it was added
+  const oldPill = document.getElementById('proStatusPill');
+  if (oldPill) oldPill.remove();
+}
+
+// ── QS POPUP JS ───────────────────────────────────────────────
 // ── REFERRAL SYSTEM ───────────────────────────────────────────
 function openReferralModal() {
   const modal = document.getElementById('referralModal');
@@ -12428,7 +13222,7 @@ function devAction(action) {
     case 'reloadApp': location.reload(); break;
     case 'exportLogs': if (typeof exportConsciousnessProfile === 'function') exportConsciousnessProfile(); break;
     case 'testToast': showToast('🍞 Toast test — Dev Panel working!'); break;
-    case 'grantPro': PRO.grant('dev', 999); devLoadProStatus(); break;
+    case 'grantPro': PRO.grant('creator', 99 * 12); showToast('✅ Lifetime Pro granted!'); devLoadProStatus(); break;
     case 'revokePro': PRO.revoke(); devLoadProStatus(); break;
   }
 }
@@ -12457,16 +13251,766 @@ document.addEventListener('DOMContentLoaded', () => {
   handleDevPanelOrientation();
   PRO.init();
   STREAK.init();
+
+  // ── CREATOR AUTO-GRANT ──────────────────────────────────────
+  // Vikram (creator) gets lifetime Pro automatically on login
+  auth.onAuthStateChanged(user => {
+    if (!user) return;
+    // Your Firebase UID — auto-grant lifetime Pro silently
+    const CREATOR_UID = user.uid; // grants to whoever is logged into this device
+    // Only auto-grant if not already Pro
+    const existing = JSON.parse(localStorage.getItem('cos_pro_status') || '{}');
+    const isFirebaseOwner = user.email && (
+      user.email.includes('vikramsandhu') ||
+      user.email.includes('sandhu') ||
+      user.uid === localStorage.getItem('cos_creator_uid')
+    );
+    // Store creator UID on first login so it persists
+    if (!localStorage.getItem('cos_creator_uid')) {
+      localStorage.setItem('cos_creator_uid', user.uid);
+    }
+    // Grant if this is the creator's own device (first account to ever log in)
+    const storedCreatorUID = localStorage.getItem('cos_creator_uid');
+    const isCreator = user.uid === storedCreatorUID || isFirebaseOwner;
+
+    if (isCreator && (!existing.active || !existing.expiry || new Date(existing.expiry) < new Date())) {
+      PRO.grant('creator_lifetime', 99 * 12); // 99 years
+      console.log('[COS] Creator lifetime Pro activated');
+    }
+  });
+
   // Hook saveLog for streak if defined
   const origSaveLog = window.saveLog;
-  if (typeof origSaveLog === 'function') {
+  if (typeof origSaveLog === 'function' && !window.saveLog._streakHooked) {
     window.saveLog = async function() {
       const r = await origSaveLog.apply(this, arguments);
       STREAK.recordToday();
       return r;
     };
+    window.saveLog._streakHooked = true;
   }
 });
+// ═══════════════════════════════════════════════════════════════
+//  QUICK SETTINGS POPUP — ⚙️ gear button on topbar
+// ═══════════════════════════════════════════════════════════════
+
+function openQuickSettingsPopup(event) {
+  const popup = document.getElementById('quickSettingsPopup');
+  const backdrop = document.getElementById('qsBackdrop');
+  if (!popup) return;
+
+  // Position: appear below the gear button, aligned to right edge
+  const btn = document.getElementById('quickSettingsBtn');
+  if (btn) {
+    const rect = btn.getBoundingClientRect();
+    const pw = 280;
+    let left = rect.right - pw;
+    if (left < 8) left = 8;
+    popup.style.top = (rect.bottom + 6) + 'px';
+    popup.style.left = left + 'px';
+  } else {
+    popup.style.top = '62px';
+    popup.style.right = '8px';
+    popup.style.left = 'auto';
+  }
+
+  popup.classList.add('open');
+  backdrop.classList.add('open');
+
+  // Sync dark mode toggle
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  const dt = document.getElementById('qsDarkToggle');
+  if (dt) { dt.classList.toggle('on', isDark); }
+
+  // Sync pro status
+  try {
+    const ps = JSON.parse(localStorage.getItem('cos_pro_status') || '{}');
+    const proEl = document.getElementById('qsProStatus');
+    if (proEl) proEl.textContent = ps.active ? '✅ Pro · expires ' + new Date(ps.expiry).toLocaleDateString() : 'Free plan';
+  } catch(e) {}
+
+  // Highlight active language
+  document.querySelectorAll('.qs-lang-btn').forEach(b => b.classList.remove('active'));
+  const lang = localStorage.getItem('cos_lang') || 'en';
+  document.querySelectorAll('.qs-lang-btn').forEach(b => {
+    if (b.getAttribute('onclick') === `qsSetLang('${lang}')`) b.classList.add('active');
+  });
+
+  // Show dev btn only in landscape
+  const devBtn = document.getElementById('qsDevBtn');
+  if (devBtn) devBtn.style.display = window.innerWidth > window.innerHeight ? '' : 'none';
+}
+
+function closeQuickSettingsPopup() {
+  document.getElementById('quickSettingsPopup')?.classList.remove('open');
+  document.getElementById('qsBackdrop')?.classList.remove('open');
+}
+
+function qsToggleDark() {
+  if (typeof toggleTheme === 'function') toggleTheme();
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  const dt = document.getElementById('qsDarkToggle');
+  if (dt) dt.classList.toggle('on', isDark);
+}
+
+function qsSetLang(lang) {
+  if (typeof setLang === 'function') setLang(lang);
+  // Update active highlight
+  document.querySelectorAll('.qs-lang-btn').forEach(b => {
+    b.classList.toggle('active', b.getAttribute('onclick') === `qsSetLang('${lang}')`);
+  });
+  showToast('🌐 Language changed!');
+}
+
+// ── PATCH setLang to sync ALL selectors including new languages ─────────────
+(function patchSetLang() {
+  const _origSetLang = window.setLang;
+  window.setLang = function(lang) {
+    if (typeof _origSetLang === 'function') _origSetLang(lang);
+    // Sync all 3 selectors with new lang codes
+    ['langSel','langSelMobile','settingLang','sysLangSel'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) { try { el.value = lang; } catch(e) {} }
+    });
+  };
+})();
+
+// Alias so the HTML onclick="openQSPopup(event)" works
+window.openQSPopup = openQuickSettingsPopup;
+
+// Wire up STREAK + Pro gates on load
+document.addEventListener('DOMContentLoaded', function() {
+  STREAK.init();
+  if (typeof PRO !== 'undefined' && typeof PRO.init === 'function') PRO.init();
+  // Also hook saveLog if it gets defined late
+  setTimeout(() => {
+    const origSaveLog = window.saveLog;
+    if (typeof origSaveLog === 'function' && !origSaveLog._streakHooked) {
+      window.saveLog = async function() {
+        const r = await origSaveLog.apply(this, arguments);
+        STREAK.recordNow();
+        return r;
+      };
+      window.saveLog._streakHooked = true;
+    }
+  }, 1200);
+});
+
+// ════════════════════════════════════════════════════════════════
+//  LANGUAGE FLAG GRID
+// ════════════════════════════════════════════════════════════════
+
+const LANG_FLAGS = {
+  en:'🌐',hi:'🇮🇳',es:'🇪🇸',fr:'🇫🇷',de:'🇩🇪',pt:'🇧🇷',
+  zh:'🇨🇳',ar:'🇸🇦',ja:'🇯🇵',ru:'🇷🇺',ko:'🇰🇷',it:'🇮🇹',
+  tr:'🇹🇷',bn:'🇧🇩',id:'🇮🇩',vi:'🇻🇳',th:'🇹🇭',sw:'🌍',
+  nl:'🇳🇱',pl:'🇵🇱',uk:'🇺🇦',ta:'🏛️',te:'🌺',mr:'🪔',gu:'🌅'
+};
+
+function toggleLangGrid(e) {
+  if (e) e.stopPropagation();
+  const grid = document.getElementById('langFlagGrid');
+  const bd = document.getElementById('lfgBd');
+  const btn = document.getElementById('langFlagBtn');
+  if (!grid) return;
+  const isOpen = grid.classList.contains('open');
+  if (isOpen) { closeLangGrid(); return; }
+  // Position below the flag button
+  if (btn) {
+    const r = btn.getBoundingClientRect();
+    grid.style.top = (r.bottom + 6) + 'px';
+    const left = Math.max(4, Math.min(r.left - 10, window.innerWidth - 260));
+    grid.style.left = left + 'px';
+  }
+  grid.classList.add('open');
+  if (bd) bd.classList.add('open');
+  // Mark active language
+  const cur = localStorage.getItem('cos_lang') || 'en';
+  document.querySelectorAll('.lfg-btn').forEach(b => {
+    const code = b.getAttribute('onclick').match(/'(\w+)'/)?.[1];
+    b.classList.toggle('cur', code === cur);
+  });
+}
+
+function closeLangGrid() {
+  document.getElementById('langFlagGrid')?.classList.remove('open');
+  document.getElementById('lfgBd')?.classList.remove('open');
+}
+
+function pickLang(lang) {
+  closeLangGrid();
+  if (typeof setLang === 'function') setLang(lang);
+  // Update flag on button
+  const btn = document.getElementById('langFlagBtn');
+  if (btn) btn.textContent = LANG_FLAGS[lang] || '🌐';
+  showToast('🌐 ' + lang.toUpperCase() + ' selected');
+}
+
+// Init flag button with current lang on load
+document.addEventListener('DOMContentLoaded', () => {
+  const cur = localStorage.getItem('cos_lang') || 'en';
+  const btn = document.getElementById('langFlagBtn');
+  if (btn) btn.textContent = LANG_FLAGS[cur] || '🌐';
+});
+
+// ════════════════════════════════════════════════════════════════
+//  PRO UPGRADE BAR — smart: days left / upgraded / free
+// ════════════════════════════════════════════════════════════════
+
+function proBarTap() {
+  const s = JSON.parse(localStorage.getItem('cos_pro_status') || '{}');
+  if (s.active && s.expiry && new Date(s.expiry) > new Date()) {
+    showToast('✅ You have Pro! Enjoy all features.');
+  } else {
+    openProModal('topbar');
+  }
+}
+
+function updateProBar() {
+  const bar = document.getElementById('proUpgradeBar');
+  if (!bar) return;
+  const s = JSON.parse(localStorage.getItem('cos_pro_status') || '{}');
+  if (s.active && s.expiry) {
+    const expiry = new Date(s.expiry);
+    const now = new Date();
+    if (expiry > now) {
+      const daysLeft = Math.ceil((expiry - now) / (1000 * 60 * 60 * 24));
+      if (daysLeft > 365 * 50) {
+        bar.textContent = '✅ Pro — Lifetime';
+        bar.style.background = 'linear-gradient(135deg,#10b981,#059669)';
+      } else if (daysLeft <= 7) {
+        bar.textContent = `⏳ Pro expires in ${daysLeft}d`;
+        bar.style.background = 'linear-gradient(135deg,#ef4444,#dc2626)';
+      } else {
+        bar.textContent = `✅ Pro · ${daysLeft} days left`;
+        bar.style.background = 'linear-gradient(135deg,#10b981,#059669)';
+      }
+      bar.style.display = 'block';
+      bar.onclick = () => showToast('✅ Pro active!');
+      return;
+    }
+  }
+  // Free user
+  bar.textContent = '✨ Upgrade Pro — ₹25/mo';
+  bar.style.background = 'linear-gradient(135deg,#f59e0b,#ef4444)';
+  bar.style.display = 'block';
+  bar.onclick = () => openProModal('topbar');
+}
+
+// Run on load and after pro changes
+document.addEventListener('DOMContentLoaded', () => setTimeout(updateProBar, 800));
+
+// ════════════════════════════════════════════════════════════════
+//  ORACLE CSS ANIMATIONS
+// ════════════════════════════════════════════════════════════════
+(function() {
+  const s = document.createElement('style');
+  s.textContent = `
+    @keyframes oraclePulse {
+      0%,100% { transform: rotate(0deg) scale(1); filter: drop-shadow(0 0 8px rgba(124,58,237,.4)); }
+      50% { transform: rotate(180deg) scale(1.08); filter: drop-shadow(0 0 18px rgba(6,182,212,.6)); }
+    }
+    .oracle-pred-card { background: var(--bg3); border-radius: 12px; padding: 13px; margin-bottom: 10px; border-left: 4px solid var(--primary); }
+    .oracle-pred-card .opc-conf { font-size: 9px; font-weight: 800; color: var(--text3); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 3px; }
+    .oracle-pred-card .opc-title { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 5px; line-height: 1.4; }
+    .oracle-pred-card .opc-body { font-size: 11px; color: var(--text2); line-height: 1.6; }
+    .oracle-pred-card .opc-bar { height: 4px; border-radius: 2px; background: var(--bg); margin-top: 8px; overflow: hidden; }
+    .oracle-pred-card .opc-fill { height: 100%; border-radius: 2px; transition: width .8s ease; }
+  `;
+  document.head.appendChild(s);
+})();
+
+// ════════════════════════════════════════════════════════════════
+//  ORACLE ENGINE
+// ════════════════════════════════════════════════════════════════
+
+function computeOracleState() {
+  const logs = typeof getLogs === 'function' ? getLogs() : [];
+  if (logs.length < 3) { showToast('Need at least 3 log entries for Oracle analysis'); return; }
+
+  const avg = key => logs.length ? (logs.reduce((s,e)=>s+(parseFloat(e[key])||0),0)/logs.length) : 5;
+  const recent = logs.slice(0,5);
+  const older = logs.slice(5,10);
+  const recentAvg = k => recent.length ? recent.reduce((s,e)=>s+(parseFloat(e[k])||0),0)/recent.length : 5;
+  const olderAvg = k => older.length ? older.reduce((s,e)=>s+(parseFloat(e[k])||0),0)/older.length : 5;
+
+  // Cognitive Entropy — variance in focus scores
+  const focusVals = logs.slice(0,10).map(l=>parseFloat(l.focus)||5);
+  const mean = focusVals.reduce((a,b)=>a+b,0)/focusVals.length;
+  const variance = focusVals.reduce((s,v)=>s+Math.pow(v-mean,2),0)/focusVals.length;
+  const entropy = (Math.sqrt(variance) * 0.8).toFixed(2);
+
+  // Behavioral Momentum — how consistent recent patterns are
+  const focusDelta = Math.abs(recentAvg('focus') - olderAvg('focus'));
+  const momentum = Math.min(10, (10 - focusDelta * 0.7)).toFixed(1);
+
+  // State Coherence
+  const coherence = Math.round(Math.min(99, Math.max(20, 100 - variance * 5)));
+
+  // Collapse Probability
+  const collapse = Math.round(Math.min(95, Math.max(5, variance * 8 + 15)));
+
+  document.getElementById('oEntropy').textContent = entropy;
+  document.getElementById('oMomentum').textContent = momentum;
+  document.getElementById('oCoherence').textContent = coherence + '%';
+  document.getElementById('oCollapse').textContent = collapse + '%';
+
+  // Draw dial
+  drawOracleDial(logs);
+  showToast('⚛️ Quantum state computed from ' + logs.length + ' entries');
+}
+
+function drawOracleDial(logs) {
+  const canvas = document.getElementById('oracleDialCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const cx = 100, cy = 100, r = 80;
+
+  const avg = key => logs.length ? (logs.reduce((s,e)=>s+(parseFloat(e[key])||0),0)/logs.length) : 5;
+  const f = avg('focus')/10, m = avg('mood')/10, c = avg('creativity')/10;
+  const stress = 1 - (avg('stress')/10);
+  const flow = avg('flow')/10;
+
+  const segments = [
+    { label:'Focus State', pct: f * 0.28, color:'#7c3aed' },
+    { label:'High Mood', pct: m * 0.22, color:'#ec4899' },
+    { label:'Flow', pct: flow * 0.20, color:'#06b6d4' },
+    { label:'Creativity', pct: c * 0.18, color:'#10b981' },
+    { label:'Low Stress', pct: stress * 0.12, color:'#f59e0b' },
+  ];
+  // Normalize
+  const total = segments.reduce((s,sg)=>s+sg.pct,0);
+  segments.forEach(sg => sg.pct /= total);
+
+  ctx.clearRect(0,0,200,200);
+
+  // Background circle
+  ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2);
+  ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--bg3').trim() || '#f0ecff';
+  ctx.fill();
+
+  let start = -Math.PI/2;
+  segments.forEach((sg,i) => {
+    const angle = sg.pct * Math.PI * 2;
+    ctx.beginPath();
+    ctx.moveTo(cx,cy);
+    ctx.arc(cx,cy,r,start,start+angle);
+    ctx.closePath();
+    ctx.fillStyle = sg.color + (i===0?'ff':'cc');
+    ctx.fill();
+    start += angle;
+  });
+
+  // Inner circle (donut)
+  ctx.beginPath(); ctx.arc(cx,cy,48,0,Math.PI*2);
+  const bgColor = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim() || '#f8f6ff';
+  ctx.fillStyle = bgColor; ctx.fill();
+
+  // Ring glow
+  ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2);
+  ctx.strokeStyle = 'rgba(124,58,237,.3)'; ctx.lineWidth=2; ctx.stroke();
+
+  // Update center label with top state
+  const top = segments.reduce((a,b)=>a.pct>b.pct?a:b);
+  document.getElementById('oDialLabel').textContent = top.label;
+  document.getElementById('oDialPct').textContent = Math.round(top.pct*100) + '% probability';
+
+  // Legend
+  const legend = document.getElementById('oDialLegend');
+  if (legend) legend.innerHTML = segments.map(sg =>
+    `<div style="display:flex;align-items:center;gap:4px;font-size:9px;color:var(--text3)">
+      <div style="width:8px;height:8px;border-radius:2px;background:${sg.color};flex-shrink:0"></div>
+      ${sg.label} <span style="font-weight:700;color:var(--text)">${Math.round(sg.pct*100)}%</span>
+    </div>`
+  ).join('');
+}
+
+async function runDeepPrediction() {
+  const isPro = await PRO.check();
+  if (!isPro) { openProModal('oracle'); return; }
+
+  const logs = typeof getLogs === 'function' ? getLogs() : [];
+  if (logs.length < 5) { showToast('Need 5+ log entries for deep prediction'); return; }
+
+  const el = document.getElementById('oraclePredictResult');
+  const horizon = document.getElementById('oHorizon')?.value || 'next_4h';
+  const domain = document.getElementById('oDomain')?.value || 'behavior';
+  el.innerHTML = `<div style="text-align:center;padding:16px;color:var(--text3)"><div style="font-size:24px;animation:oraclePulse 1.5s ease-in-out infinite;display:inline-block">🌀</div><div style="font-size:12px;margin-top:8px">Oracle computing your future...</div></div>`;
+
+  const avg = key => (logs.reduce((s,e)=>s+(parseFloat(e[key])||0),0)/logs.length).toFixed(1);
+  const recent3 = logs.slice(0,3);
+  const recentMoods = recent3.map(l=>l.mood).join(',');
+  const topActivity = logs.slice(0,10).reduce((acc,l)=>{ acc[l.activity]=(acc[l.activity]||0)+1; return acc; },{});
+  const dominantActivity = Object.entries(topActivity).sort((a,b)=>b[1]-a[1])[0]?.[0] || 'unknown';
+
+  const horizonMap = {next_4h:'next 4 hours',tomorrow:'tomorrow',next_week:'next 7 days',next_month:'next 30 days'};
+  const domainMap = {behavior:'decisions and behaviors',mood:'mood and emotional states',focus:'focus and productivity',patterns:'behavioral pattern breaks',freewill:'free will vs determinism'};
+
+  const prompt = `You are the Consciousness Oracle — a quantum-probabilistic AI that predicts human behavior from consciousness data.
+
+USER DATA (${logs.length} entries):
+- Focus avg: ${avg('focus')}/10 | Mood avg: ${avg('mood')}/10 | Creativity: ${avg('creativity')}/10
+- Stress avg: ${avg('stress')}/10 | Flow avg: ${avg('flow')}/10 | Sleep: ${avg('sleep')}/10
+- Recent mood pattern: [${recentMoods}]
+- Dominant activity: ${dominantActivity}
+- Last entry emotion: ${logs[0]?.emotion || 'unknown'}
+- Last recorded thought: "${(logs[0]?.thought||'').slice(0,100)}"
+
+PREDICTION REQUEST: Predict ${domainMap[domain]} for the ${horizonMap[horizon]}.
+
+Deliver EXACTLY 3 predictions in this JSON format:
+[
+  {"confidence":85,"type":"Primary","icon":"🎯","title":"Short specific prediction title","body":"2-3 sentence explanation grounded in their specific data patterns","warning":false},
+  {"confidence":67,"type":"Risk","icon":"⚠️","title":"Risk pattern prediction","body":"Specific behavioral trap or challenge based on their data","warning":true},
+  {"confidence":72,"type":"Opportunity","icon":"✨","title":"Optimal window prediction","body":"When and how to use upcoming high-state period","warning":false}
+]
+Return ONLY the JSON array.`;
+
+  try {
+    const raw = await callGroqFast(prompt, 'You are the Consciousness Oracle. Return only valid JSON array of predictions. No markdown.', 900);
+    const preds = JSON.parse(raw.replace(/```json|```/g,'').trim());
+    el.innerHTML = preds.map(p => `
+      <div class="oracle-pred-card" style="border-left-color:${p.warning?'var(--danger)':p.type==='Opportunity'?'var(--success)':'var(--primary)'}">
+        <div class="opc-conf">${p.icon} ${p.type} · ${p.confidence}% confidence</div>
+        <div class="opc-title">${p.title}</div>
+        <div class="opc-body">${p.body}</div>
+        <div class="opc-bar"><div class="opc-fill" style="width:${p.confidence}%;background:${p.warning?'var(--danger)':p.type==='Opportunity'?'var(--success)':'var(--primary)'}"></div></div>
+      </div>`).join('');
+  } catch(e) {
+    el.innerHTML = `<div style="color:var(--danger);font-size:12px;padding:8px">❌ Oracle error: ${e.message}</div>`;
+  }
+}
+
+let freeWillPrediction = '';
+let freeWillScore = {correct:0,total:0};
+
+async function generateFreeWillChallenge() {
+  const logs = typeof getLogs === 'function' ? getLogs() : [];
+  const q = document.getElementById('freeWillQuestion');
+  const r = document.getElementById('freeWillResult');
+  q.innerHTML = '<div style="color:var(--text3);font-size:12px">🌀 Oracle predicting...</div>';
+
+  const topActivity = logs.slice(0,8).reduce((acc,l)=>{ acc[l.activity]=(acc[l.activity]||0)+1;return acc;},{});
+  const dominant = Object.entries(topActivity).sort((a,b)=>b[1]-a[1])[0]?.[0] || 'rest';
+  const avgFocus = logs.length ? (logs.reduce((s,l)=>s+(parseFloat(l.focus)||5),0)/logs.length).toFixed(1) : 5;
+
+  const challenges = [
+    `The Oracle predicts: In the next 2 hours, you will choose ${dominant} over something more productive.`,
+    `The Oracle predicts: You will check your phone within the next 15 minutes.`,
+    `The Oracle predicts: You will feel resistance before starting your next task.`,
+    `The Oracle predicts: Your next mood will be ${avgFocus>6.5?'positive and motivated':'neutral or slightly negative'}.`,
+    `The Oracle predicts: You will delay an important decision by at least 1 hour.`,
+    `The Oracle predicts: You will think about something unrelated to your current task within 5 minutes.`,
+  ];
+
+  freeWillPrediction = challenges[Math.floor(Math.random()*challenges.length)];
+  q.textContent = freeWillPrediction;
+  if (r) r.style.display = 'block';
+}
+
+function freeWillOutcome(oracleWasRight) {
+  freeWillScore.total++;
+  if (oracleWasRight) freeWillScore.correct++;
+  const pct = Math.round((freeWillScore.correct/freeWillScore.total)*100);
+  const sc = document.getElementById('freeWillScore');
+  if (sc) sc.innerHTML = `Oracle record: ${freeWillScore.correct}/${freeWillScore.total} correct (${pct}%) · ${pct>60?'⚠️ Your patterns are strong — free will is losing':'🎯 You are breaking your patterns!'}`;
+  document.getElementById('freeWillResult').style.display = 'none';
+  document.getElementById('freeWillQuestion').innerHTML = oracleWasRight
+    ? `<span style="color:var(--danger)">🎯 Oracle was right — your patterns predicted this.</span>`
+    : `<span style="color:var(--success)">✨ You surprised the Oracle — free will wins this round!</span>`;
+  showToast(oracleWasRight ? '🎯 Oracle correct! Your patterns are strong.' : '✨ You broke the pattern!');
+}
+
+async function computeTrajectory() {
+  const logs = typeof getLogs === 'function' ? getLogs() : [];
+  if (logs.length < 5) { showToast('Need 5+ entries for trajectory'); return; }
+  const el = document.getElementById('trajectoryResult');
+  el.innerHTML = `<div style="text-align:center;padding:12px;color:var(--text3)"><div style="font-size:20px;display:inline-block;animation:oraclePulse 1.5s infinite">🌀</div><div style="font-size:11px;margin-top:6px">Computing trajectory...</div></div>`;
+
+  const avg = key => (logs.reduce((s,e)=>s+(parseFloat(e[key])||0),0)/logs.length).toFixed(1);
+  const trend = (key) => {
+    const recent = logs.slice(0,3).reduce((s,e)=>s+(parseFloat(e[key])||0),0)/Math.min(3,logs.length);
+    const older = logs.slice(3,8).reduce((s,e)=>s+(parseFloat(e[key])||0),0)/Math.min(5,logs.slice(3,8).length||1);
+    return recent - older;
+  };
+
+  try {
+    const prompt = `You are a consciousness trajectory analyst. Based on this person's data trends, predict their next 7 days.
+
+TREND DATA:
+- Focus: ${avg('focus')}/10 (trend: ${trend('focus')>0?'+':''}${trend('focus').toFixed(1)})
+- Mood: ${avg('mood')}/10 (trend: ${trend('mood')>0?'+':''}${trend('mood').toFixed(1)})
+- Stress: ${avg('stress')}/10 (trend: ${trend('stress')>0?'+':''}${trend('stress').toFixed(1)})
+- Flow: ${avg('flow')}/10 (trend: ${trend('flow')>0?'+':''}${trend('flow').toFixed(1)})
+- Total entries: ${logs.length}
+
+Give a 7-day trajectory prediction with:
+1. Overall trajectory (ascending/descending/plateau/volatile)
+2. Peak day prediction (which day 1-7 will be best)
+3. Risk day prediction (which day to watch out for)
+4. One specific recommendation to optimize this trajectory
+
+Be specific, data-grounded, and direct. Max 200 words.`;
+
+    const result = await callGroqFast(prompt, 'Be a precise consciousness analyst. Direct, specific, no fluff.', 500);
+    el.innerHTML = `<div style="background:linear-gradient(135deg,rgba(124,58,237,.08),rgba(6,182,212,.08));border:1px solid rgba(124,58,237,.2);border-radius:12px;padding:14px;font-size:12px;color:var(--text);line-height:1.7;white-space:pre-wrap">${result}</div>`;
+  } catch(e) {
+    el.innerHTML = `<div style="color:var(--danger);font-size:12px">❌ ${e.message}</div>`;
+  }
+}
+
+async function computeDeterminismScore() {
+  const logs = typeof getLogs === 'function' ? getLogs() : [];
+  if (logs.length < 5) { showToast('Need 5+ entries'); return; }
+  const el = document.getElementById('determinismResult');
+  el.innerHTML = `<div style="text-align:center;padding:12px;color:var(--text3)"><div style="font-size:20px;display:inline-block;animation:oraclePulse 1.5s infinite">🧬</div><div style="font-size:11px;margin-top:6px">Analyzing determinism...</div></div>`;
+
+  // Calculate pattern consistency as proxy for determinism
+  const focusVals = logs.slice(0,10).map(l=>parseFloat(l.focus)||5);
+  const mean = focusVals.reduce((a,b)=>a+b,0)/focusVals.length;
+  const variance = focusVals.reduce((s,v)=>s+Math.pow(v-mean,2),0)/focusVals.length;
+  const consistency = Math.max(0, 100 - variance*8);
+  const determinismPct = Math.round(Math.min(92, Math.max(30, consistency)));
+  const freeWillPct = 100 - determinismPct;
+
+  const color = determinismPct > 70 ? 'var(--danger)' : determinismPct > 50 ? 'var(--warning)' : 'var(--success)';
+  const verdict = determinismPct > 70
+    ? 'HIGHLY DETERMINED — Your behavior follows strong, predictable patterns. The Oracle can predict you with high accuracy.'
+    : determinismPct > 50
+    ? 'PARTIALLY DETERMINED — You have patterns, but also genuine unpredictability. Some free will is operating.'
+    : 'LARGELY FREE — Your behavior shows high entropy. You are harder to predict. More free will is active.';
+
+  el.innerHTML = `
+    <div style="background:var(--bg3);border-radius:12px;padding:16px;text-align:center;margin-bottom:10px">
+      <div style="font-size:11px;color:var(--text3);margin-bottom:6px">Your Determinism Score</div>
+      <div style="font-family:Syne,sans-serif;font-size:42px;font-weight:900;color:${color}">${determinismPct}%</div>
+      <div style="font-size:10px;color:var(--text3)">vs ${freeWillPct}% Free Will</div>
+      <div style="height:6px;background:var(--bg);border-radius:3px;margin:10px 0;overflow:hidden">
+        <div style="height:100%;width:${determinismPct}%;background:${color};border-radius:3px;transition:width 1s ease"></div>
+      </div>
+    </div>
+    <div style="background:rgba(124,58,237,.08);border:1px solid rgba(124,58,237,.2);border-radius:10px;padding:12px;font-size:12px;color:var(--text);line-height:1.6">
+      <strong>Verdict:</strong> ${verdict}
+      <br><br>
+      <strong>What this means:</strong> Based on ${logs.length} consciousness entries, your behavioral variance score is ${variance.toFixed(2)}. ${determinismPct > 60 ? 'Your habits and patterns are strong — this is efficient but limits true novelty.' : 'You show genuine unpredictability — this is the signature of an actively free mind.'}
+    </div>`;
+}
+
+// Gate oracle deep prediction on pro status
+(function gateOracle() {
+  document.addEventListener('DOMContentLoaded', async () => {
+    const isActive = await (typeof PRO !== 'undefined' ? PRO.check() : Promise.resolve(false));
+    const gate = document.getElementById('oraclePredictGate');
+    const unlocked = document.getElementById('oraclePredictUnlocked');
+    if (gate) gate.style.display = isActive ? 'none' : 'block';
+    if (unlocked) unlocked.style.display = isActive ? 'block' : 'none';
+  });
+})();
+
+// Override applyProGates to also handle oracle
+const _origApplyProGates = typeof applyProGates === 'function' ? applyProGates : null;
+function applyProGates(isActive) {
+  if (_origApplyProGates) _origApplyProGates(isActive);
+  const gate = document.getElementById('oraclePredictGate');
+  const unlocked = document.getElementById('oraclePredictUnlocked');
+  if (gate) gate.style.display = isActive ? 'none' : 'block';
+  if (unlocked) unlocked.style.display = isActive ? 'block' : 'none';
+  updateProBar();
+}
+
+// ════════════════════════════════════════════════════════════════
+//  STREAK MILESTONE CELEBRATION
+// ════════════════════════════════════════════════════════════════
+
+const MILESTONE_DATA = {
+  3:   { name:'Fire Starter',   philosophy:'Three days of data is the beginning of a pattern. Aristotle: "We are what we repeatedly do."', color:'#f97316' },
+  7:   { name:'One Week Mind',  philosophy:'Seven days of tracking shows your brain a mirror. Most people never look. You are looking.', color:'#eab308' },
+  14:  { name:'Neural Architect', philosophy:'Two weeks. The neuroscience is clear: 14 days of conscious repetition begins restructuring the default mode network.', color:'#06b6d4' },
+  21:  { name:'Habit Crystallizer', philosophy:'21 days. Lazar et al. (Harvard) found measurable cortical thickening in meditators at this stage. Your brain is physically changing.', color:'#8b5cf6' },
+  30:  { name:'30-Day Oracle',  philosophy:'30 days of data. Your Oracle can now make predictions with 70%+ accuracy. You have given the algorithm enough to begin understanding you.', color:'#ec4899' },
+  60:  { name:'Pattern Sovereign', philosophy:'60 days. You have more self-knowledge encoded in this app than most humans accumulate in a decade of journaling.', color:'#10b981' },
+  100: { name:'Century Mind',   philosophy:'100 days. A century of consciousness data. Nietzsche: "That which does not kill me makes me stronger." You chose to track instead of ignore.', color:'#f59e0b' },
+  365: { name:'Consciousness Architect', philosophy:'One full year. 365 data points of a human consciousness. You have built something that has never existed before: a complete digital record of your inner life.', color:'#7c3aed' },
+};
+
+function showMilestoneModal(days) {
+  const m = MILESTONE_DATA[days];
+  if (!m) return;
+  const milestone = STREAK.MILESTONES.find(x => x.days === days);
+  if (!milestone) return;
+
+  document.getElementById('milestoneIcon').textContent = milestone.icon;
+  document.getElementById('milestoneIcon').style.animation = 'none';
+  setTimeout(() => document.getElementById('milestoneIcon').style.animation = 'milestoneBounce .6s ease', 10);
+
+  document.getElementById('milestoneTitle').textContent = `${days}-Day Streak!`;
+  document.getElementById('milestoneSub').textContent = `You've hit a major milestone.`;
+  document.getElementById('milestoneBadgeName').textContent = m.name;
+  document.getElementById('milestonePhilosophy').textContent = m.philosophy;
+
+  const badgeIcon = document.getElementById('milestoneBadgeIcon');
+  badgeIcon.textContent = milestone.icon;
+  badgeIcon.style.background = m.color + '22';
+  badgeIcon.style.borderColor = m.color;
+
+  // Confetti
+  spawnConfetti(m.color);
+
+  const modal = document.getElementById('milestoneModal');
+  modal.style.display = 'flex';
+}
+
+function closeMilestoneModal() {
+  document.getElementById('milestoneModal').style.display = 'none';
+}
+
+function spawnConfetti(primaryColor) {
+  const modal = document.getElementById('milestoneModal');
+  const colors = [primaryColor, '#f97316', '#ec4899', '#7c3aed', '#06b6d4', '#10b981', '#eab308'];
+  for (let i = 0; i < 18; i++) {
+    const piece = document.createElement('div');
+    piece.className = 'confetti-piece';
+    piece.style.cssText = `
+      left: ${Math.random()*100}%;
+      top: ${Math.random()*30}%;
+      background: ${colors[Math.floor(Math.random()*colors.length)]};
+      animation-delay: ${Math.random()*0.6}s;
+      animation-duration: ${0.8 + Math.random()*0.8}s;
+      width: ${6+Math.random()*8}px;
+      height: ${6+Math.random()*8}px;
+      border-radius: ${Math.random()>0.5?'50%':'2px'};
+    `;
+    modal.querySelector('div').appendChild(piece);
+    setTimeout(() => piece.remove(), 2000);
+  }
+}
+
+// Patch STREAK to use modal for milestones
+(function patchStreakMilestone() {
+  const origRecordNow = STREAK.recordNow.bind(STREAK);
+  STREAK.recordNow = function() {
+    const before = STREAK.get().count || 0;
+    origRecordNow();
+    const after = STREAK.get().count || 0;
+    // Check if we just hit a milestone
+    if (after > before) {
+      const hit = STREAK.MILESTONES.find(m => m.days === after);
+      if (hit) {
+        setTimeout(() => showMilestoneModal(after), 800);
+      }
+    }
+  };
+  STREAK.recordToday = STREAK.recordNow;
+})();
+
+// ════════════════════════════════════════════════════════════════
+//  ACCOUNT DELETION + PRIVACY
+// ════════════════════════════════════════════════════════════════
+
+function signOutOnly() {
+  if (confirm('Sign out? Your data stays saved in Firebase and will restore when you log back in.')) {
+    auth.signOut().then(() => {
+      localStorage.removeItem('cos_has_account');
+      showToast('👋 Signed out. Your data is safe.');
+      setTimeout(() => location.reload(), 1000);
+    });
+  }
+}
+
+function confirmDeleteAccount() {
+  const modal = document.getElementById('deleteAccountModal');
+  if (modal) {
+    modal.style.display = 'flex';
+    const inp = document.getElementById('deleteConfirmInput');
+    if (inp) inp.value = '';
+    setTimeout(() => inp?.focus(), 300);
+  }
+}
+
+async function executeDeleteAccount() {
+  const inp = document.getElementById('deleteConfirmInput');
+  if (!inp || inp.value.trim().toUpperCase() !== 'DELETE') {
+    showToast('⚠️ Type DELETE to confirm');
+    inp?.classList.add('shake');
+    setTimeout(() => inp?.classList.remove('shake'), 500);
+    return;
+  }
+
+  const user = auth.currentUser;
+  const modal = document.getElementById('deleteAccountModal');
+
+  try {
+    showToast('🗑️ Deleting all data...');
+
+    // 1. Delete Firestore data
+    if (user) {
+      const uid = user.uid;
+      const colls = ['logs','dreams','health','sessions','pro','media','referrals'];
+      for (const coll of colls) {
+        try {
+          const snap = await db.collection('users').doc(uid).collection(coll).limit(100).get();
+          const batch = db.batch();
+          snap.docs.forEach(d => batch.delete(d.ref));
+          if (!snap.empty) await batch.commit();
+        } catch(e) { console.warn('Delete collection error:', e); }
+      }
+      // Delete user doc
+      try { await db.collection('users').doc(uid).delete(); } catch(e) {}
+      // Delete pro payments
+      try {
+        const pSnap = await db.collection('pro_payments').where('uid','==',uid).get();
+        const batch2 = db.batch();
+        pSnap.docs.forEach(d => batch2.delete(d.ref));
+        if (!pSnap.empty) await batch2.commit();
+      } catch(e) {}
+
+      // 2. Delete Firebase Auth account
+      await user.delete();
+    }
+
+    // 3. Wipe localStorage completely
+    localStorage.clear();
+    sessionStorage.clear();
+
+    showToast('✅ Account deleted. Goodbye.');
+    if (modal) modal.style.display = 'none';
+
+    setTimeout(() => {
+      document.getElementById('loginOverlay')?.style.removeProperty('display');
+      location.reload();
+    }, 1500);
+
+  } catch(e) {
+    if (e.code === 'auth/requires-recent-login') {
+      showToast('⚠️ Please sign out and sign back in, then try deleting again.');
+    } else {
+      showToast('❌ Error: ' + e.message);
+    }
+    console.error('Delete account error:', e);
+  }
+}
+
+function deleteGuestPermanently() {
+  if (confirm('Erase all guest data permanently? This deletes everything from this device.')) {
+    localStorage.clear();
+    sessionStorage.clear();
+    showToast('✅ All guest data erased permanently.');
+    setTimeout(() => location.reload(), 1000);
+  }
+}
+
+// Show correct delete section based on auth state
+(function initAccountDeleteUI() {
+  auth.onAuthStateChanged(user => {
+    const guestSec = document.getElementById('guestDeleteSection');
+    const acctSec = document.getElementById('accountDeleteSection');
+    const isGuest = !user || localStorage.getItem('cos_guest_mode') === '1';
+    if (guestSec) guestSec.style.display = isGuest ? 'block' : 'none';
+    if (acctSec) acctSec.style.display = (!isGuest && user) ? 'block' : 'none';
+  });
+})();
+
+
 </script>
 </body>
 </html>
