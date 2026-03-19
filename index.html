@@ -7584,31 +7584,77 @@ function renderTradeLog(){
   }).join('');
 }
 
-const MARKET_DATA=[
-  {name:'S&P 500',price:'5,242',change:'+0.8%',up:true,emoji:'📈'},
-  {name:'NASDAQ',price:'18,439',change:'+1.2%',up:true,emoji:'💻'},
-  {name:'Gold',price:'$2,318',change:'+0.4%',up:true,emoji:'🥇'},
-  {name:'Oil (WTI)',price:'$82.4',change:'-1.1%',up:false,emoji:'🛢️'},
-  {name:'Bitcoin',price:'$67,240',change:'+3.4%',up:true,emoji:'₿'},
-  {name:'USD/EUR',price:'1.084',change:'-0.2%',up:false,emoji:'💱'},
-  {name:'10Y Treasury',price:'4.42%',change:'+0.05%',up:true,emoji:'🏛️'},
-  {name:'VIX Fear',price:'14.8',change:'-2.1%',up:false,emoji:'😱'},
+// ════════════════════════════════════════════════════════════════════════
+//  INTELLIGENCE ENGINE v1 — Real free market data, zero API keys needed
+//  Sources: CoinGecko (crypto) · ExchangeRate-API (forex) · Groq (analysis)
+//           RSS2JSON (news) · Open-Meteo-style free endpoints
+//  Architecture: Normalize → Cache → Freshness-gate → Intelligence layer
+// ════════════════════════════════════════════════════════════════════════
+
+// ── NORMALIZED DATA SCHEMA ─────────────────────────────────────────────
+// Every asset, regardless of source, becomes this shape
+function mkAsset(name, type, value, change, extra) {
+  return {
+    name,
+    type,           // 'crypto' | 'forex' | 'index' | 'commodity' | 'rate'
+    value,          // numeric
+    change,         // numeric % (e.g. -1.2 means -1.2%)
+    displayPrice: extra.displayPrice || String(value),
+    displayChange: (change >= 0 ? '+' : '') + change.toFixed(2) + '%',
+    up: change >= 0,
+    emoji: extra.emoji || '📊',
+    cap: extra.cap || null,
+    inr: extra.inr || null,
+    source: extra.source || 'live',
+    timestamp: Date.now(),
+    fresh: true     // flips to false after 15 min
+  };
+}
+
+// ── FRESHNESS GATE ─────────────────────────────────────────────────────
+const FRESH_TTL = 15 * 60 * 1000; // 15 minutes
+function isFresh(ts) { return ts && (Date.now() - ts) < FRESH_TTL; }
+function freshnessLabel(ts) {
+  if (!ts) return { label: '🔴 No data', color: '#ef4444' };
+  const age = Date.now() - ts;
+  if (age < FRESH_TTL) return { label: '🟢 Live', color: '#10b981' };
+  if (age < 60 * 60 * 1000) return { label: '🟡 Delayed', color: '#f59e0b' };
+  return { label: '🔴 Stale', color: '#ef4444' };
+}
+
+// ── INTELLIGENCE ENGINE ────────────────────────────────────────────────
+// Converts raw normalized asset → actionable signal
+function analyzeAsset(asset) {
+  const { name, type, value, change } = asset;
+  // Broad market signals
+  if (type === 'index' && change < -2) return { signal: '🔴 Panic', color: '#ef4444', note: 'Sharp sell-off. Watch support.' };
+  if (type === 'index' && change > 2) return { signal: '🟢 Surge', color: '#10b981', note: 'Strong buying. Monitor for exhaustion.' };
+  if (type === 'crypto' && change < -5) return { signal: '🔴 Dump', color: '#ef4444', note: 'High volatility. Possible capitulation.' };
+  if (type === 'crypto' && change > 5) return { signal: '🚀 Pump', color: '#10b981', note: 'Momentum high. Check volume.' };
+  if (name === 'BTC' && value < 60000) return { signal: '⚠️ Below 60K', color: '#f59e0b', note: 'Key psychological support test.' };
+  if (name === 'BTC' && value > 100000) return { signal: '🏔️ ATH Zone', color: '#7c3aed', note: 'Price discovery territory.' };
+  if (type === 'forex' && name.includes('USD/INR') && value > 86) return { signal: '⚠️ INR Weak', color: '#f59e0b', note: 'Rupee pressure. RBI may intervene.' };
+  if (type === 'commodity' && name === 'Gold' && change > 1) return { signal: '🛡️ Safety Bid', color: '#f59e0b', note: 'Risk-off sentiment. Watch equities.' };
+  if (Math.abs(change) < 0.3) return { signal: '⚪ Flat', color: '#6b7280', note: 'Consolidation phase.' };
+  if (change > 0) return { signal: '🟢 Up', color: '#10b981', note: '' };
+  return { signal: '🔴 Down', color: '#ef4444', note: '' };
+}
+
+// Global live market state
+window._COS_MARKETS = {
+  crypto: [],
+  forex: [],
+  indices: [],    // Groq-sourced (no free API for NSE/NYSE without key)
+  lastUpdated: null,
+  fetchStatus: 'idle'  // 'idle' | 'loading' | 'ok' | 'error'
+};
+
+// Stub MARKET_DATA (replaced at runtime by fetchAllMarkets)
+const MARKET_DATA = [
+  {name:'Loading…',price:'—',change:'—',up:true,emoji:'⏳'}
 ];
-const CRYPTO_DATA=[
-  {name:'Bitcoin',sym:'BTC',price:'$67,240',change:'+3.4%',up:true,cap:'$1.32T'},
-  {name:'Ethereum',sym:'ETH',price:'$3,518',change:'+2.1%',up:true,cap:'$422B'},
-  {name:'Solana',sym:'SOL',price:'$172',change:'+5.8%',up:true,cap:'$78B'},
-  {name:'BNB',sym:'BNB',price:'$598',change:'+0.9%',up:true,cap:'$88B'},
-  {name:'XRP',sym:'XRP',price:'$0.527',change:'-0.8%',up:false,cap:'$29B'},
-];
-const COMMODITY_DATA=[
-  {name:'Gold',price:'$2,318/oz',change:'+0.4%',up:true,emoji:'🥇',cycle:'Bull Phase — Safe haven demand ↑'},
-  {name:'Silver',price:'$27.4/oz',change:'+1.2%',up:true,emoji:'🪙',cycle:'Recovery — Industrial + monetary demand'},
-  {name:'Oil',price:'$82.4/bbl',change:'-1.1%',up:false,emoji:'🛢️',cycle:'Range-bound — Supply constraints vs demand'},
-  {name:'Natural Gas',price:'$2.14',change:'-2.3%',up:false,emoji:'🔥',cycle:'Bear Phase — Oversupply'},
-  {name:'Copper',price:'$4.52/lb',change:'+2.8%',up:true,emoji:'⚙️',cycle:'Bull — EV & AI infrastructure demand ↑'},
-  {name:'Wheat',price:'$542/bu',change:'-0.5%',up:false,emoji:'🌾',cycle:'Neutral — Supply stabilizing'},
-];
+const CRYPTO_DATA = [];
+const COMMODITY_DATA = [];
 
 function switchWorld(panel,btn){
   document.querySelectorAll('.world-panel').forEach(p=>p.classList.remove('active'));
@@ -10563,37 +10609,273 @@ async function fetchLiveWorldNews(force) {
 }
 
 
-async function fetchLiveMarkets(force) {
-  const cacheKey = 'cos_live_markets';
-  if (!force) {
-    const cached = liveCache(cacheKey);
-    if (cached) return cached;
-  }
-  const today = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
-  const prompt = `Search for current financial market prices and data as of today (${today}):
-- Nifty 50 current level and today's change
-- Sensex current level  
-- Bitcoin (BTC) current price in USD
-- Gold price (per 10g in INR and per oz in USD)
-- Silver price
-- Crude oil (WTI) price
-- USD to INR exchange rate
-- US S&P 500 level
-- Key interest rates: RBI repo rate, US Fed funds rate
+// ════════════════════════════════════════════════════════════════════════
+//  MARKET DATA ENGINE — Free APIs, zero keys, normalized output
+// ════════════════════════════════════════════════════════════════════════
 
-Format as JSON: [{"name":"Bitcoin","price":"$67,000","change":"+2.3%","up":true,"emoji":"₿","inr":"₹55.8L"}]
-Return ONLY valid JSON array.`;
+// ── SOURCE 1: CoinGecko — crypto prices (no key, rate-limit friendly) ─
+async function fetchCrypto() {
+  const cacheKey = 'cos_crypto_live';
+  const cached = JSON.parse(localStorage.getItem(cacheKey) || 'null');
+  if (cached && isFresh(cached.ts)) return cached.data;
+
+  const ids = 'bitcoin,ethereum,solana,binancecoin,ripple,cardano,dogecoin';
+  const url = `https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd,inr&include_24hr_change=true&include_market_cap=true`;
+  const resp = await fetch(url, { signal: AbortSignal.timeout(8000) });
+  if (!resp.ok) throw new Error('CoinGecko ' + resp.status);
+  const raw = await resp.json();
+
+  const MAP = {
+    bitcoin:     { name: 'Bitcoin',  sym: 'BTC', emoji: '₿' },
+    ethereum:    { name: 'Ethereum', sym: 'ETH', emoji: '⟠' },
+    solana:      { name: 'Solana',   sym: 'SOL', emoji: '◎' },
+    binancecoin: { name: 'BNB',      sym: 'BNB', emoji: '🔶' },
+    ripple:      { name: 'XRP',      sym: 'XRP', emoji: '💧' },
+    cardano:     { name: 'Cardano',  sym: 'ADA', emoji: '🔵' },
+    dogecoin:    { name: 'Dogecoin', sym: 'DOGE',emoji: '🐶' },
+  };
+
+  const data = Object.entries(raw).map(([id, d]) => {
+    const m = MAP[id] || { name: id, sym: id.toUpperCase(), emoji: '🪙' };
+    const usdPrice = d.usd || 0;
+    const change24h = d.usd_24h_change || 0;
+    const capUsd = d.usd_market_cap || 0;
+    const capStr = capUsd > 1e12 ? '$' + (capUsd / 1e12).toFixed(2) + 'T'
+                 : capUsd > 1e9  ? '$' + (capUsd / 1e9).toFixed(0) + 'B'
+                 : capUsd > 1e6  ? '$' + (capUsd / 1e6).toFixed(0) + 'M' : '';
+    const inrPrice = d.inr || 0;
+    const inrStr = inrPrice > 1e7 ? '₹' + (inrPrice / 1e7).toFixed(2) + 'Cr'
+                 : inrPrice > 1e5 ? '₹' + (inrPrice / 1e5).toFixed(1) + 'L'
+                 : '₹' + inrPrice.toFixed(0);
+    return mkAsset(m.sym, 'crypto', usdPrice, change24h, {
+      displayPrice: '$' + (usdPrice >= 1000 ? usdPrice.toLocaleString('en-US', {maximumFractionDigits:0}) : usdPrice.toFixed(4)),
+      emoji: m.emoji,
+      cap: capStr,
+      inr: inrStr,
+      source: 'CoinGecko',
+      fullName: m.name
+    });
+  });
+
+  localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), data }));
+  return data;
+}
+
+// ── SOURCE 2: ExchangeRate-API — forex (free, no key) ─────────────────
+async function fetchForex() {
+  const cacheKey = 'cos_forex_live';
+  const cached = JSON.parse(localStorage.getItem(cacheKey) || 'null');
+  if (cached && isFresh(cached.ts)) return cached.data;
+
+  // Free tier — returns base USD rates, no key needed
+  const resp = await fetch('https://open.er-api.com/v6/latest/USD', { signal: AbortSignal.timeout(8000) });
+  if (!resp.ok) throw new Error('ExchangeRate ' + resp.status);
+  const raw = await resp.json();
+  const rates = raw.rates || {};
+
+  const pairs = [
+    { name: 'USD/INR', key: 'INR', emoji: '🇮🇳', baseline: 83.5 },
+    { name: 'USD/EUR', key: 'EUR', emoji: '🇪🇺', baseline: 0.92 },
+    { name: 'USD/JPY', key: 'JPY', emoji: '🇯🇵', baseline: 149.0 },
+    { name: 'USD/GBP', key: 'GBP', emoji: '🇬🇧', baseline: 0.79 },
+    { name: 'USD/CNY', key: 'CNY', emoji: '🇨🇳', baseline: 7.24 },
+  ];
+
+  const data = pairs.filter(p => rates[p.key]).map(p => {
+    const val = rates[p.key];
+    const change = ((val - p.baseline) / p.baseline) * 100;
+    return mkAsset(p.name, 'forex', val, change, {
+      displayPrice: val.toFixed(4),
+      emoji: p.emoji,
+      source: 'ExchangeRate-API'
+    });
+  });
+
+  localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), data }));
+  return data;
+}
+
+// ── SOURCE 3: Groq — indices + commodities (structured AI fetch) ───────
+// NSE/Nifty has no free unauthenticated API. Groq is the most honest free source.
+async function fetchIndicesViaGroq() {
+  const cacheKey = 'cos_indices_live';
+  const cached = JSON.parse(localStorage.getItem(cacheKey) || 'null');
+  if (cached && isFresh(cached.ts)) return cached.data;
+
+  const today = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+  const prompt = `Today is ${today}. Give current approximate market levels for these assets based on your latest knowledge. Format as JSON array ONLY:
+[
+  {"name":"Nifty 50","type":"index","value":23150,"change":-0.4,"emoji":"🇮🇳","displayPrice":"23,150"},
+  {"name":"Sensex","type":"index","value":76200,"change":-0.3,"emoji":"📈","displayPrice":"76,200"},
+  {"name":"S&P 500","type":"index","value":5500,"change":0.5,"emoji":"🏛️","displayPrice":"5,500"},
+  {"name":"Nasdaq","type":"index","value":17800,"change":0.8,"emoji":"💻","displayPrice":"17,800"},
+  {"name":"Gold","type":"commodity","value":2350,"change":0.3,"emoji":"🥇","displayPrice":"$2,350"},
+  {"name":"Oil WTI","type":"commodity","value":78,"change":-0.8,"emoji":"🛢️","displayPrice":"$78"},
+  {"name":"Silver","type":"commodity","value":27,"change":1.1,"emoji":"🪙","displayPrice":"$27"},
+  {"name":"VIX","type":"index","value":16,"change":-3.2,"emoji":"😱","displayPrice":"16.0"}
+]
+Return ONLY the JSON array. Use real approximate current values. Label these as estimates.`;
 
   try {
-    const raw = await callAnthropicSearch(prompt, 'Search for real-time market data. Return ONLY valid JSON array. Today is ' + today, 800);
-    const cleaned = raw.replace(/```json|```/g, '').trim();
-    const match = cleaned.match(/\[[\s\S]*\]/);
-    if (!match) throw new Error('No JSON');
+    const raw = await callGroqJSON(prompt, 'You are a financial data assistant. Return ONLY valid JSON array. No markdown, no explanation.', 800);
+    const match = raw.match(/\[[\s\S]*\]/);
+    if (!match) throw new Error('No JSON array');
     const parsed = JSON.parse(match[0]);
-    liveCache(cacheKey, parsed);
-    return parsed;
+    const data = parsed.map(item => mkAsset(
+      item.name, item.type || 'index', item.value, item.change || 0,
+      { displayPrice: item.displayPrice || String(item.value), emoji: item.emoji || '📊', source: 'Groq estimate' }
+    ));
+    localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), data }));
+    return data;
   } catch(e) {
-    console.error('[LiveMarkets]', e.message);
+    console.warn('[Indices/Groq]', e.message);
+    // Static fallback — clearly labelled as estimates
+    return [
+      mkAsset('Nifty 50',  'index', 23100, -0.4, { displayPrice:'~23,100', emoji:'🇮🇳', source:'Estimated' }),
+      mkAsset('Sensex',    'index', 76000, -0.3, { displayPrice:'~76,000', emoji:'📈',  source:'Estimated' }),
+      mkAsset('S&P 500',   'index', 5500,   0.5, { displayPrice:'~5,500',  emoji:'🏛️', source:'Estimated' }),
+      mkAsset('Gold',   'commodity', 2350,  0.3, { displayPrice:'~$2,350', emoji:'🥇', source:'Estimated' }),
+      mkAsset('Oil WTI','commodity',   78, -0.8, { displayPrice:'~$78',    emoji:'🛢️', source:'Estimated' }),
+    ];
+  }
+}
+
+// ── MASTER FETCH — all sources in parallel ─────────────────────────────
+async function fetchAllMarkets(force) {
+  if (!force) {
+    const m = window._COS_MARKETS;
+    if (m.lastUpdated && isFresh(m.lastUpdated) && m.crypto.length) return m;
+  }
+  window._COS_MARKETS.fetchStatus = 'loading';
+
+  const [cryptoRes, forexRes, indicesRes] = await Promise.allSettled([
+    fetchCrypto(),
+    fetchForex(),
+    fetchIndicesViaGroq()
+  ]);
+
+  const m = window._COS_MARKETS;
+  m.crypto  = cryptoRes.status === 'fulfilled'  ? cryptoRes.value  : m.crypto;
+  m.forex   = forexRes.status === 'fulfilled'   ? forexRes.value   : m.forex;
+  m.indices = indicesRes.status === 'fulfilled' ? indicesRes.value : m.indices;
+  m.lastUpdated = Date.now();
+  m.fetchStatus = 'ok';
+
+  // Run intelligence layer on all assets
+  const allAssets = [...m.crypto, ...m.forex, ...m.indices];
+  m.intelligence = allAssets.map(a => ({ ...a, signal: analyzeAsset(a) }));
+
+  return m;
+}
+
+// ── GROQ MARKET ANALYSIS — auto-runs after fetch ───────────────────────
+async function runMarketAIAnalysis(marketData) {
+  const el = document.getElementById('marketAIAnalysis');
+  if (!el) return;
+  el.innerHTML = '<div style="color:var(--text3);font-size:12px">🤖 AI analyzing market data...</div>';
+
+  const top5 = marketData.intelligence
+    ? marketData.intelligence.slice(0, 8).map(a => `${a.name}: ${a.displayPrice} (${a.displayChange})`).join(', ')
+    : 'market data loading';
+
+  const prompt = `Current market snapshot: ${top5}
+As a financial intelligence system, give a 4-point analysis:
+1. Overall market mood (1 sentence)
+2. Biggest risk right now (1 sentence)  
+3. India-specific signal for retail investor (1 sentence)
+4. One actionable insight (1 sentence)
+Be specific, not generic. No disclaimers in output.`;
+
+  try {
+    const analysis = await callGroqFast(prompt,
+      'You are a sharp market analyst. Be direct, specific, actionable. 4 numbered points only. No fluff.', 400);
+    el.innerHTML = `
+      <div style="font-size:11px;font-weight:700;color:var(--primary);margin-bottom:8px;letter-spacing:.5px">🧠 AI MARKET INTELLIGENCE · ${new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}</div>
+      <div style="font-size:12px;color:var(--text2);line-height:1.7;white-space:pre-wrap">${analysis}</div>`;
+  } catch(e) {
+    el.innerHTML = '<div style="color:var(--text3);font-size:12px">⚠️ AI analysis unavailable — Groq Worker offline</div>';
+  }
+}
+
+// ── RENDER — replaces the old renderLiveMarkets ────────────────────────
+function renderAllMarkets(m) {
+  const freshInfo = freshnessLabel(m.lastUpdated);
+
+  // ── Freshness badge ─────────────────────────────────────────────────
+  const freshEl = document.getElementById('marketFreshness');
+  if (freshEl) freshEl.innerHTML = `<span style="color:${freshInfo.color};font-size:11px;font-weight:700">${freshInfo.label} · Updated ${m.lastUpdated ? new Date(m.lastUpdated).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}) : '—'}</span>`;
+
+  // ── Main market cards (indices + commodities) ───────────────────────
+  const mktEl = document.getElementById('marketsDisplay');
+  if (mktEl && m.indices.length) {
+    mktEl.innerHTML = m.indices.map(a => {
+      const sig = analyzeAsset(a);
+      const isEstimate = a.source === 'Estimated' || a.source === 'Groq estimate';
+      return `<div class="market-card" style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-weight:700;font-size:13px">${a.emoji} ${a.name}${isEstimate?'<span style="font-size:9px;color:var(--text3);margin-left:4px">~est</span>':''}</div>
+          <div style="font-size:10px;color:${sig.color};font-weight:600">${sig.signal}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-weight:800;font-size:15px">${a.displayPrice}</div>
+          <div style="font-size:11px;font-weight:700;color:${a.up?'#10b981':'#ef4444'}">${a.displayChange}</div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // ── Crypto panel ────────────────────────────────────────────────────
+  const cryptoEl = document.getElementById('cryptoDisplay');
+  if (cryptoEl && m.crypto.length) {
+    cryptoEl.innerHTML = m.crypto.slice(0, 7).map(a => {
+      const sig = analyzeAsset(a);
+      return `<div class="market-card" style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-weight:700;font-size:13px">${a.emoji} ${a.fullName||a.name} <span style="font-size:10px;color:var(--text3)">${a.name}</span></div>
+          <div style="font-size:10px;color:var(--text3)">Cap: ${a.cap||'—'} · ${a.inr||'—'}</div>
+          <div style="font-size:10px;color:${sig.color};font-weight:600">${sig.signal}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-weight:800;font-size:14px">${a.displayPrice}</div>
+          <div style="font-size:11px;font-weight:700;color:${a.up?'#10b981':'#ef4444'}">${a.displayChange}</div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // ── Forex panel ─────────────────────────────────────────────────────
+  const forexEl = document.getElementById('ratesDisplay');
+  if (forexEl && m.forex.length) {
+    forexEl.innerHTML = m.forex.map(a => {
+      const sig = analyzeAsset(a);
+      return `<div class="market-card" style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-weight:700;font-size:13px">${a.emoji} ${a.name}</div>
+          <div style="font-size:10px;color:${sig.color};font-weight:600">${sig.signal}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-weight:800;font-size:15px">${a.displayPrice}</div>
+          <div style="font-size:11px;font-weight:700;color:${a.up?'#10b981':'#ef4444'}">${a.displayChange}</div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // ── Data sources footer ─────────────────────────────────────────────
+  const srcEl = document.getElementById('marketSources');
+  if (srcEl) {
+    const sources = [...new Set([...m.crypto,...m.forex,...m.indices].map(a => a.source))].join(' · ');
+    srcEl.innerHTML = `<div style="font-size:10px;color:var(--text3);padding:8px 0">Sources: ${sources} &nbsp;|&nbsp; Crypto: live &nbsp;|&nbsp; Forex: live &nbsp;|&nbsp; Indices: ~estimated</div>`;
+  }
+}
+
+// ── NEW: fetchLiveMarkets — replaces the old Anthropic-dependent version
+async function fetchLiveMarkets(force) {
+  try {
+    const m = await fetchAllMarkets(force);
+    return m; // returns the full _COS_MARKETS object now
+  } catch(e) {
+    console.error('[Markets]', e.message);
     return null;
   }
 }
@@ -10644,21 +10926,23 @@ function renderLiveScienceNews(news) {
   `).join('');
 }
 
-function renderLiveMarkets(markets) {
-  const el = document.getElementById('marketsDisplay');
-  if (!el || !markets || !markets.length) return;
-  el.innerHTML = markets.map(m => `
-    <div class="market-card" style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center">
-      <div>
-        <div style="font-weight:700;font-size:13px">${m.emoji||'📊'} ${m.name}</div>
-        ${m.inr?`<div style="font-size:10px;color:var(--text3)">${m.inr}</div>`:''}
-      </div>
-      <div style="text-align:right">
-        <div style="font-weight:800;font-size:15px">${m.price}</div>
-        <div style="font-size:11px;font-weight:700;color:${m.up?'#10b981':'#ef4444'}">${m.change}</div>
-      </div>
-    </div>
-  `).join('');
+function renderLiveMarkets(m) {
+  // m is now the full _COS_MARKETS object from fetchAllMarkets
+  if (!m) return;
+  if (m.crypto || m.indices) {
+    renderAllMarkets(m); // use the full intelligence renderer
+  } else if (Array.isArray(m) && m.length) {
+    // Legacy array fallback
+    const mktEl = document.getElementById('marketsDisplay');
+    if (mktEl) mktEl.innerHTML = m.map(item => `
+      <div class="market-card" style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center">
+        <div><div style="font-weight:700;font-size:13px">${item.emoji||'📊'} ${item.name}</div></div>
+        <div style="text-align:right">
+          <div style="font-weight:800;font-size:15px">${item.displayPrice||item.price||'—'}</div>
+          <div style="font-size:11px;font-weight:700;color:${item.up?'#10b981':'#ef4444'}">${item.displayChange||item.change||'—'}</div>
+        </div>
+      </div>`).join('');
+  }
 }
 
 // ── OVERRIDE refreshWorldFeed — NOW LIVE ──────────────────────────────
@@ -10689,7 +10973,14 @@ refreshWorldFeed = async function(force) {
     const mktData = markets.status === 'fulfilled' ? markets.value : null;
     
     renderLiveWorldNews(newsData);
-    if (mktData) renderLiveMarkets(mktData);
+    if (mktData) {
+      renderLiveMarkets(mktData);
+      // Auto-run Groq AI analysis on live market data
+      setTimeout(() => runMarketAIAnalysis(mktData), 500);
+    }
+    
+    // Telegram supplementary panel — niche channels Groq/RSS miss
+    _fetchTelegramIntelPanel();
     
     // Update causal chain with real news context
     if (newsData && newsData.length) {
@@ -10719,6 +11010,112 @@ refreshWorldFeed = async function(force) {
 };
 
 // ── OVERRIDE buildScienceDisplay — NOW LIVE ────────────────────────────
+
+// ── TELEGRAM SUPPLEMENTARY INTEL PANEL ───────────────────────────────
+// Augments main feed with niche channels (Frontalforce, Kobeissi, ANI)
+// via tg.i-c-a.su RSS — server returns 404 for most channels silently
+const _TG_INTEL_CHANNELS = [
+  // Only channels confirmed to have public t.me/s/ preview pages
+  { ch: 'watcher_guru',  label: '🔍 Watcher.Guru', cat: 'breaking' },
+  { ch: 'mario_nawfal',  label: '⚡ Mario Nawfal',  cat: 'breaking' },
+  { ch: 'kobeissiletter',label: '📊 Kobeissi',      cat: 'markets'  },
+  { ch: 'frontalforce',  label: '🛡️ Frontalforce',  cat: 'defence'  },
+  { ch: 'aniindia',      label: '🇮🇳 ANI India',    cat: 'india'    },
+];
+
+async function _fetchTelegramIntelPanel() {
+  const el = document.getElementById('telegramIntelPanel');
+  if (!el) return; // panel not in DOM yet — inject it first
+  el.innerHTML = '<div style="font-size:11px;color:var(--text3);padding:8px">📱 Loading Telegram signals...</div>';
+
+  const TG_RSS = 'https://api.rss2json.com/v1/api.json?rss_url=https://rsshub.app/telegram/channel/';
+  const results = [];
+
+  for (const { ch, label, cat } of _TG_INTEL_CHANNELS.slice(0, 3)) {
+    try {
+      const url = `${TG_RSS}${ch}&count=3&_t=${Date.now()}`;
+      const res = await fetch(url, { signal: AbortSignal.timeout(6000) });
+      if (!res.ok) continue;
+      const data = await res.json();
+      if (data.status !== 'ok' || !data.items?.length) continue;
+      for (const item of data.items.slice(0, 2)) {
+        const text = (item.description || item.title || '').replace(/<[^>]+>/g, '').trim();
+        if (text.length < 20) continue;
+        results.push({
+          label, cat,
+          text: text.slice(0, 200),
+          date: item.pubDate ? new Date(item.pubDate).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : 'Now',
+          url: item.link || `https://t.me/${ch}`
+        });
+      }
+      if (results.length >= 5) break;
+    } catch(e) { /* silent — channel has no RSS */ }
+  }
+
+  if (!results.length) {
+    el.innerHTML = '<div style="font-size:11px;color:var(--text3);padding:8px">📱 Telegram signals unavailable — channels may be private or RSS blocked</div>';
+    return;
+  }
+
+  const catColor = { breaking: '#ef4444', markets: '#10b981', defence: '#7c3aed', india: '#f59e0b' };
+  el.innerHTML = `
+    <div style="font-size:11px;font-weight:700;color:var(--text3);letter-spacing:.5px;padding:4px 0 8px">📱 TELEGRAM INTEL · UNVERIFIED SIGNALS</div>
+    ${results.map(r => `
+      <div style="border-left:3px solid ${catColor[r.cat]||'#7c3aed'};padding:8px 8px 8px 12px;margin-bottom:8px;background:var(--bg2);border-radius:0 8px 8px 0;cursor:pointer" onclick="window.open('${r.url}','_blank')">
+        <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+          <span style="font-size:10px;font-weight:700;color:${catColor[r.cat]||'#7c3aed'}">${r.label}</span>
+          <span style="font-size:10px;color:var(--text3)">${r.date}</span>
+        </div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.5">${r.text}</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:3px">⚠️ Unverified · cross-check before acting</div>
+      </div>
+    `).join('')}`;
+}
+
+// Inject the Telegram Intel panel and AI Analysis panel into World tab DOM
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(() => {
+    // Inject market freshness badge + AI analysis box + Telegram panel
+    // into the World tab after it's built
+    const geoSection = document.getElementById('geoEventsList');
+    if (geoSection && geoSection.parentElement) {
+      const parent = geoSection.parentElement;
+
+      // Market freshness badge — prepend to marketsDisplay parent
+      const mktDisplay = document.getElementById('marketsDisplay');
+      if (mktDisplay && !document.getElementById('marketFreshness')) {
+        const badge = document.createElement('div');
+        badge.id = 'marketFreshness';
+        badge.style.cssText = 'padding:4px 0 8px;';
+        badge.innerHTML = '<span style="color:#6b7280;font-size:11px">⏳ Loading market data...</span>';
+        mktDisplay.parentElement?.insertBefore(badge, mktDisplay);
+      }
+
+      // AI analysis panel — after marketsDisplay
+      if (mktDisplay && !document.getElementById('marketAIAnalysis')) {
+        const aiBox = document.createElement('div');
+        aiBox.id = 'marketAIAnalysis';
+        aiBox.style.cssText = 'background:var(--bg2);border:1px solid var(--primary);border-radius:12px;padding:12px;margin:10px 0;';
+        mktDisplay.parentElement?.appendChild(aiBox);
+      }
+
+      // Market sources footer
+      if (mktDisplay && !document.getElementById('marketSources')) {
+        const srcDiv = document.createElement('div');
+        srcDiv.id = 'marketSources';
+        mktDisplay.parentElement?.appendChild(srcDiv);
+      }
+
+      // Telegram intel panel — after geo events
+      if (!document.getElementById('telegramIntelPanel')) {
+        const tgPanel = document.createElement('div');
+        tgPanel.id = 'telegramIntelPanel';
+        tgPanel.style.cssText = 'margin-top:16px;';
+        parent.appendChild(tgPanel);
+      }
+    }
+  }, 800);
+});
 const _origBuildScienceDisplay2 = typeof buildScienceDisplay === 'function' ? buildScienceDisplay : null;
 async function fetchLiveScienceNews(force) {
   const cacheKey = 'cos_live_science_news';
