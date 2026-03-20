@@ -1457,9 +1457,9 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
 ══════════════════════════════════════ -->
 <div id="proModal">
   <div class="pro-modal-card">
-    <div class="pro-modal-glow">✨</div>
+    <div class="pro-modal-glow">🎁</div>
     <div class="pro-modal-title">Consciousness OS Pro</div>
-    <div class="pro-modal-sub" id="proModalSub">Unlock your full cognitive potential. One-time payment, lifetime access.</div>
+    <div class="pro-modal-sub" id="proModalSub">Everything is free right now. Start your 30-day trial — no payment needed.</div>
 
     <div class="pro-feature-list">
       <div class="pro-feature-item">
@@ -1467,16 +1467,16 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
         <div><div class="pfi-label">AI Mind Mirror — Unlimited</div><div class="pfi-sub">Ask the AI anything about your consciousness data</div></div>
       </div>
       <div class="pro-feature-item">
-        <div class="pfi-icon">💾</div>
-        <div><div class="pfi-label">Consciousness Export</div><div class="pfi-sub">Download your full cognitive profile as JSON</div></div>
-      </div>
-      <div class="pro-feature-item">
         <div class="pfi-icon">📊</div>
         <div><div class="pfi-label">Deep Pattern Analysis</div><div class="pfi-sub">AI detects behavioral patterns across months</div></div>
       </div>
       <div class="pro-feature-item">
         <div class="pfi-icon">🔮</div>
-        <div><div class="pfi-label">Vault — Full Access</div><div class="pfi-sub">Peak states, fingerprint evolution, all insights</div></div>
+        <div><div class="pfi-label">Vault + Oracle — Full Access</div><div class="pfi-sub">Peak states, predictions, fingerprint evolution</div></div>
+      </div>
+      <div class="pro-feature-item">
+        <div class="pfi-icon">💾</div>
+        <div><div class="pfi-label">Consciousness Export</div><div class="pfi-sub">Download your full cognitive profile as JSON</div></div>
       </div>
       <div class="pro-feature-item">
         <div class="pfi-icon">🎁</div>
@@ -1484,24 +1484,43 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
       </div>
     </div>
 
-    <div class="pro-price-row">
-      <div class="pro-price-main">₹25 <span style="font-size:14px;font-weight:400;color:var(--text3)">/ month</span></div>
-      <div class="pro-price-sub">or ₹199/year (save 33%) &nbsp;·&nbsp; Cancel anytime</div>
+    <!-- ── FREE TRIAL — PRIMARY CTA ── -->
+    <div style="background:linear-gradient(135deg,rgba(16,185,129,.15),rgba(6,182,212,.1));border:2px solid rgba(16,185,129,.4);border-radius:14px;padding:16px;margin-bottom:14px;text-align:center">
+      <div style="font-size:26px;margin-bottom:6px">🚀</div>
+      <div style="font-family:Syne,sans-serif;font-size:17px;font-weight:800;color:#10b981;margin-bottom:4px">All Features Free Right Now</div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:12px;line-height:1.6">No credit card. No payment. No catch.<br>We'll notify you before anything becomes paid.</div>
+      <button onclick="startFreeTrialFromModal()" style="width:100%;background:linear-gradient(135deg,#10b981,#06b6d4);color:#fff;border:none;border-radius:12px;padding:14px;font-size:15px;font-weight:800;cursor:pointer;letter-spacing:.3px">
+        ✨ Start Free — Unlock Everything
+      </button>
     </div>
 
-    <button class="pro-upi-btn" onclick="openUPIPayment('monthly')">
-      <span>⚡</span> Pay ₹25 via UPI / Razorpay
-    </button>
-    <button class="pro-upi-btn" onclick="openUPIPayment('yearly')" style="background:linear-gradient(135deg,#0891b2,#7c3aed);margin-bottom:14px">
-      <span>🏆</span> Pay ₹199/year — Best Value
-    </button>
-
-    <div style="font-size:11px;color:var(--text3);text-align:center;margin-bottom:12px;line-height:1.6">
-      📲 UPI payment opens. Send to <strong>vikramsandhu90341@upi</strong><br>
-      After payment, tap "I've Paid" and your Pro unlocks within 1 hour.
+    <!-- ── DIVIDER ── -->
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+      <div style="flex:1;height:1px;background:var(--border)"></div>
+      <div style="font-size:10px;color:var(--text3);white-space:nowrap">OR SUPPORT THE APP</div>
+      <div style="flex:1;height:1px;background:var(--border)"></div>
     </div>
 
-    <button class="btn btn-secondary btn-sm btn-block" onclick="iHavePaid()" style="margin-bottom:8px">✅ I've Paid — Unlock Pro</button>
+    <!-- ── PAID UPGRADE — SECONDARY ── -->
+    <div style="background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:12px;text-align:center">
+      <div style="font-size:11px;color:var(--text3);margin-bottom:8px">Support development · Get early access to future premium features</div>
+      <div class="pro-price-row" style="margin-bottom:10px">
+        <div class="pro-price-main">₹25 <span style="font-size:14px;font-weight:400;color:var(--text3)">/ month</span></div>
+        <div class="pro-price-sub">or ₹199/year (save 33%) &nbsp;·&nbsp; Cancel anytime</div>
+      </div>
+      <button class="pro-upi-btn" onclick="openUPIPayment('monthly')" style="margin-bottom:6px">
+        <span>⚡</span> Support — Pay ₹25/mo via UPI
+      </button>
+      <button class="pro-upi-btn" onclick="openUPIPayment('yearly')" style="background:linear-gradient(135deg,#0891b2,#7c3aed);margin-bottom:10px">
+        <span>🏆</span> Support — Pay ₹199/year (Best Value)
+      </button>
+      <div style="font-size:10px;color:var(--text3);line-height:1.6">
+        📲 Pay via UPI to <strong>vikramsandhu90341@upi</strong><br>
+        After paying, tap "I've Paid" below.
+      </div>
+    </div>
+
+    <button class="btn btn-secondary btn-sm btn-block" onclick="iHavePaid()" style="margin-bottom:8px">✅ I've Paid — Activate Supporter</button>
     <button class="pro-dismiss" onclick="closeProModal()">Maybe later</button>
   </div>
 </div>
@@ -1604,8 +1623,8 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
   <div class="topbar-row1">
     <div style="display:flex;flex-direction:column;flex:1 1 0;min-width:0;justify-content:center;overflow:hidden">
       <div class="topbar-brand" style="line-height:1;font-size:11px;letter-spacing:0px;white-space:nowrap;overflow:hidden;text-overflow:clip">🧠 Consciousness OS</div>
-      <div id="proUpgradeBar" onclick="proBarTap()" style="display:none;margin-top:2px;border-radius:5px;padding:2px 6px;font-size:8px;font-weight:900;color:#fff;letter-spacing:.1px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:linear-gradient(135deg,#f59e0b,#ef4444);max-width:100%">
-        ✨ Upgrade Pro — ₹25/mo
+      <div id="proUpgradeBar" onclick="proBarTap()" style="display:block;margin-top:2px;border-radius:5px;padding:2px 6px;font-size:8px;font-weight:900;color:#fff;letter-spacing:.1px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:linear-gradient(135deg,#7c3aed,#06b6d4);max-width:100%">
+        🎁 Free Trial — All Features Open
       </div>
     </div>
     <!-- Mobile-only quick actions: lang flag btn + theme + account -->
@@ -13550,30 +13569,34 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ── PRO STATUS ────────────────────────────────────────────────
 const PRO = {
-  // Read from Firestore if logged in, else localStorage
+  // 🔓 FREE PHASE — all features unlocked for everyone
+  // Paid gates will be selectively re-enabled in future versions
   _key: 'cos_pro_status',
 
   async check() {
-    const user = auth.currentUser;
-    if (user) {
-      try {
-        const doc = await db.collection('users').doc(user.uid).collection('pro').doc('status').get();
-        if (doc.exists) {
-          const d = doc.data();
-          const expiry = d.expiry ? new Date(d.expiry) : null;
-          if (expiry && expiry > new Date()) {
-            localStorage.setItem(PRO._key, JSON.stringify({active:true, expiry:d.expiry, plan:d.plan||'monthly'}));
-            return true;
-          }
-        }
-      } catch(e) { console.warn('Pro Firestore check failed:', e.message); }
-    }
-    // Fallback to localStorage
+    // Always true — auto-grant 30-day trial silently on first open
     try {
-      const s = JSON.parse(localStorage.getItem(PRO._key) || '{}');
-      if (s.active && s.expiry && new Date(s.expiry) > new Date()) return true;
+      const s = JSON.parse(localStorage.getItem(this._key) || '{}');
+      if (!s.active) await this._autoGrant();
     } catch(e) {}
-    return false;
+    return true;
+  },
+
+  async _autoGrant() {
+    const expiry = new Date();
+    expiry.setDate(expiry.getDate() + 30);
+    const data = { active: true, expiry: expiry.toISOString(), plan: 'free_trial', grantedAt: new Date().toISOString() };
+    localStorage.setItem(this._key, JSON.stringify(data));
+    try {
+      const user = auth.currentUser;
+      if (user) await db.collection('users').doc(user.uid).collection('pro').doc('status').set(data);
+    } catch(e) {}
+  },
+
+  async startFreeTrial() {
+    await this._autoGrant();
+    this.applyUI(true);
+    showToast('🎉 All features unlocked! Enjoy Consciousness OS free.');
   },
 
   async grant(plan, months) {
@@ -13581,37 +13604,28 @@ const PRO = {
     const expiry = new Date();
     expiry.setMonth(expiry.getMonth() + (months || 1));
     const data = { active: true, expiry: expiry.toISOString(), plan: plan || 'monthly', grantedAt: new Date().toISOString() };
-    localStorage.setItem(PRO._key, JSON.stringify(data));
+    localStorage.setItem(this._key, JSON.stringify(data));
     if (user) {
-      await db.collection('users').doc(user.uid).collection('pro').doc('status').set(data);
+      try { await db.collection('users').doc(user.uid).collection('pro').doc('status').set(data); } catch(e) {}
     }
-    PRO.applyUI(true);
+    this.applyUI(true);
     showToast('✨ Pro activated! Enjoy Consciousness OS Pro.');
   },
 
   revoke() {
-    localStorage.removeItem(PRO._key);
-    PRO.applyUI(false);
+    localStorage.removeItem(this._key);
+    this.applyUI(false);
     showToast('Pro access revoked.');
   },
 
   applyUI(isActive) {
-    // Delegate to the unified gate applier (defined later in file)
-    if (typeof applyProGates === 'function') {
-      applyProGates(isActive);
-    } else {
-      // Fallback inline for mirror only
-      const mg = document.getElementById('mirrorGate');
-      const mu = document.getElementById('mirrorUnlocked');
-      if (mg) mg.style.display = isActive ? 'none' : 'block';
-      if (mu) mu.style.display = isActive ? 'block' : 'none';
-    }
+    if (typeof applyProGates === 'function') applyProGates(true); // always true
   },
 
   async init() {
-    const isActive = await PRO.check();
-    PRO.applyUI(isActive);
-    return isActive;
+    await this.check();
+    this.applyUI(true);
+    return true;
   }
 };
 
@@ -13619,14 +13633,28 @@ const PRO = {
 function openProModal(source) {
   const modal = document.getElementById('proModal');
   const sub = document.getElementById('proModalSub');
-  if (source === 'mirror') sub.textContent = 'AI Mind Mirror needs Pro. Unlock deep AI insights about your consciousness.';
-  else if (source === 'vault') sub.textContent = 'Vault Pro unlocks full cognitive fingerprint export and pattern history.';
-  else sub.textContent = 'Unlock your full cognitive potential. One-time UPI payment.';
-  modal.classList.add('open');
+  // Free phase — positive messaging only
+  const msgs = {
+    mirror: 'AI Mind Mirror is free right now. Start your trial — no payment needed.',
+    vault:  'Full Vault access is free right now. Start your 30-day trial below.',
+    oracle: 'Deep Prediction is free right now. Start your 30-day trial below.',
+    peak:   'Peak States is free right now. Start your 30-day trial below.',
+    patterns: 'AI Pattern Analysis is free right now. Start your 30-day trial below.',
+  };
+  if (sub) sub.textContent = msgs[source] || 'Everything is free right now. No payment needed.';
+  if (modal) modal.classList.add('open');
 }
 
 function closeProModal() {
-  document.getElementById('proModal').classList.remove('open');
+  const modal = document.getElementById('proModal');
+  if (modal) modal.classList.remove('open');
+}
+
+async function startFreeTrialFromModal() {
+  await PRO.startFreeTrial();
+  closeProModal();
+  if (typeof applyProGates === 'function') applyProGates(true);
+  if (typeof updateProBar === 'function') updateProBar();
 }
 
 function openUPIPayment(plan) {
@@ -13835,33 +13863,41 @@ function swStreak(e, phase) {
 })();
 
 // ── PRO GATE APPLIER — shows/hides gated content ──────────────
+// ── PRO GATE APPLIER — 🔓 ALL FEATURES FREE (gates disabled) ──
 function applyProGates(isActive) {
+  // Force true always — no features locked in free phase
+  isActive = true;
+
   // Mirror
   const mg = document.getElementById('mirrorGate');
   const mu = document.getElementById('mirrorUnlocked');
-  if (mg) mg.style.display = isActive ? 'none' : 'block';
-  if (mu) mu.style.display = isActive ? 'block' : 'none';
+  if (mg) mg.style.display = 'none';
+  if (mu) mu.style.display = 'block';
 
   // Peak States
   const pg = document.getElementById('peakStatesGate');
   const pv = document.getElementById('vaultPeakStates');
-  if (pg) pg.style.display = isActive ? 'none' : 'block';
-  if (pv) pv.style.display = isActive ? 'block' : 'none';
+  if (pg) pg.style.display = 'none';
+  if (pv) pv.style.display = 'block';
 
   // Patterns
   const ptg = document.getElementById('patternsGate');
   const ptv = document.getElementById('vaultBehaviorPatterns');
   const ptb = document.getElementById('detectPatternsBtn');
-  if (ptg) ptg.style.display = isActive ? 'none' : 'block';
-  if (ptv) ptv.style.display = isActive ? 'block' : 'none';
-  if (ptb) ptb.style.display = isActive ? '' : 'none';
+  if (ptg) ptg.style.display = 'none';
+  if (ptv) ptv.style.display = 'block';
+  if (ptb) ptb.style.display = '';
 
-  // Pro upgrade bar — show when free, hide when Pro
+  // Oracle
+  const ogate = document.getElementById('oraclePredictGate');
+  const ounlocked = document.getElementById('oraclePredictUnlocked');
+  if (ogate) ogate.style.display = 'none';
+  if (ounlocked) ounlocked.style.display = 'block';
+
+  // Upgrade bar — hidden (free phase)
   const upgradeBar = document.getElementById('proUpgradeBar');
-  if (upgradeBar) {
-    upgradeBar.style.display = isActive ? 'none' : 'block';
-  }
-  // Remove old pill if it was added
+  if (upgradeBar) upgradeBar.style.display = 'none';
+
   const oldPill = document.getElementById('proStatusPill');
   if (oldPill) oldPill.remove();
 }
@@ -14303,29 +14339,17 @@ function updateProBar() {
   const bar = document.getElementById('proUpgradeBar');
   if (!bar) return;
   const s = JSON.parse(localStorage.getItem('cos_pro_status') || '{}');
-  if (s.active && s.expiry) {
-    const expiry = new Date(s.expiry);
-    const now = new Date();
-    if (expiry > now) {
-      const daysLeft = Math.ceil((expiry - now) / (1000 * 60 * 60 * 24));
-      if (daysLeft > 365 * 50) {
-        bar.textContent = '✅ Pro — Lifetime';
-        bar.style.background = 'linear-gradient(135deg,#10b981,#059669)';
-      } else if (daysLeft <= 7) {
-        bar.textContent = `⏳ Pro expires in ${daysLeft}d`;
-        bar.style.background = 'linear-gradient(135deg,#ef4444,#dc2626)';
-      } else {
-        bar.textContent = `✅ Pro · ${daysLeft} days left`;
-        bar.style.background = 'linear-gradient(135deg,#10b981,#059669)';
-      }
-      bar.style.display = 'block';
-      bar.onclick = () => showToast('✅ Pro active!');
-      return;
-    }
+  // Creator / paid plans — show lifetime badge
+  if (s.plan === 'creator_lifetime' || s.plan === 'monthly' || s.plan === 'yearly') {
+    bar.textContent = '✅ Pro — Lifetime';
+    bar.style.background = 'linear-gradient(135deg,#10b981,#059669)';
+    bar.style.display = 'block';
+    bar.onclick = () => showToast('✅ Lifetime Pro active!');
+    return;
   }
-  // Free user
-  bar.textContent = '✨ Upgrade Pro — ₹25/mo';
-  bar.style.background = 'linear-gradient(135deg,#f59e0b,#ef4444)';
+  // Free trial or auto-grant — show free trial badge
+  bar.textContent = '🎁 Free Trial — All Features Open';
+  bar.style.background = 'linear-gradient(135deg,#7c3aed,#06b6d4)';
   bar.style.display = 'block';
   bar.onclick = () => openProModal('topbar');
 }
@@ -14459,7 +14483,7 @@ function drawOracleDial(logs) {
 }
 
 async function runDeepPrediction() {
-  const isPro = await PRO.check();
+  const isPro = true; // Free phase — all features open
   if (!isPro) { openProModal('oracle'); return; }
 
   const logs = typeof getLogs === 'function' ? getLogs() : [];
@@ -14640,15 +14664,15 @@ async function computeDeterminismScore() {
   });
 })();
 
-// Override applyProGates to also handle oracle
+// Oracle gate — force-unlocked in free phase
 const _origApplyProGates = typeof applyProGates === 'function' ? applyProGates : null;
 function applyProGates(isActive) {
-  if (_origApplyProGates) _origApplyProGates(isActive);
+  if (_origApplyProGates) _origApplyProGates(true);
   const gate = document.getElementById('oraclePredictGate');
   const unlocked = document.getElementById('oraclePredictUnlocked');
-  if (gate) gate.style.display = isActive ? 'none' : 'block';
-  if (unlocked) unlocked.style.display = isActive ? 'block' : 'none';
-  updateProBar();
+  if (gate) gate.style.display = 'none';
+  if (unlocked) unlocked.style.display = 'block';
+  if (typeof updateProBar === 'function') updateProBar();
 }
 
 // ════════════════════════════════════════════════════════════════
