@@ -160,21 +160,6 @@ function _handleAuthUser(fbUser) {
       if (typeof setCurrentUser  === 'function') setCurrentUser(fbUser.uid);
       if (typeof buildProfileBar === 'function') setTimeout(buildProfileBar, 500);
     }
-    // ── AUTO GRANT 30-DAY FREE TRIAL FOR ALL NEW USERS ──────────
-    if (typeof TRIAL !== 'undefined') {
-      const trialData = TRIAL.grant(fbUser.uid);
-      if (trialData) {
-        // New trial just granted — show welcome toast
-        setTimeout(() => {
-          showToast('🎁 30-day free trial activated! All Pro features unlocked.');
-          if (typeof applyProGates === 'function') applyProGates(true);
-          TRIAL.updateBadge();
-        }, 1500);
-      } else {
-        // Returning user — update badge if trial still active
-        setTimeout(() => TRIAL.updateBadge(), 800);
-      }
-    }
   } else {
     dbg('log', '🔐 Auth state: signed out — showing login screen');
     // Show login form (NOT spinner)
@@ -1507,18 +1492,9 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
     <button class="pro-upi-btn" onclick="openUPIPayment('monthly')">
       <span>⚡</span> Pay ₹25 via UPI / Razorpay
     </button>
-    <button class="pro-upi-btn" onclick="openUPIPayment('yearly')" style="background:linear-gradient(135deg,#0891b2,#7c3aed);margin-bottom:8px">
+    <button class="pro-upi-btn" onclick="openUPIPayment('yearly')" style="background:linear-gradient(135deg,#0891b2,#7c3aed);margin-bottom:14px">
       <span>🏆</span> Pay ₹199/year — Best Value
     </button>
-
-    <!-- 30-day free trial CTA -->
-    <div id="trialCTAInModal" style="margin-bottom:12px">
-      <div style="text-align:center;color:var(--text3);font-size:11px;margin-bottom:6px">— or —</div>
-      <button onclick="startFreeTrial()" style="width:100%;background:linear-gradient(135deg,#1e3a5f,#064e3b);border:1.5px solid #3b82f6;color:#93c5fd;border-radius:12px;padding:12px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
-        🎁 Start 30-Day Free Trial — No Payment Needed
-      </button>
-      <div style="font-size:10px;color:var(--text3);text-align:center;margin-top:5px">All Pro features. Cancel anytime. No card required.</div>
-    </div>
 
     <div style="font-size:11px;color:var(--text3);text-align:center;margin-bottom:12px;line-height:1.6">
       📲 UPI payment opens. Send to <strong>vikramsandhu90341@upi</strong><br>
@@ -5358,31 +5334,8 @@ function switchTab(tabId) {
   if(id==='ai'){refreshAIInsights();loadDailyTip();buildApiKeysList();}
   if(id==='system'){buildThemeGrid();updateTelemetry();updateAccountUI();}
   if(id==='guide'){buildGuideNavMap();}
-  if(id==='vault'){
-    buildVaultFingerprint();
-    buildVaultPatterns();
-    updatePreservationStats();
-    // Instant sync unlock — no Firestore wait, no race condition
-    const syncPro = checkProSync();
-    if(typeof applyProGates==='function') applyProGates(syncPro);
-    // Retry loop — mobile auth can be slow, keep checking until gates open
-    let _vr = 0;
-    const _vLoop = setInterval(async () => {
-      _vr++;
-      const isP = await PRO.check();
-      if(typeof applyProGates==='function') applyProGates(isP);
-      const stillLocked = document.getElementById('mirrorGate')?.style.display !== 'none';
-      if (isP || !stillLocked || _vr >= 6) clearInterval(_vLoop);
-    }, 800);
-  }
+  if(id==='vault'){buildVaultFingerprint();buildVaultPatterns();updatePreservationStats();}
   if(id==='analysis'){generateWeeklyReport();}
-  if(id==='oracle'){
-    // Re-apply pro gates — oracle gate element lazy-exists in DOM
-    setTimeout(async()=>{
-      const isP = await PRO.check();
-      if(typeof applyProGates==='function') applyProGates(isP);
-    }, 100);
-  }
 
   // Lazy init — only run heavy init functions once per tab
   if (!_tabRendered[id]) {
@@ -13595,63 +13548,6 @@ document.addEventListener('DOMContentLoaded', function() {
 //  Consciousness OS v8.1
 // ═══════════════════════════════════════════════════════════════
 
-// ── 30-DAY FREE TRIAL SYSTEM ──────────────────────────────────
-// Every new user (any account) gets 30 days free Pro automatically
-// After 30 days they see the upgrade prompt
-const TRIAL = {
-  _key: 'cos_trial_status',
-
-  // Grant a 30-day trial to any new user (called on first login)
-  grant(userId) {
-    const existing = JSON.parse(localStorage.getItem(TRIAL._key) || '{}');
-    if (existing.granted) return; // already had a trial
-    const expiry = new Date();
-    expiry.setDate(expiry.getDate() + 30);
-    const data = {
-      granted: true,
-      grantedAt: new Date().toISOString(),
-      expiry: expiry.toISOString(),
-      userId: userId || 'guest',
-      plan: 'trial_30_day'
-    };
-    localStorage.setItem(TRIAL._key, JSON.stringify(data));
-    console.log('[COS] 30-day free trial started → expires', expiry.toLocaleDateString('en-IN'));
-    return data;
-  },
-
-  // Check if trial is still active
-  isActive() {
-    try {
-      const s = JSON.parse(localStorage.getItem(TRIAL._key) || '{}');
-      return !!(s.granted && s.expiry && new Date(s.expiry) > new Date());
-    } catch(e) { return false; }
-  },
-
-  // Days remaining
-  daysLeft() {
-    try {
-      const s = JSON.parse(localStorage.getItem(TRIAL._key) || '{}');
-      if (!s.expiry) return 0;
-      const ms = new Date(s.expiry) - new Date();
-      return Math.max(0, Math.ceil(ms / 86400000));
-    } catch(e) { return 0; }
-  },
-
-  // Show trial badge in topbar
-  updateBadge() {
-    const bar = document.getElementById('proStatusBar');
-    if (!bar) return;
-    if (TRIAL.isActive()) {
-      const days = TRIAL.daysLeft();
-      bar.textContent = `🎁 Free Trial — ${days} day${days===1?'':'s'} left`;
-      bar.style.background = 'linear-gradient(90deg,#1e3a5f,#1a4731)';
-      bar.style.color = '#60a5fa';
-      bar.onclick = () => openProModal('trial_badge');
-      bar.style.cursor = 'pointer';
-    }
-  }
-};
-
 // ── PRO STATUS ────────────────────────────────────────────────
 const PRO = {
   // Read from Firestore if logged in, else localStorage
@@ -13659,25 +13555,6 @@ const PRO = {
 
   async check() {
     const user = auth.currentUser;
-    // ── CREATOR HARD BYPASS — instant, no network needed ──────
-    if (user && user.email) {
-      const e = user.email.toLowerCase();
-      if (e.includes('vikramsandhu') || e.includes('sandhu') ||
-          e === 'test@test.com' || e.startsWith('test@test')) {
-        // Ensure Pro is saved so UI shows correctly
-        const existing = JSON.parse(localStorage.getItem(PRO._key) || '{}');
-        if (!existing.active || !existing.plan?.includes('creator')) {
-          const expiry = new Date(); expiry.setFullYear(expiry.getFullYear() + 99);
-          localStorage.setItem(PRO._key, JSON.stringify({active:true,expiry:expiry.toISOString(),plan:'creator_lifetime',grantedAt:new Date().toISOString()}));
-        }
-        return true;
-      }
-    }
-    // ── localStorage plan check (creator_lifetime never expires) ─
-    try {
-      const s = JSON.parse(localStorage.getItem(PRO._key) || '{}');
-      if (s.active && s.plan && s.plan.includes('creator')) return true;
-    } catch(e) {}
     if (user) {
       try {
         const doc = await db.collection('users').doc(user.uid).collection('pro').doc('status').get();
@@ -13691,13 +13568,11 @@ const PRO = {
         }
       } catch(e) { console.warn('Pro Firestore check failed:', e.message); }
     }
-    // Fallback to localStorage expiry check
+    // Fallback to localStorage
     try {
       const s = JSON.parse(localStorage.getItem(PRO._key) || '{}');
       if (s.active && s.expiry && new Date(s.expiry) > new Date()) return true;
     } catch(e) {}
-    // 30-day free trial — every user gets full Pro access during trial
-    if (typeof TRIAL !== 'undefined' && TRIAL.isActive()) return true;
     return false;
   },
 
@@ -13736,13 +13611,6 @@ const PRO = {
   async init() {
     const isActive = await PRO.check();
     PRO.applyUI(isActive);
-    // If on trial (not paid pro, not creator), show trial badge
-    if (isActive && typeof TRIAL !== 'undefined' && TRIAL.isActive()) {
-      const proData = JSON.parse(localStorage.getItem(PRO._key) || '{}');
-      const isRealPro = proData.active && !proData.plan?.includes('trial');
-      const isCreator = proData.plan?.includes('creator');
-      if (!isRealPro && !isCreator) setTimeout(() => TRIAL.updateBadge(), 500);
-    }
     return isActive;
   }
 };
@@ -13751,22 +13619,9 @@ const PRO = {
 function openProModal(source) {
   const modal = document.getElementById('proModal');
   const sub = document.getElementById('proModalSub');
-  const trialLeft = (typeof TRIAL !== 'undefined' && TRIAL.isActive()) ? TRIAL.daysLeft() : 0;
-  const trialNote = trialLeft > 0 ? ` Your free trial ends in ${trialLeft} day${trialLeft===1?'':'s'}.` : '';
-  const trialCTA = document.getElementById('trialCTAInModal');
-
-  if (source === 'mirror') sub.textContent = 'AI Mind Mirror needs Pro. Unlock deep AI insights about your consciousness.' + trialNote;
-  else if (source === 'vault') sub.textContent = 'Vault Pro unlocks full cognitive fingerprint export and pattern history.' + trialNote;
-  else if (source === 'trial_badge') sub.textContent = `🎁 You are on a 30-day free trial with ${trialLeft} days remaining. Upgrade to keep all Pro features after your trial ends.`;
-  else sub.textContent = 'Unlock your full cognitive potential. One-time UPI payment.' + trialNote;
-
-  // Hide trial CTA if already on trial or paid pro
-  if (trialCTA) {
-    const alreadyTrialing = typeof TRIAL !== 'undefined' && TRIAL.isActive();
-    const paidPro = JSON.parse(localStorage.getItem('cos_pro_status') || '{}').active;
-    trialCTA.style.display = (alreadyTrialing || paidPro) ? 'none' : 'block';
-  }
-
+  if (source === 'mirror') sub.textContent = 'AI Mind Mirror needs Pro. Unlock deep AI insights about your consciousness.';
+  else if (source === 'vault') sub.textContent = 'Vault Pro unlocks full cognitive fingerprint export and pattern history.';
+  else sub.textContent = 'Unlock your full cognitive potential. One-time UPI payment.';
   modal.classList.add('open');
 }
 
@@ -13981,27 +13836,6 @@ function swStreak(e, phase) {
 
 // ── PRO GATE APPLIER — shows/hides gated content ──────────────
 function applyProGates(isActive) {
-  // ── CREATOR HARD BYPASS — no async, no race condition ──────────
-  // If logged in as creator, always unlock regardless of DB state
-  const _user = auth.currentUser;
-  if (_user && _user.email) {
-    const _e = _user.email.toLowerCase();
-    if (_e.includes('vikramsandhu') || _e.includes('sandhu') ||
-        _e === 'test@test.com' || _e.startsWith('test@test')) {
-      isActive = true;
-    }
-  }
-  // Also check localStorage directly as a secondary bypass
-  if (!isActive) {
-    try {
-      const _s = JSON.parse(localStorage.getItem('cos_pro_status') || '{}');
-      if (_s.active && (_s.plan === 'creator_lifetime' || _s.plan === 'creator' ||
-          (_s.expiry && new Date(_s.expiry) > new Date()))) {
-        isActive = true;
-      }
-    } catch(e) {}
-  }
-
   // Mirror
   const mg = document.getElementById('mirrorGate');
   const mu = document.getElementById('mirrorUnlocked');
@@ -14024,41 +13858,12 @@ function applyProGates(isActive) {
 
   // Pro upgrade bar — show when free, hide when Pro
   const upgradeBar = document.getElementById('proUpgradeBar');
-  if (upgradeBar) upgradeBar.style.display = isActive ? 'none' : 'block';
-
+  if (upgradeBar) {
+    upgradeBar.style.display = isActive ? 'none' : 'block';
+  }
   // Remove old pill if it was added
   const oldPill = document.getElementById('proStatusPill');
   if (oldPill) oldPill.remove();
-
-  // Pro status topbar banner
-  const bar = document.getElementById('proStatusBar');
-  if (bar) {
-    if (isActive) {
-      bar.textContent = '✅ Pro — Lifetime';
-      bar.style.background = 'linear-gradient(90deg,#064e3b,#065f46)';
-      bar.style.color = '#6ee7b7';
-    }
-  }
-}
-
-// ── SYNC PRO CHECK: read localStorage only (no async, instant UI) ─────
-function checkProSync() {
-  // Creator hard bypass — always Pro
-  const _u = auth.currentUser;
-  if (_u && _u.email) {
-    const _e = _u.email.toLowerCase();
-    if (_e.includes('vikramsandhu') || _e.includes('sandhu') ||
-        _e === 'test@test.com' || _e.startsWith('test@test')) return true;
-  }
-  try {
-    const s = JSON.parse(localStorage.getItem('cos_pro_status') || '{}');
-    // Accept creator_lifetime plan with any expiry OR standard active+expiry
-    if (s.active && s.plan && s.plan.includes('creator')) return true;
-    if (s.active && s.expiry && new Date(s.expiry) > new Date()) return true;
-  } catch(e) {}
-  // 30-day free trial
-  if (typeof TRIAL !== 'undefined' && TRIAL.isActive()) return true;
-  return false;
 }
 
 // ── QS POPUP JS ───────────────────────────────────────────────
@@ -14410,25 +14215,6 @@ window.openQSPopup = openQuickSettingsPopup;
 document.addEventListener('DOMContentLoaded', function() {
   STREAK.init();
   if (typeof PRO !== 'undefined' && typeof PRO.init === 'function') PRO.init();
-  // ── MOBILE FIX: Re-apply pro gates after full page parse (500ms + 2s)
-  // Vault/Oracle gates are lazy-DOM — they don't exist at DOMContentLoaded.
-  // applyProGates on those tabs is handled by switchTab, but the top bar
-  // "Pro — Lifetime" banner and any always-visible gates need this:
-  [500, 2000, 5000].forEach(delay => {
-    setTimeout(async () => {
-      try {
-        const isP = await PRO.check();
-        if (typeof applyProGates === 'function') applyProGates(isP);
-        // Also update topbar banner
-        const bar = document.getElementById('proStatusBar');
-        if (bar && isP) {
-          bar.style.background = 'linear-gradient(90deg,#064e3b,#065f46)';
-          bar.innerHTML = '✅ Pro — Lifetime';
-          bar.style.color = '#6ee7b7';
-        }
-      } catch(e) {}
-    }, delay);
-  });
   // Also hook saveLog if it gets defined late
   setTimeout(() => {
     const origSaveLog = window.saveLog;
@@ -14513,59 +14299,20 @@ function proBarTap() {
   }
 }
 
-function startFreeTrial() {
-  if (typeof TRIAL === 'undefined') { showToast('Sign in first to start your trial'); return; }
-  const existing = JSON.parse(localStorage.getItem(TRIAL._key) || '{}');
-  if (existing.granted && new Date(existing.expiry) > new Date()) {
-    showToast(`🎁 Trial already active — ${TRIAL.daysLeft()} days remaining!`);
-    closeProModal();
-    if (typeof applyProGates === 'function') applyProGates(true);
-    TRIAL.updateBadge();
-    return;
-  }
-  if (existing.granted && new Date(existing.expiry) <= new Date()) {
-    showToast('⏳ Your 30-day trial has ended. Upgrade to continue.');
-    return;
-  }
-  // Grant new trial
-  const uid = auth.currentUser?.uid || 'guest_' + Date.now();
-  TRIAL.grant(uid);
-  showToast('🎁 30-day free trial started! All Pro features unlocked.');
-  closeProModal();
-  if (typeof applyProGates === 'function') applyProGates(true);
-  TRIAL.updateBadge();
-  updateProBar();
-}
-
 function updateProBar() {
   const bar = document.getElementById('proUpgradeBar');
   if (!bar) return;
-
-  // Creator check
-  const _u = auth.currentUser;
-  if (_u && _u.email) {
-    const _e = _u.email.toLowerCase();
-    if (_e.includes('vikramsandhu') || _e.includes('sandhu') ||
-        _e === 'test@test.com' || _e.startsWith('test@test')) {
-      bar.textContent = '✅ Pro — Lifetime';
-      bar.style.background = 'linear-gradient(135deg,#10b981,#059669)';
-      bar.style.display = 'block';
-      bar.onclick = () => showToast('✅ Creator Pro active!');
-      return;
-    }
-  }
-
   const s = JSON.parse(localStorage.getItem('cos_pro_status') || '{}');
   if (s.active && s.expiry) {
     const expiry = new Date(s.expiry);
     const now = new Date();
     if (expiry > now) {
       const daysLeft = Math.ceil((expiry - now) / (1000 * 60 * 60 * 24));
-      if (daysLeft > 365 * 50 || s.plan?.includes('creator')) {
+      if (daysLeft > 365 * 50) {
         bar.textContent = '✅ Pro — Lifetime';
         bar.style.background = 'linear-gradient(135deg,#10b981,#059669)';
       } else if (daysLeft <= 7) {
-        bar.textContent = `⏳ Pro expires in ${daysLeft}d — Renew`;
+        bar.textContent = `⏳ Pro expires in ${daysLeft}d`;
         bar.style.background = 'linear-gradient(135deg,#ef4444,#dc2626)';
       } else {
         bar.textContent = `✅ Pro · ${daysLeft} days left`;
@@ -14576,33 +14323,9 @@ function updateProBar() {
       return;
     }
   }
-
-  // Trial active
-  if (typeof TRIAL !== 'undefined' && TRIAL.isActive()) {
-    const d = TRIAL.daysLeft();
-    bar.textContent = `🎁 Free Trial — ${d} day${d===1?'':'s'} left`;
-    bar.style.background = 'linear-gradient(135deg,#1e3a8a,#1e4d2b)';
-    bar.style.color = '#93c5fd';
-    bar.style.display = 'block';
-    bar.onclick = () => openProModal('trial_badge');
-    // Hide trial CTA in modal since trial is already active
-    const trialCTA = document.getElementById('trialCTAInModal');
-    if (trialCTA) trialCTA.style.display = 'none';
-    return;
-  }
-
-  // Free user — show trial CTA first, upgrade second
-  const trialData = JSON.parse(localStorage.getItem(TRIAL?._key || 'cos_trial_status') || '{}');
-  if (trialData.granted && new Date(trialData.expiry) <= new Date()) {
-    // Trial expired
-    bar.textContent = '⏳ Trial ended — Upgrade for ₹25/mo';
-    bar.style.background = 'linear-gradient(135deg,#7c3aed,#0891b2)';
-  } else {
-    // Never had a trial
-    bar.textContent = '🎁 Start Free 30-Day Trial';
-    bar.style.background = 'linear-gradient(135deg,#1d4ed8,#065f46)';
-  }
-  bar.style.color = '#fff';
+  // Free user
+  bar.textContent = '✨ Upgrade Pro — ₹25/mo';
+  bar.style.background = 'linear-gradient(135deg,#f59e0b,#ef4444)';
   bar.style.display = 'block';
   bar.onclick = () => openProModal('topbar');
 }
