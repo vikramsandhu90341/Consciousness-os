@@ -1198,6 +1198,16 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
 .pro-gate-overlay .pg-icon{font-size:36px}
 .pro-gate-overlay .pg-title{font-family:Syne,sans-serif;font-size:15px;font-weight:800;color:var(--text)}
 .pro-gate-overlay .pg-sub{font-size:11px;color:var(--text3);line-height:1.5;max-width:220px}
+/* ── 🔓 FREE PHASE: All gates hidden, all unlocked content visible ── */
+#peakStatesGate,
+#patternsGate,
+#mirrorGate,
+#oraclePredictGate { display: none !important; }
+#vaultPeakStates,
+#vaultBehaviorPatterns,
+#mirrorUnlocked,
+#oraclePredictUnlocked,
+#detectPatternsBtn { display: block !important; }
 
 /* PAYWALL MODAL */
 #proModal{display:none;position:fixed;inset:0;z-index:9500;background:rgba(0,0,0,.75);align-items:flex-end;justify-content:center}
@@ -2524,7 +2534,7 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
         <button class="btn btn-primary btn-sm" onclick="openProModal('peak')">✨ Unlock ₹25/mo</button>
       </div>
     </div>
-    <div id="vaultPeakStates" style="display:none">
+    <div id="vaultPeakStates">
       <div class="empty-state"><span class="es-icon">⚡</span><div class="es-text">Log 5+ entries to see your peak states</div></div>
     </div>
   </div>
@@ -2546,7 +2556,7 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
         <button class="btn btn-primary btn-sm" onclick="openProModal('patterns')">✨ Unlock ₹25/mo</button>
       </div>
     </div>
-    <div id="vaultBehaviorPatterns" style="display:none">
+    <div id="vaultBehaviorPatterns">
       <div class="empty-state"><span class="es-icon">🔍</span><div class="es-text">Patterns emerge after 7+ days of use</div></div>
     </div>
     <button class="btn btn-secondary btn-sm btn-block" id="detectPatternsBtn" onclick="buildVaultPatterns()" style="margin-top:10px;display:none">🔄 Detect Patterns</button>
@@ -2569,7 +2579,7 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
         <button class="btn btn-primary btn-sm" onclick="openProModal('mirror')">✨ Unlock for ₹25/mo</button>
       </div>
     </div>
-    <div id="mirrorUnlocked" style="display:none">
+    <div id="mirrorUnlocked">
       <div style="font-size:12px;color:var(--text3);margin-bottom:12px">Ask the AI to describe you — based entirely on your actual logged data. Not generic advice. A mirror of your specific consciousness.</div>
       <textarea class="form-textarea" id="mirrorPrompt" placeholder="e.g., 'Who am I based on my data?' / 'What is my cognitive type?' / 'What should I work on?' / 'Describe my consciousness pattern in one paragraph.'" style="min-height:70px;margin-bottom:8px"></textarea>
       <button class="btn btn-primary btn-block btn-sm" onclick="askMirrorAI()">🪞 Ask the Mirror</button>
@@ -4283,7 +4293,7 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
         <button class="btn btn-primary btn-sm" onclick="openProModal('oracle')">✨ Unlock for ₹25/mo</button>
       </div>
     </div>
-    <div id="oraclePredictUnlocked" style="display:none">
+    <div id="oraclePredictUnlocked">
       <div style="font-size:11px;color:var(--text3);margin-bottom:12px">Select prediction horizon and what to predict:</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
         <select class="form-select" id="oHorizon" style="font-size:12px">
@@ -5353,7 +5363,7 @@ function switchTab(tabId) {
   if(id==='ai'){refreshAIInsights();loadDailyTip();buildApiKeysList();}
   if(id==='system'){buildThemeGrid();updateTelemetry();updateAccountUI();}
   if(id==='guide'){buildGuideNavMap();}
-  if(id==='vault'){buildVaultFingerprint();buildVaultPatterns();updatePreservationStats();}
+  if(id==='vault'){buildVaultFingerprint();buildVaultPatterns();updatePreservationStats();applyProGates(true);}
   if(id==='analysis'){generateWeeklyReport();}
 
   // Lazy init — only run heavy init functions once per tab
@@ -13651,10 +13661,17 @@ function closeProModal() {
 }
 
 async function startFreeTrialFromModal() {
+  // Grant trial in storage
   await PRO.startFreeTrial();
   closeProModal();
+  // Force-hide ALL gates via JS (belt + suspenders on top of CSS)
+  const gates = ['peakStatesGate','patternsGate','mirrorGate','oraclePredictGate'];
+  const unlocks = ['vaultPeakStates','vaultBehaviorPatterns','mirrorUnlocked','oraclePredictUnlocked','detectPatternsBtn'];
+  gates.forEach(id => { const el = document.getElementById(id); if(el) el.style.display = 'none'; });
+  unlocks.forEach(id => { const el = document.getElementById(id); if(el) el.style.display = 'block'; });
   if (typeof applyProGates === 'function') applyProGates(true);
   if (typeof updateProBar === 'function') updateProBar();
+  showToast('🎉 All features unlocked! Everything is free.');
 }
 
 function openUPIPayment(plan) {
@@ -14355,7 +14372,24 @@ function updateProBar() {
 }
 
 // Run on load and after pro changes
-document.addEventListener('DOMContentLoaded', () => setTimeout(updateProBar, 800));
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(updateProBar, 800);
+  // Force-unlock all gates — runs multiple times to beat lazy tab rendering
+  const forceUnlockAll = () => {
+    ['peakStatesGate','patternsGate','mirrorGate','oraclePredictGate'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) { el.style.cssText += ';display:none!important'; el.hidden = true; }
+    });
+    ['vaultPeakStates','vaultBehaviorPatterns','mirrorUnlocked','oraclePredictUnlocked','detectPatternsBtn'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) { el.style.removeProperty('display'); el.hidden = false; }
+    });
+  };
+  forceUnlockAll();
+  setTimeout(forceUnlockAll, 400);
+  setTimeout(forceUnlockAll, 1200);
+  setTimeout(forceUnlockAll, 3000);
+});
 
 // ════════════════════════════════════════════════════════════════
 //  ORACLE CSS ANIMATIONS
