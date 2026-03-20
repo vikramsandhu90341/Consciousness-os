@@ -5334,8 +5334,25 @@ function switchTab(tabId) {
   if(id==='ai'){refreshAIInsights();loadDailyTip();buildApiKeysList();}
   if(id==='system'){buildThemeGrid();updateTelemetry();updateAccountUI();}
   if(id==='guide'){buildGuideNavMap();}
-  if(id==='vault'){buildVaultFingerprint();buildVaultPatterns();updatePreservationStats();}
+  if(id==='vault'){
+    buildVaultFingerprint();
+    buildVaultPatterns();
+    updatePreservationStats();
+    // Instant sync unlock — fixes blurred gates on mobile (lazy DOM not ready at page load)
+    const syncPro = checkProSync();
+    if(typeof applyProGates==='function') applyProGates(syncPro);
+    setTimeout(async()=>{
+      const isP = await PRO.check();
+      if(typeof applyProGates==='function') applyProGates(isP);
+    }, 300);
+  }
   if(id==='analysis'){generateWeeklyReport();}
+  if(id==='oracle'){
+    setTimeout(async()=>{
+      const isP = await PRO.check();
+      if(typeof applyProGates==='function') applyProGates(isP);
+    }, 100);
+  }
 
   // Lazy init — only run heavy init functions once per tab
   if (!_tabRendered[id]) {
@@ -13858,12 +13875,28 @@ function applyProGates(isActive) {
 
   // Pro upgrade bar — show when free, hide when Pro
   const upgradeBar = document.getElementById('proUpgradeBar');
-  if (upgradeBar) {
-    upgradeBar.style.display = isActive ? 'none' : 'block';
-  }
+  if (upgradeBar) upgradeBar.style.display = isActive ? 'none' : 'block';
+
   // Remove old pill if it was added
   const oldPill = document.getElementById('proStatusPill');
   if (oldPill) oldPill.remove();
+
+  // Update topbar pro banner
+  const bar = document.getElementById('proStatusBar');
+  if (bar && isActive) {
+    bar.textContent = '✅ Pro — Lifetime';
+    bar.style.background = 'linear-gradient(90deg,#064e3b,#065f46)';
+    bar.style.color = '#6ee7b7';
+    bar.style.fontWeight = '700';
+  }
+}
+
+// Fast sync check — reads localStorage only, no async Firestore wait
+function checkProSync() {
+  try {
+    const s = JSON.parse(localStorage.getItem('cos_pro_status') || '{}');
+    return !!(s.active && s.expiry && new Date(s.expiry) > new Date());
+  } catch(e) { return false; }
 }
 
 // ── QS POPUP JS ───────────────────────────────────────────────
@@ -14215,6 +14248,17 @@ window.openQSPopup = openQuickSettingsPopup;
 document.addEventListener('DOMContentLoaded', function() {
   STREAK.init();
   if (typeof PRO !== 'undefined' && typeof PRO.init === 'function') PRO.init();
+  // ── MOBILE FIX: Re-apply pro gates after full parse at 500ms, 2s, 5s
+  // Vault/Oracle DOM elements are lazy — they don't exist at DOMContentLoaded.
+  // switchTab handles them per-tab, but this catches the topbar + any visible gates.
+  [500, 2000, 5000].forEach(delay => {
+    setTimeout(async () => {
+      try {
+        const isP = await PRO.check();
+        if (typeof applyProGates === 'function') applyProGates(isP);
+      } catch(e) {}
+    }, delay);
+  });
   // Also hook saveLog if it gets defined late
   setTimeout(() => {
     const origSaveLog = window.saveLog;
