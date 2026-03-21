@@ -6360,7 +6360,20 @@ function loadDailyTip(){const el=document.getElementById('aiDailyTip');if(el)el.
 function buildSuggestedQs(){
   const el=document.getElementById('suggestedQs');if(!el)return;
   const shuffled=[...SUGGESTED_QS].sort(()=>Math.random()-.5).slice(0,4);
-  el.innerHTML=shuffled.map(q=>`<button class="sq-btn" onclick="askSuggested('${q.replace(/'/g,"\\'")}')">${q}</button>`).join('');
+  el.innerHTML=shuffled.map(q=>`<button class="sq-btn" onclick="loadSuggestedQ(this,'${q.replace(/'/g,"\\'")}')">${q}</button>`).join('');
+}
+// Tap once → loads into input (editable). Tap send to submit.
+function loadSuggestedQ(btn, q){
+  const input = document.getElementById('chatInput');
+  if(!input) return;
+  input.value = q;
+  input.focus();
+  // Move cursor to end
+  input.selectionStart = input.selectionEnd = q.length;
+  // Highlight the chip briefly
+  document.querySelectorAll('.sq-btn').forEach(b=>b.style.borderColor='');
+  btn.style.borderColor = 'var(--primary)';
+  btn.style.color = 'var(--primary)';
 }
 function askSuggested(q){document.getElementById('chatInput').value=q;sendChat();}
 function addChatMsg(role,text,modelId,skipHistory){
@@ -6404,6 +6417,13 @@ async function sendChat(){
   const loadDiv=document.createElement('div');loadDiv.className='chat-msg ai';
   loadDiv.innerHTML=`<div class="ai-tag">${model.emoji} ${model.name}</div><div class="ai-loading"><span></span><span></span><span></span></div>`;
   msgs.appendChild(loadDiv);msgs.scrollTop=msgs.scrollHeight;
+  // Safety: auto-remove loading dots after 20s if AI hasn't responded
+  const _loadTimeout = setTimeout(() => {
+    if (loadDiv.parentNode) {
+      loadDiv.remove();
+      addChatMsg('ai', '⚠️ AI took too long to respond. Worker may be busy — please try again.', curAIModel, true);
+    }
+  }, 20000);
 
   const logs=getLogs().slice(0,30);
   const dreams=getDreams().slice(0,15);
@@ -6444,6 +6464,7 @@ ${L.goal?'CURRENT GOAL: "'+L.goal.slice(0,100)+'"':''}`;
 
   try{
     const text=await callAI(model,apiMessages,userContext);
+    clearTimeout(_loadTimeout);
     loadDiv.remove();
     // ── Use element reference not ID — prevents typeTarget collision across messages ──
     const aiDiv=document.createElement('div');aiDiv.className='chat-msg ai';
@@ -6454,9 +6475,16 @@ ${L.goal?'CURRENT GOAL: "'+L.goal.slice(0,100)+'"':''}`;
     let i=0;const type=()=>{if(i<text.length){typeSpan.textContent+=text[i++];msgs.scrollTop=msgs.scrollHeight;setTimeout(type,8);}};type();
     chatHistory.push({role:'ai',content:text,model:curAIModel});
   }catch(e){
-    loadDiv.remove();
-    const _fbText=await localAIResponse(msg);
-    addChatMsg('ai',_fbText,curAIModel,true);
+    clearTimeout(_loadTimeout);
+    // ALWAYS remove the loading dots first
+    if(loadDiv.parentNode) loadDiv.remove();
+    // Try local fallback
+    try {
+      const _fbText = await localAIResponse(msg);
+      addChatMsg('ai', _fbText, curAIModel, true);
+    } catch(e2) {
+      addChatMsg('ai', '⚠️ **AI temporarily offline.** Worker or Groq may be unreachable.\n\nTry:\n1. Refresh the page\n2. Check your internet\n3. Try again in 30 seconds', curAIModel, true);
+    }
   }
   buildSuggestedQs();
 }
@@ -9530,7 +9558,14 @@ function openProfileSwitcher(){
   const pb=document.getElementById('profileBar');
   const gnb=document.getElementById('guideNavTopBar');
   if(gnb)gnb.style.display='none';
-  pb.style.display=pb.style.display==='none'?'':'none';
+  const isOpen = pb.style.display !== 'none' && pb.style.display !== '';
+  if(isOpen){
+    pb.style.display='none';
+    return;
+  }
+  // Always rebuild before showing
+  buildProfileBar();
+  pb.style.display='block';
 }
 
 // Guide nav is now integrated into topbar row 2 — no separate toggle needed
@@ -9548,6 +9583,12 @@ function buildProfileBar(){
   if(!bar)return;
   const users=getUsers();
   const cur=getCurrentUser();
+
+  if(!users||users.length===0){
+    bar.innerHTML=`<div style="display:flex;align-items:center;gap:10px;padding:4px 8px;width:100%"><span style="font-size:22px">👤</span><div style="flex:1"><div style="font-size:13px;font-weight:700;color:var(--text)">Not signed in</div><div style="font-size:11px;color:var(--text3)">Sign in to save your data across devices</div></div><button class="btn btn-primary btn-sm" onclick="openLoginOverlay();document.getElementById('profileBar').style.display='none'">Sign In</button></div>`;
+    return;
+  }
+
   bar.innerHTML=users.map(u=>`
     <div class="profile-chip${cur&&cur.id===u.id?' active-profile':''}" onclick="switchProfile('${u.id}')" style="position:relative">
       <span class="pc-avatar">${u.avatar||'👤'}</span>
