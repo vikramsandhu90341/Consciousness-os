@@ -322,6 +322,11 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
 .chat-msg.user{align-self:flex-end;background:linear-gradient(135deg,var(--primary),var(--pink));color:#fff;border-bottom-right-radius:3px}
 .chat-msg.ai{align-self:flex-start;background:var(--bg2);border:1px solid var(--border);color:var(--text);border-bottom-left-radius:3px}
 .chat-msg.ai .ai-tag{font-size:10px;font-weight:700;color:var(--primary);margin-bottom:4px}
+.chat-msg .msg-actions{opacity:0;transition:opacity .2s}
+.chat-msg:hover .msg-actions{opacity:1}
+.chat-msg.user .msg-actions{opacity:.7}
+.chat-msg.user:hover .msg-actions{opacity:1}
+@keyframes fadeOut{from{opacity:1;transform:scale(1)}to{opacity:0;transform:scale(.95)}}
 .chat-input-area{display:flex;gap:8px}
 .chat-input{flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:9px 12px;color:var(--text);font-family:"DM Sans",sans-serif;font-size:14px;outline:none;resize:none;height:44px;max-height:140px;overflow:hidden;transition:border .2s}
 .chat-input:focus{border-color:var(--primary)}
@@ -1499,7 +1504,7 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
       <div style="font-size:26px;margin-bottom:6px">🚀</div>
       <div style="font-family:Syne,sans-serif;font-size:17px;font-weight:800;color:#10b981;margin-bottom:4px">All Features Free Right Now</div>
       <div style="font-size:11px;color:var(--text3);margin-bottom:12px;line-height:1.6">No credit card. No payment. No catch.<br>We'll notify you before anything becomes paid.</div>
-      <button onclick="startFreeTrialFromModal()" style="width:100%;background:linear-gradient(135deg,#10b981,#06b6d4);color:#fff;border:none;border-radius:12px;padding:14px;font-size:15px;font-weight:800;cursor:pointer;letter-spacing:.3px">
+      <button id="startFreeBtn" onclick="handleStartFreeTrial(this)" style="width:100%;background:linear-gradient(135deg,#10b981,#06b6d4);color:#fff;border:none;border-radius:12px;padding:14px;font-size:15px;font-weight:800;cursor:pointer;letter-spacing:.3px;transition:all .2s">
         ✨ Start Free — Unlock Everything
       </button>
     </div>
@@ -1634,7 +1639,7 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
     <div style="display:flex;flex-direction:column;flex:1 1 0;min-width:0;justify-content:center;overflow:hidden">
       <div class="topbar-brand" style="line-height:1;font-size:11px;letter-spacing:0px;white-space:nowrap;overflow:hidden;text-overflow:clip">🧠 Consciousness OS</div>
       <div id="proUpgradeBar" onclick="proBarTap()" style="display:block;margin-top:2px;border-radius:5px;padding:2px 6px;font-size:8px;font-weight:900;color:#fff;letter-spacing:.1px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:linear-gradient(135deg,#7c3aed,#06b6d4);max-width:100%">
-        🎁 Free Trial — All Features Open
+        🎁 Free Trial — Premium Access
       </div>
     </div>
     <!-- Mobile-only quick actions: lang flag btn + theme + account -->
@@ -1647,7 +1652,7 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
   </div>
   <!-- Row 2: Desktop quick action buttons -->
   <div class="topbar-row2">
-    <button class="tb-btn" onclick="switchTab('guide')" title="Guide">❓ Guide</button>
+    <button class="tb-btn" onclick="toggleAppGuideBar()" title="App Guide" style="background:linear-gradient(135deg,rgba(124,58,237,.15),rgba(6,182,212,.1));border-color:rgba(124,58,237,.3);font-weight:700;color:var(--primary)">🗺️ Guide</button>
     <button class="tb-btn tour-btn" onclick="showOnboarding()" title="Tour">✨ Tour</button>
     <select class="lang-sel" id="langSel" onchange="setLang(this.value)" title="Language">
       <option value="en">🌐 EN</option><option value="hi">🇮🇳 HI</option><option value="es">🇪🇸 ES</option>
@@ -1728,6 +1733,49 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
 <!-- ── PROFILE BAR (shown below topbar when clicked) ── -->
 <div id="profileBar" style="display:none;position:fixed;top:var(--topbar-h);left:0;right:0;z-index:190;background:var(--bg2);border-bottom:1px solid var(--border);box-shadow:0 4px 12px rgba(0,0,0,.08)">
   <div class="profile-bar" id="profileBarInner"></div>
+</div>
+
+<!-- ── APP FEATURE GUIDE BAR ── -->
+<div id="appGuideBar" style="display:none;position:fixed;top:var(--topbar-h);left:0;right:0;z-index:185;background:var(--bg);border-bottom:1px solid var(--border);box-shadow:0 8px 30px rgba(0,0,0,.15);max-height:85vh;overflow-y:auto">
+  <div style="padding:14px 16px 20px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <div style="font-family:Syne,sans-serif;font-size:16px;font-weight:800;color:var(--text)">🗺️ App Feature Guide</div>
+      <button onclick="document.getElementById('appGuideBar').style.display='none'" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;width:30px;height:30px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center">✕</button>
+    </div>
+    <div style="font-size:12px;color:var(--text3);margin-bottom:16px;line-height:1.6;background:rgba(124,58,237,.07);border-radius:10px;padding:10px 12px;border-left:3px solid var(--primary)">
+      Consciousness OS is a personal cognitive operating system. Track your inner world — focus, mood, creativity, stress, sleep, dreams — and let AI help you optimize your mind.
+    </div>
+    <div style="display:grid;gap:10px">
+      ${[
+        {icon:'📝',tab:'log',name:'Daily Log',color:'#7c3aed',desc:'Log 20 consciousness dimensions daily — mood, focus, energy, stress, creativity, flow, sleep. This is the engine. More logs = smarter AI insights.', value:'Build your personal dataset. In 30 days the AI knows your patterns better than you do.'},
+        {icon:'📊',tab:'analysis',name:'Analysis Dashboard',color:'#0ea5e9',desc:'AI predictions, trends, weekly mind reports, cognitive scores, and pattern detection from your logs.', value:'See exactly which habits drive your best performance days.'},
+        {icon:'🔮',tab:'vault',name:'Consciousness Vault',color:'#8b5cf6',desc:'AI Mind Mirror, Peak States Archive, behavioral patterns, cognitive fingerprint — your complete psychological profile.', value:'The vault builds a living model of your mind. After 5+ entries it reveals things about you that you haven\'t noticed.'},
+        {icon:'🔮',tab:'oracle',name:'Oracle — Deep Prediction',color:'#ec4899',desc:'AI predicts your cognitive state, mood, energy, and focus for the next 4 hours, tomorrow, or next week based on your logged patterns.', value:'Use predictions to schedule your hardest tasks at your peak times.'},
+        {icon:'🤖',tab:'ai',name:'AI Hub',color:'#06b6d4',desc:'Multi-AI consciousness coach. Chat with AI Twin, Coach, Sage, Dr. Mind, Friend, Gemini, Claude, ChatGPT and more — all trained on your actual data.', value:'Ask anything — patterns, health, career, dreams. AI responds with your specific numbers, not generic advice.'},
+        {icon:'🎵',tab:'waves',name:'Neural Beats',color:'#f59e0b',desc:'Binaural beats and brainwave audio — Alpha for focus, Theta for creativity, Delta for sleep, Gamma for insight.', value:'15 minutes of Alpha beats before deep work can measurably improve focus.'},
+        {icon:'🌙',tab:'dreams',name:'Dream Journal',color:'#6366f1',desc:'Log dreams, track lucidity, use WILD/MILD/WBTB protocols. AI analyzes dream patterns and symbols.', value:'Dream recall improves 3x within 2 weeks of daily journaling.'},
+        {icon:'❤️',tab:'health',name:'Health Profile',color:'#ef4444',desc:'18-section comprehensive health assessment — sleep, nutrition, exercise, stress, mental health. AI doctor analysis.', value:'Connects your physical health data to your consciousness performance scores.'},
+        {icon:'🌍',tab:'world',name:'World Intelligence',color:'#10b981',desc:'Live markets (Nifty, S&P, BTC, Gold), geopolitics causal chains, trading AI, news feeds — all connected to second-order effects.', value:'Understand how world events affect each other through 8D causal chain analysis.'},
+        {icon:'💰',tab:'wealth',name:'Wealth OS',color:'#f59e0b',desc:'Cashflow quadrant, rat race tracker, investment guidance, Kiyosaki frameworks, live gold/silver/crypto ticker.', value:'Map your income vs passive income vs expenses. See the exact gap to financial freedom.'},
+        {icon:'🎓',tab:'path',name:'Study & Career AI',color:'#14b8a6',desc:'AI career path builder, study planner, cognitive schedule optimizer, exam strategy.', value:'AI designs a personalized study blueprint based on your cognitive performance data.'},
+        {icon:'🔬',tab:'science',name:'Science Feed',color:'#8b5cf6',desc:'Live frontier science news — AI, biotech, quantum, neuroscience, space. Groq AI analysis of each story.', value:'Stay updated on discoveries that could directly change how you optimize your mind.'},
+        {icon:'🎮',tab:'games',name:'Brain Games',color:'#f97316',desc:'N-back, reaction time, memory palace, pattern recognition — scientifically validated cognitive training.', value:'N-back training 5x/week shows measurable fluid IQ improvements after 4 weeks.'},
+      ].map(f=>`
+        <div onclick="document.getElementById('appGuideBar').style.display='none';switchTab('${f.tab}')" style="display:flex;gap:12px;padding:12px;background:var(--bg3);border-radius:12px;border:1px solid var(--border);cursor:pointer;transition:all .15s;active:opacity:.8">
+          <div style="font-size:26px;width:36px;flex-shrink:0;text-align:center">${f.icon}</div>
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+              <div style="font-size:13px;font-weight:800;color:var(--text)">${f.name}</div>
+              <span style="background:${f.color}22;color:${f.color};border-radius:20px;padding:1px 7px;font-size:9px;font-weight:800">TAP TO OPEN</span>
+            </div>
+            <div style="font-size:11px;color:var(--text2);line-height:1.5;margin-bottom:5px">${f.desc}</div>
+            <div style="font-size:10px;color:${f.color};font-weight:700;line-height:1.4">💡 ${f.value}</div>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+    <button onclick="document.getElementById('appGuideBar').style.display='none'" style="width:100%;margin-top:16px;background:var(--primary);color:#fff;border:none;border-radius:12px;padding:12px;font-size:14px;font-weight:700;cursor:pointer">Got it — Let's go! 🚀</button>
+  </div>
 </div>
 
 <!-- ══════════════════════════════════════
@@ -2345,9 +2393,20 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
     </div>
     <div class="chat-messages" id="chatMessages"></div>
     <div class="suggested-qs" id="suggestedQs"></div>
-    <div class="chat-input-area">
-      <textarea class="chat-input" id="chatInput" placeholder="Ask me anything about your consciousness, health, dreams..." onkeydown="handleChatKey(event)" rows="1"></textarea>
-      <button class="btn btn-primary" onclick="sendChat()" id="chatSendBtn">➤</button>
+    <div class="chat-input-area" style="flex-direction:column;gap:6px">
+      <div style="display:flex;gap:5px;flex-wrap:wrap">
+        <button onclick="toggleWebSearch()" id="webSearchBtn" title="Web Search" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:4px 9px;font-size:11px;color:var(--text2);cursor:pointer;font-weight:600;transition:all .15s">🌐 Web</button>
+        <button onclick="triggerFileUpload()" title="Attach file/image" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:4px 9px;font-size:11px;color:var(--text2);cursor:pointer;font-weight:600">📎 File</button>
+        <button onclick="toggleDeepResearch()" id="deepResearchBtn" title="Deep Research" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:4px 9px;font-size:11px;color:var(--text2);cursor:pointer;font-weight:600">🔬 Research</button>
+        <button onclick="setVoiceInput()" title="Voice input" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:4px 9px;font-size:11px;color:var(--text2);cursor:pointer;font-weight:600">🎤 Voice</button>
+        <span id="chatModeLabel" style="font-size:10px;color:var(--primary);font-weight:700;align-self:center;padding:2px 6px;border-radius:6px;display:none"></span>
+      </div>
+      <input type="file" id="chatFileInput" accept="image/*,.pdf,.txt,.md" style="display:none" onchange="handleChatFileUpload(this)">
+      <div id="chatFilePreview" style="display:none;background:var(--bg3);border-radius:8px;padding:6px 10px;font-size:11px;color:var(--text2);border:1px solid var(--border)"></div>
+      <div style="display:flex;gap:8px">
+        <textarea class="chat-input" id="chatInput" placeholder="Ask me anything about your consciousness, health, dreams..." onkeydown="handleChatKey(event)" rows="1"></textarea>
+        <button class="btn btn-primary" onclick="sendChat()" id="chatSendBtn">➤</button>
+      </div>
     </div>
   </div>
 
@@ -6380,11 +6439,134 @@ function addChatMsg(role,text,modelId,skipHistory){
   const msgs=document.getElementById('chatMessages');if(!msgs)return;
   const model=AI_MODELS.find(m=>m.id===(modelId||curAIModel));
   const div=document.createElement('div');div.className='chat-msg '+role;
-  if(role==='ai')div.innerHTML=`<div class="ai-tag">${model?model.emoji+' '+model.name:'AI'}</div>${text}`;
-  else div.textContent=text;
+  const msgId='msg_'+Date.now()+'_'+Math.random().toString(36).slice(2,6);
+  div.dataset.msgId=msgId;div.dataset.text=text;div.dataset.role=role;
+
+  if(role==='ai'){
+    const fmtText=text.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>');
+    div.innerHTML=`<div class="ai-tag">${model?model.emoji+' '+model.name:'AI'}</div><div class="ai-text">${fmtText}</div>
+    <div class="msg-actions" style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
+      <button onclick="regenerateLastAI()" style="background:rgba(124,58,237,.1);border:1px solid rgba(124,58,237,.2);border-radius:8px;padding:3px 9px;font-size:10px;color:var(--primary);cursor:pointer;font-weight:700">🔄 Regenerate</button>
+      <button onclick="copyMsgText(this,'${msgId}')" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:3px 9px;font-size:10px;color:var(--text3);cursor:pointer">📋 Copy</button>
+      <button onclick="deleteChatMsg('${msgId}')" style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:8px;padding:3px 9px;font-size:10px;color:#ef4444;cursor:pointer">🗑</button>
+    </div>`;
+  } else {
+    div.innerHTML=`<div class="user-text" style="white-space:pre-wrap">${text}</div>
+    <div class="msg-actions" style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;justify-content:flex-end">
+      <button onclick="editChatMsg('${msgId}')" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);border-radius:8px;padding:3px 9px;font-size:10px;color:#fff;cursor:pointer;font-weight:700">✏️ Edit</button>
+      <button onclick="deleteChatMsg('${msgId}')" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:8px;padding:3px 9px;font-size:10px;color:#fff;cursor:pointer">🗑</button>
+    </div>`;
+  }
   msgs.appendChild(div);msgs.scrollTop=msgs.scrollHeight;
-  // Only push to history when explicitly requested (avoid double-pushes from sendChat)
-  if(!skipHistory)chatHistory.push({role,content:text,model:modelId||curAIModel});
+  if(!skipHistory)chatHistory.push({role,content:text,model:modelId||curAIModel,id:msgId});
+}
+
+function copyMsgText(btn, msgId){
+  const div=document.querySelector(`[data-msg-id="${msgId}"]`);
+  if(!div)return;
+  const text=div.dataset.text||div.querySelector('.ai-text')?.innerText||'';
+  navigator.clipboard.writeText(text).then(()=>{btn.textContent='✅ Copied';setTimeout(()=>btn.textContent='📋 Copy',1500);}).catch(()=>showToast(text.slice(0,60)+'...'));
+}
+
+function deleteChatMsg(msgId){
+  const div=document.querySelector(`[data-msg-id="${msgId}"]`);
+  if(div){div.style.animation='fadeOut .2s ease forwards';setTimeout(()=>div.remove(),200);}
+  chatHistory=chatHistory.filter(m=>m.id!==msgId);
+}
+
+function editChatMsg(msgId){
+  const div=document.querySelector(`[data-msg-id="${msgId}"]`);
+  if(!div)return;
+  const originalText=div.dataset.text||div.querySelector('.user-text')?.innerText||'';
+  const input=document.getElementById('chatInput');
+  if(!input)return;
+  input.value=originalText;input.focus();
+  input.selectionStart=input.selectionEnd=originalText.length;
+  // Remove the original message
+  div.style.opacity='0.4';
+  div.dataset.editing='true';
+  showToast('✏️ Edit the message above and tap ➤ to send');
+}
+
+async // ── CHAT INPUT ENHANCERS ──────────────────────────────────────
+let _chatWebSearch = false;
+let _chatDeepResearch = false;
+let _chatAttachment = null;
+
+function toggleWebSearch(){
+  _chatWebSearch = !_chatWebSearch;
+  const btn = document.getElementById('webSearchBtn');
+  const label = document.getElementById('chatModeLabel');
+  if(btn){ btn.style.background = _chatWebSearch ? 'rgba(6,182,212,.15)' : 'var(--bg3)'; btn.style.borderColor = _chatWebSearch ? 'var(--accent)' : 'var(--border)'; btn.style.color = _chatWebSearch ? 'var(--accent)' : 'var(--text2)'; }
+  if(label){ label.style.display = (_chatWebSearch||_chatDeepResearch) ? 'inline' : 'none'; label.textContent = _chatDeepResearch ? '🔬 Deep Research ON' : '🌐 Web Search ON'; }
+  showToast(_chatWebSearch ? '🌐 Web search ON — AI will mention live context' : 'Web search OFF');
+}
+
+function toggleDeepResearch(){
+  _chatDeepResearch = !_chatDeepResearch;
+  _chatWebSearch = _chatDeepResearch; // deep research implies web search
+  const btn = document.getElementById('deepResearchBtn');
+  const wBtn = document.getElementById('webSearchBtn');
+  const label = document.getElementById('chatModeLabel');
+  if(btn){ btn.style.background = _chatDeepResearch ? 'rgba(124,58,237,.15)' : 'var(--bg3)'; btn.style.borderColor = _chatDeepResearch ? 'var(--primary)' : 'var(--border)'; btn.style.color = _chatDeepResearch ? 'var(--primary)' : 'var(--text2)'; }
+  if(wBtn){ wBtn.style.background = _chatDeepResearch ? 'rgba(6,182,212,.1)' : 'var(--bg3)'; }
+  if(label){ label.style.display = _chatDeepResearch ? 'inline' : 'none'; label.textContent = '🔬 Deep Research ON'; }
+  showToast(_chatDeepResearch ? '🔬 Deep Research ON — thorough multi-angle analysis' : 'Deep Research OFF');
+}
+
+function triggerFileUpload(){
+  document.getElementById('chatFileInput')?.click();
+}
+
+function handleChatFileUpload(input){
+  const file = input.files[0];
+  if(!file) return;
+  _chatAttachment = file;
+  const preview = document.getElementById('chatFilePreview');
+  if(preview){
+    preview.style.display = 'block';
+    preview.innerHTML = `📎 <strong>${file.name}</strong> (${(file.size/1024).toFixed(0)}KB) <button onclick="clearChatAttachment()" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:12px;margin-left:6px">✕</button>`;
+  }
+  showToast(`📎 ${file.name} attached`);
+}
+
+function clearChatAttachment(){
+  _chatAttachment = null;
+  const preview = document.getElementById('chatFilePreview');
+  if(preview) preview.style.display = 'none';
+  const input = document.getElementById('chatFileInput');
+  if(input) input.value = '';
+}
+
+function setVoiceInput(){
+  if(!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)){
+    showToast('⚠️ Voice not supported in this browser');return;
+  }
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const r = new SR();
+  r.lang = 'en-IN'; r.interimResults = false; r.maxAlternatives = 1;
+  showToast('🎤 Listening... speak now');
+  r.start();
+  r.onresult = e => {
+    const t = e.results[0][0].transcript;
+    const inp = document.getElementById('chatInput');
+    if(inp){ inp.value = (inp.value ? inp.value + ' ' : '') + t; inp.focus(); }
+    showToast('🎤 Voice captured: "' + t.slice(0,40) + '"');
+  };
+  r.onerror = () => showToast('⚠️ Voice recognition error — try again');
+}
+
+function regenerateLastAI(){
+  // Find last user message
+  const lastUser=chatHistory.filter(m=>m.role==='user').pop();
+  if(!lastUser){showToast('No message to regenerate');return;}
+  // Remove last AI message from DOM
+  const aiMsgs=document.getElementById('chatMessages').querySelectorAll('.chat-msg.ai');
+  if(aiMsgs.length) aiMsgs[aiMsgs.length-1].remove();
+  chatHistory=chatHistory.filter((m,i)=>!(m.role==='ai'&&i===chatHistory.length-1));
+  // Resend
+  const input=document.getElementById('chatInput');
+  if(input){input.value=lastUser.content;sendChat();}
 }
 function clearAIChat(){chatHistory=[];document.getElementById('chatMessages').innerHTML='';showToast('Chat cleared');}
 function exportChat(){
@@ -6417,13 +6599,22 @@ async function sendChat(){
   const loadDiv=document.createElement('div');loadDiv.className='chat-msg ai';
   loadDiv.innerHTML=`<div class="ai-tag">${model.emoji} ${model.name}</div><div class="ai-loading"><span></span><span></span><span></span></div>`;
   msgs.appendChild(loadDiv);msgs.scrollTop=msgs.scrollHeight;
-  // Safety: auto-remove loading dots after 20s if AI hasn't responded
+  // Safety: auto-remove loading dots after 30s if AI hasn't responded
   const _loadTimeout = setTimeout(() => {
     if (loadDiv.parentNode) {
       loadDiv.remove();
-      addChatMsg('ai', '⚠️ AI took too long to respond. Worker may be busy — please try again.', curAIModel, true);
+      const errDiv = document.createElement('div');
+      errDiv.className = 'chat-msg ai';
+      const model2 = AI_MODELS.find(m=>m.id===curAIModel);
+      errDiv.innerHTML = `<div class="ai-tag">${model2?model2.emoji+' '+model2.name:'AI'}</div>
+        <div style="color:var(--text2);font-size:13px">⚠️ Response timed out — Worker may be busy.</div>
+        <div style="margin-top:8px;display:flex;gap:6px">
+          <button onclick="this.closest('.chat-msg').remove();document.getElementById('chatInput').value='${msg.replace(/'/g,"\\'")}';sendChat()" style="background:var(--primary);color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:11px;cursor:pointer;font-weight:700">🔄 Retry</button>
+          <button onclick="this.closest('.chat-msg').remove()" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:11px;cursor:pointer">Dismiss</button>
+        </div>`;
+      msgs.appendChild(errDiv);msgs.scrollTop=msgs.scrollHeight;
     }
-  }, 20000);
+  }, 30000);
 
   const logs=getLogs().slice(0,30);
   const dreams=getDreams().slice(0,15);
@@ -6461,6 +6652,20 @@ ${L.goal?'CURRENT GOAL: "'+L.goal.slice(0,100)+'"':''}`;
   if(Object.keys(healthData).length>2)userContext+=`\n\nHEALTH: sleep=${healthData.hSleepDur||'?'}hrs exercise=${healthData.hExerciseFreq||'?'} stress=${healthData.hStressLevel||'?'}/10`;
   if(studyData.stField)userContext+=`\n\nSTUDY: field=${studyData.stField} target=${studyData.stTargetCareer||'?'}`;
   userContext+=`\n\nCURRENT TIME: ${new Date().toLocaleString('en-IN',{timeZone:'Asia/Kolkata'})} IST`;
+
+  // ── Mode flags from chat toolbar ──
+  if(typeof _chatDeepResearch !== 'undefined' && _chatDeepResearch){
+    userContext+=`\n\n[DEEP RESEARCH MODE ON] Give a thorough, multi-angle, structured analysis. Include: key facts, counter-arguments, data/numbers if known, actionable recommendations, and confidence level. Be comprehensive.`;
+    msg = `[DEEP RESEARCH REQUEST] ${msg}`;
+  } else if(typeof _chatWebSearch !== 'undefined' && _chatWebSearch){
+    userContext+=`\n\n[WEB SEARCH MODE] Mention any relevant recent developments or real-world data you're aware of. Clearly label if something is from your training vs. estimated/inferred.`;
+  }
+
+  // ── Attachment context ──
+  if(typeof _chatAttachment !== 'undefined' && _chatAttachment){
+    userContext+=`\n\n[FILE ATTACHED] "${_chatAttachment.name}" (${(_chatAttachment.size/1024).toFixed(0)}KB, type: ${_chatAttachment.type||'unknown'}). The user has attached this file — acknowledge it and ask what they want to do with it if relevant.`;
+    clearChatAttachment();
+  }
 
   try{
     const text=await callAI(model,apiMessages,userContext);
@@ -9552,6 +9757,18 @@ function updateAccountUI(){
     if(loggedOut)loggedOut.style.display='';
     const st=document.getElementById('accountStatus');if(st)st.textContent='Not signed in';
   }
+}
+
+function toggleAppGuideBar(){
+  const bar = document.getElementById('appGuideBar');
+  if(!bar) return;
+  const isOpen = bar.style.display !== 'none' && bar.style.display !== '';
+  // Close profile bar if open
+  const pb = document.getElementById('profileBar');
+  if(pb) pb.style.display = 'none';
+  bar.style.display = isOpen ? 'none' : 'block';
+  // Scroll to top when opening
+  if(!isOpen) bar.scrollTop = 0;
 }
 
 function openProfileSwitcher(){
@@ -13701,18 +13918,36 @@ function closeProModal() {
   if (modal) modal.classList.remove('open');
 }
 
-async function startFreeTrialFromModal() {
-  // Grant trial in storage
+async function handleStartFreeTrial(btn) {
+  if(!btn) btn = document.getElementById('startFreeBtn');
+  // Immediate visual feedback
+  if(btn) {
+    btn.disabled = true;
+    btn.textContent = '⏳ Unlocking...';
+    btn.style.opacity = '0.8';
+  }
   await PRO.startFreeTrial();
-  closeProModal();
-  // Force-hide ALL gates via JS (belt + suspenders on top of CSS)
+  // Force unlock all gates
   const gates = ['peakStatesGate','patternsGate','mirrorGate','oraclePredictGate'];
   const unlocks = ['vaultPeakStates','vaultBehaviorPatterns','mirrorUnlocked','oraclePredictUnlocked','detectPatternsBtn'];
-  gates.forEach(id => { const el = document.getElementById(id); if(el) el.style.display = 'none'; });
-  unlocks.forEach(id => { const el = document.getElementById(id); if(el) el.style.display = 'block'; });
-  if (typeof applyProGates === 'function') applyProGates(true);
-  if (typeof updateProBar === 'function') updateProBar();
-  showToast('🎉 All features unlocked! Everything is free.');
+  gates.forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display='none'; });
+  unlocks.forEach(id=>{ const el=document.getElementById(id); if(el) el.style.removeProperty('display'); });
+  if(typeof applyProGates==='function') applyProGates(true);
+  if(typeof updateProBar==='function') updateProBar();
+  // Show success state on button
+  if(btn) {
+    btn.textContent = '✅ Unlocked! All Features Active';
+    btn.style.background = 'linear-gradient(135deg,#059669,#047857)';
+    btn.style.opacity = '1';
+    btn.disabled = false;
+  }
+  showToast('🎉 All features unlocked! Welcome to Consciousness OS.');
+  // Close modal after 1.5s
+  setTimeout(()=>{ closeProModal(); }, 1500);
+}
+
+async function startFreeTrialFromModal() {
+  await handleStartFreeTrial(document.getElementById('startFreeBtn'));
 }
 
 function openUPIPayment(plan) {
@@ -14406,7 +14641,7 @@ function updateProBar() {
     return;
   }
   // Free trial or auto-grant — show free trial badge
-  bar.textContent = '🎁 Free Trial — All Features Open';
+  bar.textContent = '🎁 Free Trial — Premium Access';
   bar.style.background = 'linear-gradient(135deg,#7c3aed,#06b6d4)';
   bar.style.display = 'block';
   bar.onclick = () => openProModal('topbar');
@@ -14738,6 +14973,16 @@ async function computeDeterminismScore() {
     if (unlocked) unlocked.style.display = isActive ? 'block' : 'none';
   });
 })();
+
+// Close guide bar when tapping outside it
+document.addEventListener('click', e => {
+  const bar = document.getElementById('appGuideBar');
+  if(bar && bar.style.display !== 'none') {
+    if(!bar.contains(e.target) && !e.target.closest('[onclick*="toggleAppGuideBar"]')) {
+      bar.style.display = 'none';
+    }
+  }
+});
 
 // Oracle gate — force-unlocked in free phase
 const _origApplyProGates = typeof applyProGates === 'function' ? applyProGates : null;
