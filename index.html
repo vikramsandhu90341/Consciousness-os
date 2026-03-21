@@ -828,7 +828,7 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
 
   /* ── Topbar: compact on mobile ── */
   :root {
-    --topbar-h: 62px;
+    --topbar-h: 72px;
     --sidebar-w: 0px;
   }
   .topbar {
@@ -1310,7 +1310,7 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
 <body>
 
 <!-- ══ LOGIN OVERLAY ══ -->
-<div class="login-overlay" id="loginOverlay" style="display:flex">
+<div class="login-overlay" id="loginOverlay" style="display:none">
   <div class="login-card">
     <div style="text-align:center;margin-bottom:20px">
       <div style="font-size:48px">🧠</div>
@@ -6737,7 +6737,7 @@ ${ctx}`;
       method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:750,temperature:0.88,
         messages:[{role:'system',content:sys},{role:'user',content:msg}]}),
-      signal:AbortSignal.timeout(15000)
+      signal:AbortSignal.timeout(25000)
     });
     if(!resp.ok){const t=await resp.text().catch(()=>'');throw new Error('Worker '+resp.status+': '+t.slice(0,100));}
     const d=await resp.json();
@@ -6752,7 +6752,7 @@ ${ctx}`;
         method:'POST',headers:{'Content-Type':'application/json'},
         body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:400,temperature:0.8,
           messages:[{role:'user',content:msg}]}),
-        signal:AbortSignal.timeout(12000)
+        signal:AbortSignal.timeout(22000)
       });
       if(!simple.ok)throw new Error('Worker '+simple.status);
       const sd=await simple.json();
@@ -9765,7 +9765,23 @@ function openProfileSwitcher(){
   const pb=document.getElementById('profileBar');
   const gnb=document.getElementById('guideNavTopBar');
   if(gnb)gnb.style.display='none';
-  pb.style.display=pb.style.display==='none'?'':'none';
+  const isHidden=pb.style.display==='none'||pb.style.display==='';
+  if(isHidden){
+    pb.style.display='block';
+    // Always rebuild before showing so chips are never empty
+    if(typeof buildProfileBar==='function') buildProfileBar();
+    // Close on outside tap
+    setTimeout(()=>{
+      document.addEventListener('click',function _closePB(e){
+        if(!pb.contains(e.target)&&e.target.id!=='profileTopBtnMob'&&e.target.id!=='profileTopBtn'){
+          pb.style.display='none';
+          document.removeEventListener('click',_closePB);
+        }
+      });
+    },100);
+  } else {
+    pb.style.display='none';
+  }
 }
 
 // Guide nav is now integrated into topbar row 2 — no separate toggle needed
@@ -11928,14 +11944,18 @@ if (_origCallAI) {
 
 // Also patch callGroqFast to include brain context in system prompts when relevant
 const _origCallGroqFast = callGroqFast;
-callGroqFast = async function(prompt, system, maxTokens) {
+callGroqFast = async function(prompt, system, maxTokens, attempt) {
   // Only add brain context for long prompts (actual analysis, not quick calls)
   if (prompt && prompt.length > 100 && system && system.length > 30) {
-    const brainCtx = buildCOSBrainContext();
-    const enhancedSystem = (system || '') + '\n\nYou have access to the user\'s complete Consciousness OS data:\n' + brainCtx;
-    return _origCallGroqFast(prompt, enhancedSystem, maxTokens);
+    try {
+      const brainCtx = typeof buildCOSBrainContext === 'function' ? buildCOSBrainContext() : '';
+      const enhancedSystem = (system || '') + (brainCtx ? '\n\nUser consciousness data:\n' + brainCtx.slice(0, 800) : '');
+      return _origCallGroqFast(prompt, enhancedSystem, maxTokens, attempt);
+    } catch(e) {
+      return _origCallGroqFast(prompt, system, maxTokens, attempt);
+    }
   }
-  return _origCallGroqFast(prompt, system, maxTokens);
+  return _origCallGroqFast(prompt, system, maxTokens, attempt);
 };
 
 // ── CIL PULSE UI ──────────────────────────────────────────────────────
@@ -13031,7 +13051,7 @@ async function askAI(prompt, systemPrompt, maxTok) {
         { role: 'user',   content: prompt }
       ]
     }),
-    signal: AbortSignal.timeout(15000)
+    signal: AbortSignal.timeout(25000)
   });
   if (!res.ok) { const txt = await res.text().catch(()=>''); throw new Error(`Worker error ${res.status}: ${txt.slice(0,120)}`); }
   const data = await res.json();
@@ -15246,13 +15266,17 @@ function handleChatFileSelect(event, ctx) {
     try {
       const visionResult = await _analyzeImageGemini(base64, mime);
       window._chatAttachContext = '[IMAGE ANALYSIS]\n' + visionResult;
-      if (statusEl) statusEl.textContent = '✅ Image analyzed';
-      showToast('📷 Image analyzed — ask your question now');
+      if (statusEl) statusEl.textContent = '✅ Image ready';
+      showToast('📷 Image analyzed — now type your question and send!');
     } catch (err) {
-      // Fallback: just embed as context note
-      window._chatAttachContext = `[USER ATTACHED IMAGE: ${file.name}, ${(file.size/1024).toFixed(0)}KB. Describe what you see and analyze it in context of the question.]`;
+      // Fallback: just note the file
+      window._chatAttachContext = '[USER ATTACHED IMAGE: ' + file.name + ' (' + (file.size/1024).toFixed(0) + 'KB) — describe what you see and answer the user question in context of this image.]';
       if (statusEl) statusEl.textContent = '📎 Image attached';
+      showToast('📎 Image attached — type your question and send!');
     }
+    // Focus the input so user can type question immediately
+    const chatIn = document.getElementById(ctx === 'chat' ? 'chatInput' : ctx === 'compare' ? 'compareInput' : ctx === 'mirror' ? 'mirrorPrompt' : 'chatInput');
+    if (chatIn) { chatIn.focus(); chatIn.placeholder = '💬 Ask about the image...'; }
   };
   reader.readAsDataURL(file);
   event.target.value = '';
@@ -15318,11 +15342,14 @@ async function aiWebSearch(ctx) {
     window._chatAttachContext = (window._chatAttachContext || '') + '\n\n' + searchCtx;
     if (statusEl) statusEl.textContent = '✅ Web results added';
     if(searchBtn){searchBtn.classList.remove('loading');searchBtn.textContent='✅ Searched';}
-    showToast('🔍 Live web data added — now send your message!');
+    // Auto-focus input so user can type follow-up
+    const sInput = document.getElementById(ctx==='chat'?'chatInput':ctx==='compare'?'compareInput':ctx==='wealth'?'wealthAICustomQ':'mirrorPrompt');
+    if(sInput) sInput.focus();
+    showToast('🔍 Web data added — send your message now!');
   } catch (err) {
     if (statusEl) statusEl.textContent = '⚠️ Search failed';
     if(searchBtn){searchBtn.classList.remove('loading');searchBtn.textContent='🔍 Search';}
-    showToast('⚠️ Web search failed — try sending directly');
+    showToast('⚠️ Search failed — sending directly will still use AI knowledge');
   }
 }
 
@@ -15470,7 +15497,7 @@ async function aiDeepResearch(ctx) {
     const s5 = addStep('✅', 'Report Ready', 'Research complete');
     updateStep('Report Ready', `${finalAnswer.length} char report generated`, true);
     resultEl.textContent = finalAnswer;
-    actionsEl.style.display = 'flex';
+    if(actionsEl){actionsEl.style.display='flex';}
 
   } catch (err) {
     addStep('⚠️', 'Error', err.message || 'Research failed');
@@ -15485,7 +15512,6 @@ function closeResearchOverlay() {
 
 function useResearchResult() {
   if (!_deepResearchFinalAnswer) return;
-  // Inject as context and auto-trigger the right chat
   window._chatAttachContext = '[DEEP RESEARCH RESULT]\n' + _deepResearchFinalAnswer;
   closeResearchOverlay();
   const ctx = _deepResearchCtx;
@@ -15494,11 +15520,16 @@ function useResearchResult() {
     : ctx === 'wealth' ? 'wealthAICustomQ'
     : 'chatInput';
   const inputEl = document.getElementById(inputId);
-  if (inputEl && !inputEl.value.trim()) {
-    inputEl.value = 'Summarize the deep research results for me in plain language.';
+  // Set a summarize prompt if input is empty, then auto-send
+  if (inputEl) {
+    if (!inputEl.value.trim()) inputEl.value = 'Summarize these research findings for me clearly and tell me what action I should take.';
+    inputEl.focus();
   }
-  if (ctx === 'chat') sendChat();
-  showToast('📚 Research loaded into AI context');
+  // Auto-send for chat context
+  setTimeout(() => {
+    if (ctx === 'chat' || !ctx) sendChat();
+    showToast('📚 Research answer sent to AI!');
+  }, 200);
 }
 
 // Close research overlay on backdrop tap
@@ -15607,7 +15638,7 @@ document.addEventListener('click', e => {
     </div>
     <div id="researchSteps"></div>
     <div id="researchResult" class="research-result"></div>
-    <div id="researchActions" style="display:none;margin-top:12px;display:flex;gap:8px">
+    <div id="researchActions" style="display:none;margin-top:12px;gap:8px">
       <button class="btn btn-primary" onclick="useResearchResult()" style="flex:1">↗ Use This Answer</button>
       <button class="btn btn-secondary" onclick="closeResearchOverlay()">Close</button>
     </div>
