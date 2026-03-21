@@ -71,21 +71,30 @@ const GEMINI_KEY=_k;
 // No key in this file. No key in localStorage. Nothing to leak.
 let GROQ_KEY = 'worker-proxy'; // placeholder so existing references don't crash
 const _WORKER_URL='https://hidden-wildflower-3301.vikramsandhu90341.workers.dev';
-async function callGroqFast(prompt,system,maxTokens){
+async function callGroqFast(prompt,system,maxTokens,attempt){
   system=system||'You are an expert strategic AI inside Consciousness OS. Titan Protocol: first-principles, counterarguments first, no fluff, action > theory. Be precise, specific, direct.';
   maxTokens=maxTokens||800;
-  const resp=await fetch(_WORKER_URL,{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:maxTokens,temperature:0.8,messages:[{role:'system',content:system},{role:'user',content:prompt}]}),
-    signal:AbortSignal.timeout(15000)
-  });
-  if(!resp.ok){const txt=await resp.text().catch(()=>'');throw new Error(`Worker error ${resp.status}: ${txt.slice(0,120)}`);}
-  const d=await resp.json();
-  if(d.error)throw new Error(d.error.message||'Groq error');
-  const content=d.choices?.[0]?.message?.content;
-  if(!content)throw new Error('Groq returned empty content');
-  return content;
+  attempt=attempt||1;
+  try{
+    const resp=await fetch(_WORKER_URL,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:maxTokens,temperature:0.8,messages:[{role:'system',content:system},{role:'user',content:prompt}]}),
+      signal:AbortSignal.timeout(25000)
+    });
+    if(!resp.ok){const txt=await resp.text().catch(()=>'');throw new Error('Worker '+resp.status+': '+txt.slice(0,80));}
+    const d=await resp.json();
+    if(d.error)throw new Error(d.error.message||'Groq error');
+    const content=d.choices?.[0]?.message?.content;
+    if(!content)throw new Error('Empty response');
+    return content;
+  }catch(e){
+    // Auto-retry once with smaller model on timeout
+    if(attempt===1 && (e.name==='TimeoutError'||e.message.includes('timeout')||e.message.includes('network'))){
+      return callGroqFast(prompt,system,Math.min(maxTokens,400),2);
+    }
+    throw e;
+  }
 }
 async function callGroqJSON(prompt,system,maxTokens){
   const raw=await callGroqFast(prompt,system||'Return ONLY valid JSON. No markdown.',maxTokens||600);
@@ -1631,17 +1640,15 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
 <div class="topbar">
   <!-- Row 1: Brand + desktop quick actions -->
   <div class="topbar-row1">
-    <div style="display:flex;flex-direction:column;flex:1 1 0;min-width:0;justify-content:center;overflow:hidden">
+    <div style="display:flex;flex-direction:column;flex:1 1 0;min-width:0;justify-content:center;overflow:visible">
       <div class="topbar-brand" style="line-height:1;font-size:11px;letter-spacing:0px;white-space:nowrap;overflow:hidden;text-overflow:clip">🧠 Consciousness OS</div>
-      <div id="proUpgradeBar" onclick="proBarTap()" style="display:block;margin-top:2px;border-radius:5px;padding:2px 6px;font-size:8px;font-weight:900;color:#fff;letter-spacing:.1px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:linear-gradient(135deg,#7c3aed,#06b6d4);max-width:100%">
+      <div id="proUpgradeBar" onclick="proBarTap()" style="display:block;margin-top:2px;border-radius:5px;padding:4px 8px;font-size:8px;font-weight:900;color:#fff;letter-spacing:.1px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:linear-gradient(135deg,#7c3aed,#06b6d4);max-width:100%;position:relative;z-index:10;-webkit-tap-highlight-color:rgba(255,255,255,.3);touch-action:manipulation;min-height:22px;display:flex;align-items:center">
         🎁 Free Trial — Premium Access
       </div>
-      <div id="appGuideBar" onclick="openAppGuideModal()" style="display:flex;align-items:center;gap:4px;margin-top:3px;border-radius:5px;padding:2px 7px;font-size:8px;font-weight:800;color:#0891b2;letter-spacing:.1px;cursor:pointer;white-space:nowrap;background:linear-gradient(135deg,rgba(8,145,178,.12),rgba(124,58,237,.10));border:1px solid rgba(8,145,178,.35);max-width:100%">
-        &#x1F4D6; App Guide &#x2014; All Features Explained
-      </div>
     </div>
-    <!-- Mobile-only quick actions: lang flag btn + theme + account -->
+    <!-- Mobile-only quick actions: 📖 Guide icon + lang flag btn + theme + account -->
     <div class="topbar-quick topbar-mobile-only" style="margin-left:6px;flex-shrink:0;display:flex;align-items:center;gap:3px">
+      <button class="tb-btn" id="appGuideIconBtn" onclick="openAppGuideModal()" title="App Guide" style="font-size:15px;min-width:30px;width:30px;padding:4px;height:30px">📖</button>
       <button class="tb-btn" id="langFlagBtn" onclick="toggleLangGrid(event)" title="Language" style="font-size:15px;min-width:30px;width:30px;padding:4px;height:30px">🌐</button>
       <button class="tb-btn" onclick="toggleTheme()" id="themeBtnMob" title="Toggle theme" style="min-width:30px;width:30px;height:30px;padding:4px">🌙</button>
       <button class="tb-btn" onclick="openProfileSwitcher()" id="profileTopBtnMob" title="Account" style="min-width:30px;width:30px;height:30px;padding:4px">👤</button>
@@ -1650,7 +1657,7 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
   </div>
   <!-- Row 2: Desktop quick action buttons -->
   <div class="topbar-row2">
-    <button class="tb-btn" onclick="switchTab('guide')" title="Guide">❓ Guide</button>
+    <button class="tb-btn" onclick="openAppGuideModal()" title="App Guide">📖 Guide</button>
     <button class="tb-btn tour-btn" onclick="showOnboarding()" title="Tour">✨ Tour</button>
     <select class="lang-sel" id="langSel" onchange="setLang(this.value)" title="Language">
       <option value="en">🌐 EN</option><option value="hi">🇮🇳 HI</option><option value="es">🇪🇸 ES</option>
@@ -1688,14 +1695,16 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
 /* ═══ AI ENHANCED INPUT SYSTEM ═══ */
 .ai-enhanced-input-wrap{position:relative}
 .ai-input-toolbar{display:flex;align-items:center;gap:4px;padding:4px 2px;margin-bottom:3px}
-.ai-tool-btn{background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:4px 7px;font-size:13px;cursor:pointer;transition:all .15s;color:var(--text);line-height:1;white-space:nowrap}
+.ai-tool-btn{background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:6px 10px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;color:var(--text);line-height:1;white-space:nowrap;min-height:32px;display:inline-flex;align-items:center;gap:3px;-webkit-tap-highlight-color:rgba(124,58,237,.2);touch-action:manipulation;user-select:none;position:relative;z-index:1}
 .ai-tool-btn:active,.ai-tool-btn.active{background:rgba(124,58,237,.18);border-color:var(--primary);transform:scale(.95)}
 .ai-tool-btn.loading{opacity:.6;pointer-events:none;animation:ai-pulse 1s infinite}
+.ai-input-toolbar{display:flex;align-items:center;gap:6px;padding:4px 0;flex-wrap:wrap}
 @keyframes ai-pulse{0%,100%{opacity:.6}50%{opacity:1}}
 /* Chat message action row */
 .chat-msg-wrap{position:relative;margin-bottom:4px}
-.chat-msg-actions{display:flex;gap:4px;margin-top:2px;justify-content:flex-end;opacity:0;transition:opacity .2s}
-.chat-msg-wrap:hover .chat-msg-actions,.chat-msg-wrap.show-actions .chat-msg-actions{opacity:1}
+.chat-msg-actions{display:flex;gap:4px;margin-top:3px;justify-content:flex-end;opacity:.45;transition:opacity .2s}
+.chat-msg-wrap:hover .chat-msg-actions,.chat-msg-wrap.show-actions .chat-msg-actions,.chat-msg-wrap:focus-within .chat-msg-actions{opacity:1}
+.chat-msg.user+.chat-msg-actions,.chat-msg-wrap .chat-msg-actions{opacity:.45}
 .msg-action-btn{font-size:10px;color:var(--text3);background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:1px 5px;cursor:pointer;transition:all .12s}
 .msg-action-btn:hover{color:var(--primary);border-color:var(--primary)}
 .chat-msg.user .chat-msg-actions{justify-content:flex-end}
@@ -2408,18 +2417,18 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
     <div class="chat-messages" id="chatMessages"></div>
     <div class="suggested-qs" id="suggestedQs"></div>
     <div class="ai-enhanced-input-wrap" id="chatInputWrap">
-      <!-- Message bubbles with edit/delete/regenerate actions rendered by JS -->
-      <div class="ai-input-toolbar" id="chatToolbar">
-        <button class="ai-tool-btn" onclick="aiAttachFile('chat')" title="Attach photo/file">📎</button>
-        <button class="ai-tool-btn" onclick="aiWebSearch('chat')" title="Web search">🔍</button>
-        <button class="ai-tool-btn" onclick="aiDeepResearch('chat')" title="Deep research">🔬</button>
-        <span style="flex:1"></span>
-        <span id="chatToolbarStatus" style="font-size:10px;color:var(--text3)"></span>
-      </div>
-      <div id="chatAttachPreview" style="display:none;padding:6px 8px;background:rgba(124,58,237,.08);border-radius:8px;margin-bottom:4px;font-size:11px;color:var(--primary);display:flex;align-items:center;gap:6px"></div>
+      <div id="chatAttachPreview" style="display:none;padding:6px 8px;background:rgba(124,58,237,.08);border-radius:8px;margin-bottom:4px;font-size:11px;color:var(--primary);align-items:center;gap:6px"></div>
       <div class="chat-input-area">
         <textarea class="chat-input" id="chatInput" placeholder="Ask me anything about your consciousness, health, dreams..." onkeydown="handleChatKey(event)" rows="1"></textarea>
         <button class="btn btn-primary" onclick="sendChat()" id="chatSendBtn">➤</button>
+      </div>
+      <!-- Toolbar BELOW input -->
+      <div class="ai-input-toolbar" id="chatToolbar" style="margin-top:6px;padding:2px 0">
+        <button class="ai-tool-btn" id="chatAttachBtn" title="Attach photo/file" style="cursor:pointer" onclick="document.getElementById('chatFileInput').click()">📎 Attach</button>
+        <button class="ai-tool-btn" id="chatWebSearchBtn" title="Web search — adds live results to context" onclick="aiWebSearch('chat')" style="cursor:pointer">🔍 Search</button>
+        <button class="ai-tool-btn" id="chatDeepResBtn" title="Deep research" onclick="aiDeepResearch('chat')" style="cursor:pointer">🔬 Research</button>
+        <span style="flex:1"></span>
+        <span id="chatToolbarStatus" style="font-size:10px;color:var(--text3)"></span>
       </div>
       <input type="file" id="chatFileInput" accept="image/*" style="display:none" onchange="handleChatFileSelect(event,'chat')">
     </div>
@@ -6267,7 +6276,7 @@ async function callAI(model,messages,userContext){
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:900,temperature:0.85,
         messages:[{role:'system',content:model.persona+'\n\nYou are an advanced AI consciousness coach in Consciousness OS.'+userContext},...messages]}),
-      signal:AbortSignal.timeout(15000)});
+      signal:AbortSignal.timeout(25000)});
     if(!resp.ok){const t=await resp.text().catch(()=>'');throw new Error('Worker '+resp.status+': '+t.slice(0,80));}
     const d=await resp.json();
     if(d.error)throw new Error(d.error.message);
@@ -6300,7 +6309,7 @@ async function callAI(model,messages,userContext){
     const resp=await fetch('https://api.deepseek.com/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},body:JSON.stringify({model:model.apiModel,max_tokens:900,messages:[{role:'system',content:systemMsg},...messages]})});
     const data=await resp.json();if(data.error)throw new Error(data.error.message);return data.choices?.[0]?.message?.content||'No response';
   }else if(provider==='groq'){
-    const resp=await fetch(_WORKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:model.apiModel||'llama-3.3-70b-versatile',max_tokens:900,temperature:0.85,messages:[{role:'system',content:systemMsg},...messages]}),signal:AbortSignal.timeout(15000)});
+    const resp=await fetch(_WORKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:model.apiModel||'llama-3.3-70b-versatile',max_tokens:900,temperature:0.85,messages:[{role:'system',content:systemMsg},...messages]}),signal:AbortSignal.timeout(25000)});
     if(!resp.ok){const t=await resp.text().catch(()=>'');throw new Error('Worker '+resp.status+': '+t.slice(0,80));}
     const data=await resp.json();if(data.error)throw new Error(data.error.message);return data.choices?.[0]?.message?.content||'No response';
   }
@@ -6584,9 +6593,15 @@ async function _sendChatWithMsg(msg,skipUserBubble){
   }
   const model=_model||AI_MODELS.find(m=>m.id===curAIModel);
   const msgs=document.getElementById('chatMessages');
+  // Use a unique ID so we can reliably find and remove the loading bubble
+  const _loadId='load-'+Date.now();
+  const loadWrap=document.createElement('div');loadWrap.className='chat-msg-wrap';loadWrap.id=_loadId;
   const loadDiv=document.createElement('div');loadDiv.className='chat-msg ai';
-  loadDiv.innerHTML=`<div class="ai-tag">${model.emoji} ${model.name}</div><div class="ai-loading"><span></span><span></span><span></span></div>`;
-  msgs.appendChild(loadDiv);msgs.scrollTop=msgs.scrollHeight;
+  loadDiv.innerHTML=`<div class="ai-tag">${model.emoji} ${model.name}</div><div class="ai-loading"><span></span><span></span><span></span></div><span style="font-size:11px;color:var(--text3);margin-left:4px">Thinking...</span>`;
+  loadWrap.appendChild(loadDiv);
+  msgs.appendChild(loadWrap);msgs.scrollTop=msgs.scrollHeight;
+  // Safety: auto-remove after 30s if never resolved
+  const _loadTimeout=setTimeout(()=>{const el=document.getElementById(_loadId);if(el)el.remove();},30000);
 
   const logs=getLogs().slice(0,30);
   const dreams=getDreams().slice(0,15);
@@ -6627,21 +6642,52 @@ ${L.goal?'CURRENT GOAL: "'+L.goal.slice(0,100)+'"':''}`;
 
   try{
     const text=await callAI(model,apiMessages,userContext);
-    loadDiv.remove();
-    // ── Use element reference not ID — prevents typeTarget collision across messages ──
-    const aiDiv=document.createElement('div');aiDiv.className='chat-msg ai';
-    const typeSpan=document.createElement('span');
+    clearTimeout(_loadTimeout);const _lw=document.getElementById(_loadId);if(_lw)_lw.remove();
+    // ── Wrap in chat-msg-wrap so regen/copy/delete buttons work ──
+    const aiWrap=document.createElement('div');aiWrap.className='chat-msg-wrap';
+    const aiDiv=document.createElement('div');aiDiv.className='chat-msg ai';aiDiv.dataset.role='ai';aiDiv.dataset.model=curAIModel;
+    const typeSpan=document.createElement('span');typeSpan.className='msg-content';
     aiDiv.innerHTML=`<div class="ai-tag">${model.emoji} ${model.name}</div>`;
     aiDiv.appendChild(typeSpan);
-    msgs.appendChild(aiDiv);
-    let i=0;const type=()=>{if(i<text.length){typeSpan.textContent+=text[i++];msgs.scrollTop=msgs.scrollHeight;setTimeout(type,8);}};type();
+    // Action buttons
+    const aiActions=document.createElement('div');aiActions.className='chat-msg-actions';
+    aiActions.innerHTML='<button class="msg-action-btn" onclick="regenChatMsg(this)" title="Regenerate">🔄 Regen</button>'
+      +'<button class="msg-action-btn" onclick="copyChatMsg(this)" title="Copy">📋</button>'
+      +'<button class="msg-action-btn" onclick="deleteChatMsg(this)" title="Delete">🗑️</button>';
+    aiWrap.appendChild(aiDiv);aiWrap.appendChild(aiActions);
+    msgs.appendChild(aiWrap);
+    let i=0;const type=()=>{
+      if(i<text.length){typeSpan.textContent+=text[i++];msgs.scrollTop=msgs.scrollHeight;setTimeout(type,8);}
+      else{aiDiv.dataset.text=text;} // store full text for copy/regen after typing done
+    };type();
     chatHistory.push({role:'ai',content:text,model:curAIModel});
   }catch(e){
     loadDiv.remove();
-    const _fbText=await localAIResponse(msg);
-    addChatMsg('ai',_fbText,curAIModel,true);
+    clearTimeout(_loadTimeout);const _lw2=document.getElementById(_loadId);if(_lw2)_lw2.remove();
+    // Show proper error with retry button
+    const errWrap=document.createElement('div');errWrap.className='chat-msg-wrap';
+    const errDiv=document.createElement('div');errDiv.className='chat-msg ai';
+    const errMsg=e.name==='TimeoutError'||e.message.includes('timeout')
+      ? 'Worker is busy — tap Retry to try again.'
+      : (e.message||'Connection failed — tap Retry.');
+    errDiv.innerHTML='<div class="ai-tag">'+model.emoji+' '+model.name+'</div>'
+      +'<span style="color:#f59e0b">⚠️ '+errMsg+'</span> '
+      +'<button onclick="retryLastChat(this)" style="margin-left:6px;font-size:11px;background:var(--primary);color:#fff;border:none;border-radius:6px;padding:2px 8px;cursor:pointer">↩ Retry</button>';
+    errDiv.dataset.retryMsg=msg;errDiv.dataset.retryModel=curAIModel;
+    errWrap.appendChild(errDiv);msgs.appendChild(errWrap);
+    msgs.scrollTop=msgs.scrollHeight;
   }
   buildSuggestedQs();
+}
+async function retryLastChat(btn){
+  const errDiv=btn.closest('.chat-msg');
+  const msg=errDiv?.dataset?.retryMsg;
+  const wrap=btn.closest('.chat-msg-wrap');
+  if(!msg)return;
+  if(wrap)wrap.remove();
+  // Remove last user msg from history so it doesn't double
+  if(chatHistory.length&&chatHistory[chatHistory.length-1].role==='user')chatHistory.pop();
+  await _sendChatWithMsg(msg);
 }
 async function sendChat(){
   const input=document.getElementById('chatInput');
@@ -15160,7 +15206,16 @@ function aiAttachFile(ctx) {
     : ctx === 'mirror' ? 'mirrorFileInput'
     : 'chatFileInput';
   const el = document.getElementById(inputId);
-  if (el) el.click();
+  if (el) {
+    el.value = ''; // reset so same file can be re-selected
+    el.click();
+  } else {
+    // Fallback: create temporary input
+    const tmp = document.createElement('input');
+    tmp.type = 'file'; tmp.accept = 'image/*';
+    tmp.onchange = (e) => handleChatFileSelect(e, ctx);
+    tmp.click();
+  }
 }
 
 function handleChatFileSelect(event, ctx) {
@@ -15246,23 +15301,28 @@ async function aiWebSearch(ctx) {
   const inputEl = document.getElementById(inputId);
   const query = inputEl ? inputEl.value.trim() : '';
   if (!query) {
-    showToast('💡 Type your question first, then tap 🔍');
+    showToast('💡 Type your question first, then tap 🔍 Search');
+    if(inputEl) inputEl.focus();
     return;
   }
   const statusId = ctx + 'ToolbarStatus';
   const statusEl = document.getElementById(statusId);
-  const toolBtn = inputEl ? inputEl.closest('.ai-enhanced-input-wrap,div')?.querySelector('[onclick*="aiWebSearch"]') : null;
-  if (statusEl) statusEl.textContent = '🔍 Searching...';
+  // Visually disable the button while searching
+  const searchBtn = document.getElementById(ctx+'WebSearchBtn');
+  if(searchBtn){searchBtn.classList.add('loading');searchBtn.textContent='🔍 Searching...';}
+  if (statusEl) statusEl.textContent = '🔍 Searching live web...';
   try {
     const results = await _freeWebSearch(query);
     // Inject search results as context into _chatAttachContext
     const searchCtx = '[WEB SEARCH RESULTS for: "' + query + '"]\n' + results;
     window._chatAttachContext = (window._chatAttachContext || '') + '\n\n' + searchCtx;
     if (statusEl) statusEl.textContent = '✅ Web results added';
-    showToast('🔍 Live web data added to context');
+    if(searchBtn){searchBtn.classList.remove('loading');searchBtn.textContent='✅ Searched';}
+    showToast('🔍 Live web data added — now send your message!');
   } catch (err) {
     if (statusEl) statusEl.textContent = '⚠️ Search failed';
-    showToast('⚠️ Web search failed: ' + (err.message || 'network error'));
+    if(searchBtn){searchBtn.classList.remove('loading');searchBtn.textContent='🔍 Search';}
+    showToast('⚠️ Web search failed — try sending directly');
   }
 }
 
