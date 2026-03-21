@@ -5383,6 +5383,13 @@ function switchTab(tabId) {
     },100);
   }
 
+  // Always refresh date fields when log tab opens
+  if(id==='log'){
+    const n=new Date();
+    const t=n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0');
+    setTimeout(()=>{ const el=document.getElementById('logDate'); if(el) el.value=t; }, 50);
+  }
+
   // Hide all tabs
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
 
@@ -10801,16 +10808,23 @@ function init(){
   document.getElementById('themeBtn').textContent=th==='dark'?'☀️':'🌙';
   const themeBtnMob=document.getElementById('themeBtnMob');if(themeBtnMob)themeBtnMob.textContent=th==='dark'?'☀️':'🌙';
   const today=new Date().toISOString().split('T')[0];
-  if(document.getElementById('logDate'))document.getElementById('logDate').value=today;
-  if(document.getElementById('dreamDate'))document.getElementById('dreamDate').value=today;
-  // Re-set dates after a short delay in case elements weren't ready
-  setTimeout(()=>{
-    const t=new Date().toISOString().split('T')[0];
+  // Use local date (toISOString is UTC and can give wrong date in India before 5:30 AM)
+  const _now = new Date();
+  const _localToday = _now.getFullYear()+'-'+String(_now.getMonth()+1).padStart(2,'0')+'-'+String(_now.getDate()).padStart(2,'0');
+  if(document.getElementById('logDate'))document.getElementById('logDate').value=_localToday;
+  if(document.getElementById('dreamDate'))document.getElementById('dreamDate').value=_localToday;
+  // Re-set dates multiple times to beat lazy tab rendering
+  const _setDates = () => {
+    const n = new Date();
+    const t = n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0');
     const ld=document.getElementById('logDate');
     const dd=document.getElementById('dreamDate');
-    if(ld&&!ld.value) ld.value=t;
-    if(dd&&!dd.value) dd.value=t;
-  }, 500);
+    if(ld) ld.value=t;
+    if(dd) dd.value=t;
+  };
+  setTimeout(_setDates, 300);
+  setTimeout(_setDates, 800);
+  setTimeout(_setDates, 2000);
   loadSettings();
   const _safe=(fn,nm)=>{try{fn();}catch(e){console.error('init/'+nm+':',e.message);}};
   _safe(buildNav,'buildNav');
@@ -13833,14 +13847,17 @@ const PRO = {
   },
 
   async _autoGrant() {
+    // Sync localStorage immediately — never await Firestore (causes hangs)
     const expiry = new Date();
     expiry.setDate(expiry.getDate() + 30);
     const data = { active: true, expiry: expiry.toISOString(), plan: 'free_trial', grantedAt: new Date().toISOString() };
     localStorage.setItem(this._key, JSON.stringify(data));
+    // Fire-and-forget Firestore write — do NOT await, never blocks UI
     try {
       const user = auth.currentUser;
-      if (user) await db.collection('users').doc(user.uid).collection('pro').doc('status').set(data);
+      if (user) db.collection('users').doc(user.uid).collection('pro').doc('status').set(data).catch(()=>{});
     } catch(e) {}
+    return data;
   },
 
   async startFreeTrial() {
@@ -13900,7 +13917,7 @@ function closeProModal() {
   if (modal) modal.classList.remove('open');
 }
 
-async function handleStartFreeTrial(btn) {
+function handleStartFreeTrial(btn) {
   if(!btn) btn = document.getElementById('startFreeBtn');
   // Immediate visual feedback
   if(btn) {
@@ -13908,15 +13925,34 @@ async function handleStartFreeTrial(btn) {
     btn.textContent = '⏳ Unlocking...';
     btn.style.opacity = '0.8';
   }
-  await PRO.startFreeTrial();
-  // Force unlock all gates
+
+  // ── SYNC: write to localStorage immediately (never waits for network) ──
+  try {
+    const expiry = new Date();
+    expiry.setDate(expiry.getDate() + 30);
+    const data = { active: true, expiry: expiry.toISOString(), plan: 'free_trial', grantedAt: new Date().toISOString() };
+    localStorage.setItem('cos_pro_status', JSON.stringify(data));
+  } catch(e) {}
+
+  // ── Fire-and-forget Firestore (does NOT block the button) ──
+  try {
+    const user = auth.currentUser;
+    if (user) {
+      const expiry2 = new Date(); expiry2.setDate(expiry2.getDate() + 30);
+      db.collection('users').doc(user.uid).collection('pro').doc('status')
+        .set({ active:true, expiry:expiry2.toISOString(), plan:'free_trial' }).catch(()=>{});
+    }
+  } catch(e) {}
+
+  // ── Force unlock all gates immediately ──
   const gates = ['peakStatesGate','patternsGate','mirrorGate','oraclePredictGate'];
   const unlocks = ['vaultPeakStates','vaultBehaviorPatterns','mirrorUnlocked','oraclePredictUnlocked','detectPatternsBtn'];
-  gates.forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display='none'; });
+  gates.forEach(id  =>{ const el=document.getElementById(id); if(el) el.style.display='none'; });
   unlocks.forEach(id=>{ const el=document.getElementById(id); if(el) el.style.removeProperty('display'); });
   if(typeof applyProGates==='function') applyProGates(true);
   if(typeof updateProBar==='function') updateProBar();
-  // Show success state on button
+
+  // ── Show success immediately ──
   if(btn) {
     btn.textContent = '✅ Unlocked! All Features Active';
     btn.style.background = 'linear-gradient(135deg,#059669,#047857)';
@@ -13924,12 +13960,11 @@ async function handleStartFreeTrial(btn) {
     btn.disabled = false;
   }
   showToast('🎉 All features unlocked! Welcome to Consciousness OS.');
-  // Close modal after 1.5s
-  setTimeout(()=>{ closeProModal(); }, 1500);
+  setTimeout(()=>{ closeProModal(); }, 1200);
 }
 
 async function startFreeTrialFromModal() {
-  await handleStartFreeTrial(document.getElementById('startFreeBtn'));
+  handleStartFreeTrial(document.getElementById('startFreeBtn'));
 }
 
 function openUPIPayment(plan) {
