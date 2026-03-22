@@ -1642,14 +1642,14 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
   <div class="topbar-row1">
     <div style="display:flex;flex-direction:column;flex:1 1 0;min-width:0;justify-content:center;overflow:visible">
       <div class="topbar-brand" style="line-height:1;font-size:11px;letter-spacing:0px;white-space:nowrap;overflow:hidden;text-overflow:clip">🧠 Consciousness OS</div>
-      <div id="proUpgradeBar" onclick="proBarTap()" style="display:block;margin-top:2px;border-radius:5px;padding:4px 8px;font-size:8px;font-weight:900;color:#fff;letter-spacing:.1px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:linear-gradient(135deg,#7c3aed,#06b6d4);max-width:100%;position:relative;z-index:10;-webkit-tap-highlight-color:rgba(255,255,255,.3);touch-action:manipulation;min-height:22px;display:flex;align-items:center">
+      <div id="proUpgradeBar" onclick="proBarTap()" ontouchstart="proBarTap()" style="margin-top:2px;border-radius:5px;padding:4px 8px;font-size:8px;font-weight:900;color:#fff;letter-spacing:.1px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:linear-gradient(135deg,#7c3aed,#06b6d4);max-width:100%;position:relative;z-index:10;-webkit-tap-highlight-color:rgba(255,255,255,.3);touch-action:manipulation;min-height:22px;display:flex;align-items:center">
         🎁 Free Trial — Premium Access
       </div>
     </div>
     <!-- Mobile-only quick actions: 📖 Guide icon + lang flag btn + theme + account -->
     <div class="topbar-quick topbar-mobile-only" style="margin-left:6px;flex-shrink:0;display:flex;align-items:center;gap:3px">
-      <button class="tb-btn" id="appGuideIconBtn" onclick="openAppGuideModal()" title="App Guide" style="font-size:15px;min-width:30px;width:30px;padding:4px;height:30px">📖</button>
-      <button class="tb-btn" id="langFlagBtn" onclick="toggleLangGrid(event)" title="Language" style="font-size:15px;min-width:30px;width:30px;padding:4px;height:30px">🌐</button>
+      <button class="tb-btn" id="appGuideIconBtn" onclick="openAppGuideModal()" ontouchstart="openAppGuideModal()" title="App Guide" style="font-size:15px;min-width:30px;width:30px;padding:4px;height:30px">📖</button>
+      <button class="tb-btn" id="langFlagBtn" onclick="toggleLangGrid(event)" ontouchstart="toggleLangGrid(event)" title="Language" style="font-size:15px;min-width:30px;width:30px;padding:4px;height:30px">🌐</button>
       <button class="tb-btn" onclick="toggleTheme()" id="themeBtnMob" title="Toggle theme" style="min-width:30px;width:30px;height:30px;padding:4px">🌙</button>
       <button class="tb-btn" onclick="openProfileSwitcher()" id="profileTopBtnMob" title="Account" style="min-width:30px;width:30px;height:30px;padding:4px">👤</button>
       <button class="tb-btn" onclick="toggleDevPanel()" id="devPanelBtn" title="Dev Panel" style="font-size:13px;display:none;min-width:30px;width:30px;height:30px;padding:4px">🛠️</button>
@@ -2424,9 +2424,9 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
       </div>
       <!-- Toolbar BELOW input -->
       <div class="ai-input-toolbar" id="chatToolbar" style="margin-top:6px;padding:2px 0">
-        <button class="ai-tool-btn" id="chatAttachBtn" title="Attach photo/file" style="cursor:pointer" onclick="document.getElementById('chatFileInput').click()">📎 Attach</button>
-        <button class="ai-tool-btn" id="chatWebSearchBtn" title="Web search — adds live results to context" onclick="aiWebSearch('chat')" style="cursor:pointer">🔍 Search</button>
-        <button class="ai-tool-btn" id="chatDeepResBtn" title="Deep research" onclick="aiDeepResearch('chat')" style="cursor:pointer">🔬 Research</button>
+        <button class="ai-tool-btn" id="chatAttachBtn" title="Attach photo/file" style="cursor:pointer" onclick="aiAttachFile('chat')">📎 Attach</button>
+        <button class="ai-tool-btn" id="chatWebSearchBtn" title="Web search — type question then tap" onclick="aiWebSearch('chat')" style="cursor:pointer">🔍 Search</button>
+        <button class="ai-tool-btn" id="chatDeepResBtn" title="Deep research — type question then tap" onclick="aiDeepResearch('chat')" style="cursor:pointer">🔬 Research</button>
         <span style="flex:1"></span>
         <span id="chatToolbarStatus" style="font-size:10px;color:var(--text3)"></span>
       </div>
@@ -6643,6 +6643,17 @@ ${L.goal?'CURRENT GOAL: "'+L.goal.slice(0,100)+'"':''}`;
   try{
     const text=await callAI(model,apiMessages,userContext);
     clearTimeout(_loadTimeout);const _lw=document.getElementById(_loadId);if(_lw)_lw.remove();
+    // Guard: if response is empty/null, show error with retry
+    if(!text||typeof text!=='string'||!text.trim()){
+      const errWrap2=document.createElement('div');errWrap2.className='chat-msg-wrap';
+      const errDiv2=document.createElement('div');errDiv2.className='chat-msg ai';
+      errDiv2.innerHTML='<div class="ai-tag">'+model.emoji+' '+model.name+'</div>'
+        +'<span style="color:#f59e0b">⚠️ AI returned empty response — tap Retry.</span> '
+        +'<button onclick="retryLastChat(this)" style="margin-left:6px;font-size:11px;background:var(--primary);color:#fff;border:none;border-radius:6px;padding:2px 8px;cursor:pointer">↩ Retry</button>';
+      errDiv2.dataset.retryMsg=msg;errDiv2.dataset.retryModel=curAIModel;
+      errWrap2.appendChild(errDiv2);msgs.appendChild(errWrap2);msgs.scrollTop=msgs.scrollHeight;
+      return;
+    }
     // ── Wrap in chat-msg-wrap so regen/copy/delete buttons work ──
     const aiWrap=document.createElement('div');aiWrap.className='chat-msg-wrap';
     const aiDiv=document.createElement('div');aiDiv.className='chat-msg ai';aiDiv.dataset.role='ai';aiDiv.dataset.model=curAIModel;
@@ -11930,33 +11941,9 @@ const _origGetUserContext = function(logs, dreams, healthData, studyData) {
   return buildCOSBrainContext();
 };
 
-// Monkey-patch: Override the context string appended to every AI call
-// by patching callAI to prepend COS_BRAIN context
-const _origCallAI = typeof callAI === 'function' ? callAI : null;
-if (_origCallAI) {
-  callAI = async function(model, messages, extraContext) {
-    // Append COS_BRAIN context to extraContext
-    const brainCtx = buildCOSBrainContext();
-    const fullContext = (extraContext || '') + '\n' + brainCtx;
-    return _origCallAI(model, messages, fullContext);
-  };
-}
-
-// Also patch callGroqFast to include brain context in system prompts when relevant
-const _origCallGroqFast = callGroqFast;
-callGroqFast = async function(prompt, system, maxTokens, attempt) {
-  // Only add brain context for long prompts (actual analysis, not quick calls)
-  if (prompt && prompt.length > 100 && system && system.length > 30) {
-    try {
-      const brainCtx = typeof buildCOSBrainContext === 'function' ? buildCOSBrainContext() : '';
-      const enhancedSystem = (system || '') + (brainCtx ? '\n\nUser consciousness data:\n' + brainCtx.slice(0, 800) : '');
-      return _origCallGroqFast(prompt, enhancedSystem, maxTokens, attempt);
-    } catch(e) {
-      return _origCallGroqFast(prompt, system, maxTokens, attempt);
-    }
-  }
-  return _origCallGroqFast(prompt, system, maxTokens, attempt);
-};
+// NOTE: callAI brain-context injection removed — userContext in _sendChatWithMsg already
+// contains full consciousness data. Double-injection was bloating Worker payloads
+// causing empty/silent responses. callGroqFast patch also removed for same reason.
 
 // ── CIL PULSE UI ──────────────────────────────────────────────────────
 function updateCILPulse() {
@@ -14558,7 +14545,9 @@ const LANG_FLAGS = {
   nl:'🇳🇱',pl:'🇵🇱',uk:'🇺🇦',ta:'🏛️',te:'🌺',mr:'🪔',gu:'🌅'
 };
 
+let _langGridLastTap=0;
 function toggleLangGrid(e) {
+  const n=Date.now();if(n-_langGridLastTap<500){if(e)e.preventDefault();return;}_langGridLastTap=n;
   if (e) e.stopPropagation();
   const grid = document.getElementById('langFlagGrid');
   const bd = document.getElementById('lfgBd');
@@ -14616,6 +14605,8 @@ function proBarTap() {
     openProModal('topbar');
   }
 }
+// Debounce wrapper so ontouchstart+onclick don't double-fire
+proBarTap = (function(fn){let t=0;return function(){const n=Date.now();if(n-t<500)return;t=n;fn();}})(proBarTap);
 
 function updateProBar() {
   const bar = document.getElementById('proUpgradeBar');
@@ -15162,7 +15153,9 @@ function deleteGuestPermanently() {
 let _guideCurrent = 0;
 const _GUIDE_TOTAL = 5;
 
+let _guideModalLastTap=0;
 function openAppGuideModal() {
+  const n=Date.now();if(n-_guideModalLastTap<500)return;_guideModalLastTap=n;
   _guideCurrent = 0;
   const modal = document.getElementById('appGuideModal');
   if (!modal) return;
@@ -15325,8 +15318,14 @@ async function aiWebSearch(ctx) {
   const inputEl = document.getElementById(inputId);
   const query = inputEl ? inputEl.value.trim() : '';
   if (!query) {
+    // Pulse the input box to guide the user
+    if(inputEl){
+      inputEl.focus();
+      inputEl.style.transition='box-shadow .15s';
+      inputEl.style.boxShadow='0 0 0 3px rgba(124,58,237,.5)';
+      setTimeout(()=>{inputEl.style.boxShadow='';},1200);
+    }
     showToast('💡 Type your question first, then tap 🔍 Search');
-    if(inputEl) inputEl.focus();
     return;
   }
   const statusId = ctx + 'ToolbarStatus';
@@ -15412,7 +15411,13 @@ async function aiDeepResearch(ctx) {
   const inputEl = document.getElementById(inputId);
   const query = inputEl ? inputEl.value.trim() : '';
   if (!query) {
-    showToast('💡 Type your question first, then tap 🔬');
+    if(inputEl){
+      inputEl.focus();
+      inputEl.style.transition='box-shadow .15s';
+      inputEl.style.boxShadow='0 0 0 3px rgba(124,58,237,.5)';
+      setTimeout(()=>{inputEl.style.boxShadow='';},1200);
+    }
+    showToast('💡 Type your question first, then tap 🔬 Research');
     return;
   }
 
