@@ -80,7 +80,7 @@ async function callGroqFast(prompt,system,maxTokens,attempt){
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:maxTokens,temperature:0.8,messages:[{role:'system',content:system},{role:'user',content:prompt}]}),
-      signal:AbortSignal.timeout(25000)
+      signal:AbortSignal.timeout(35000)
     });
     if(!resp.ok){const txt=await resp.text().catch(()=>'');throw new Error('Worker '+resp.status+': '+txt.slice(0,80));}
     const d=await resp.json();
@@ -91,7 +91,7 @@ async function callGroqFast(prompt,system,maxTokens,attempt){
   }catch(e){
     // Auto-retry once with smaller model on timeout
     if(attempt===1 && (e.name==='TimeoutError'||e.message.includes('timeout')||e.message.includes('network'))){
-      return callGroqFast(prompt,system,Math.min(maxTokens,400),2);
+      return callGroqFast(prompt,system,Math.min(maxTokens,600),2);
     }
     throw e;
   }
@@ -1642,14 +1642,14 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
   <div class="topbar-row1">
     <div style="display:flex;flex-direction:column;flex:1 1 0;min-width:0;justify-content:center;overflow:visible">
       <div class="topbar-brand" style="line-height:1;font-size:11px;letter-spacing:0px;white-space:nowrap;overflow:hidden;text-overflow:clip">🧠 Consciousness OS</div>
-      <div id="proUpgradeBar" onclick="proBarTap()" ontouchstart="proBarTap()" style="margin-top:2px;border-radius:5px;padding:4px 8px;font-size:8px;font-weight:900;color:#fff;letter-spacing:.1px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:linear-gradient(135deg,#7c3aed,#06b6d4);max-width:100%;position:relative;z-index:10;-webkit-tap-highlight-color:rgba(255,255,255,.3);touch-action:manipulation;min-height:22px;display:flex;align-items:center">
+      <div id="proUpgradeBar" onclick="proBarTap()" style="margin-top:2px;border-radius:5px;padding:4px 8px;font-size:8px;font-weight:900;color:#fff;letter-spacing:.1px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:linear-gradient(135deg,#7c3aed,#06b6d4);max-width:100%;position:relative;z-index:10;-webkit-tap-highlight-color:rgba(255,255,255,.3);touch-action:manipulation;min-height:22px;display:flex;align-items:center">
         🎁 Free Trial — Premium Access
       </div>
     </div>
     <!-- Mobile-only quick actions: 📖 Guide icon + lang flag btn + theme + account -->
     <div class="topbar-quick topbar-mobile-only" style="margin-left:6px;flex-shrink:0;display:flex;align-items:center;gap:3px">
-      <button class="tb-btn" id="appGuideIconBtn" onclick="openAppGuideModal()" ontouchstart="openAppGuideModal()" title="App Guide" style="font-size:15px;min-width:30px;width:30px;padding:4px;height:30px">📖</button>
-      <button class="tb-btn" id="langFlagBtn" onclick="toggleLangGrid(event)" ontouchstart="toggleLangGrid(event)" title="Language" style="font-size:15px;min-width:30px;width:30px;padding:4px;height:30px">🌐</button>
+      <button class="tb-btn" id="appGuideIconBtn" onclick="openAppGuideModal()" title="App Guide" style="font-size:15px;min-width:30px;width:30px;padding:4px;height:30px">📖</button>
+      <button class="tb-btn" id="langFlagBtn" onclick="toggleLangGrid(event)" title="Language" style="font-size:15px;min-width:30px;width:30px;padding:4px;height:30px">🌐</button>
       <button class="tb-btn" onclick="toggleTheme()" id="themeBtnMob" title="Toggle theme" style="min-width:30px;width:30px;height:30px;padding:4px">🌙</button>
       <button class="tb-btn" onclick="openProfileSwitcher()" id="profileTopBtnMob" title="Account" style="min-width:30px;width:30px;height:30px;padding:4px">👤</button>
       <button class="tb-btn" onclick="toggleDevPanel()" id="devPanelBtn" title="Dev Panel" style="font-size:13px;display:none;min-width:30px;width:30px;height:30px;padding:4px">🛠️</button>
@@ -2417,7 +2417,7 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
     <div class="chat-messages" id="chatMessages"></div>
     <div class="suggested-qs" id="suggestedQs"></div>
     <div class="ai-enhanced-input-wrap" id="chatInputWrap">
-      <div id="chatAttachPreview" style="display:none;padding:6px 8px;background:rgba(124,58,237,.08);border-radius:8px;margin-bottom:4px;font-size:11px;color:var(--primary);align-items:center;gap:6px"></div>
+      <div id="chatAttachPreview" style="display:none;padding:8px 10px;background:rgba(124,58,237,.12);border-radius:10px;margin-bottom:6px;font-size:11px;color:var(--primary);align-items:center;gap:6px;border:1.5px solid rgba(124,58,237,.4)"></div>
       <div class="chat-input-area">
         <textarea class="chat-input" id="chatInput" placeholder="Ask me anything about your consciousness, health, dreams..." onkeydown="handleChatKey(event)" rows="1"></textarea>
         <button class="btn btn-primary" onclick="sendChat()" id="chatSendBtn">➤</button>
@@ -6276,7 +6276,7 @@ async function callAI(model,messages,userContext){
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:900,temperature:0.85,
         messages:[{role:'system',content:model.persona+'\n\nYou are an advanced AI consciousness coach in Consciousness OS.'+userContext},...messages]}),
-      signal:AbortSignal.timeout(25000)});
+      signal:AbortSignal.timeout(35000)});
     if(!resp.ok){const t=await resp.text().catch(()=>'');throw new Error('Worker '+resp.status+': '+t.slice(0,80));}
     const d=await resp.json();
     if(d.error)throw new Error(d.error.message);
@@ -6284,15 +6284,25 @@ async function callAI(model,messages,userContext){
   }
   const systemMsg=model.persona+'\n\nYou are an advanced AI consciousness coach in Consciousness OS. You have deep knowledge of neuroscience, psychology, meditation, peak performance, sleep, dreams, nutrition, and human potential.'+userContext;
   if(provider==='google'){
+    // Try Gemini first; if key is revoked/rate-limited, fall back to Groq Worker silently
     const gKey=GEMINI_KEY||apiKey;
     const _gCall=async()=>{
       const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model.apiModel}:generateContent?key=${gKey}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:messages.map(m=>({role:m.role==='assistant'?'model':'user',parts:[{text:m.content}]})),systemInstruction:{parts:[{text:systemMsg}]},generationConfig:{maxOutputTokens:900,temperature:0.85}})});
       return r.json();
     };
-    let data=await _gCall();
-    if(data.error&&(data.error.code===429||data.error.status==='RESOURCE_EXHAUSTED')){await new Promise(r=>setTimeout(r,6000));data=await _gCall();}
-    if(data.error)throw new Error(data.error.message);
-    return data.candidates?.[0]?.content?.parts?.[0]?.text||'No response';
+    try{
+      let data=await _gCall();
+      if(data.error&&(data.error.code===429||data.error.status==='RESOURCE_EXHAUSTED')){await new Promise(r=>setTimeout(r,4000));data=await _gCall();}
+      if(data.error) throw new Error(data.error.message); // triggers Groq fallback below
+      return data.candidates?.[0]?.content?.parts?.[0]?.text||'No response';
+    }catch(geminiErr){
+      // Gemini failed (revoked key, quota, network) — silently use Groq Worker
+      console.warn('[COS] Gemini failed, using Groq Worker fallback:', geminiErr.message);
+      const resp=await fetch(_WORKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:900,temperature:0.85,messages:[{role:'system',content:systemMsg},...messages]}),signal:AbortSignal.timeout(35000)});
+      if(!resp.ok){const t=await resp.text().catch(()=>'');throw new Error('Worker '+resp.status+': '+t.slice(0,80));}
+      const d=await resp.json();if(d.error)throw new Error(d.error.message);
+      return d.choices?.[0]?.message?.content||'No response';
+    }
   }else if(provider==='anthropic'){
     const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true','x-api-key':apiKey},body:JSON.stringify({model:model.apiModel,max_tokens:900,system:systemMsg,messages})});
     const data=await resp.json();if(data.error)throw new Error(data.error.message);return data.content?.[0]?.text||'No response';
@@ -6309,7 +6319,7 @@ async function callAI(model,messages,userContext){
     const resp=await fetch('https://api.deepseek.com/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},body:JSON.stringify({model:model.apiModel,max_tokens:900,messages:[{role:'system',content:systemMsg},...messages]})});
     const data=await resp.json();if(data.error)throw new Error(data.error.message);return data.choices?.[0]?.message?.content||'No response';
   }else if(provider==='groq'){
-    const resp=await fetch(_WORKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:model.apiModel||'llama-3.3-70b-versatile',max_tokens:900,temperature:0.85,messages:[{role:'system',content:systemMsg},...messages]}),signal:AbortSignal.timeout(25000)});
+    const resp=await fetch(_WORKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:model.apiModel||'llama-3.3-70b-versatile',max_tokens:900,temperature:0.85,messages:[{role:'system',content:systemMsg},...messages]}),signal:AbortSignal.timeout(35000)});
     if(!resp.ok){const t=await resp.text().catch(()=>'');throw new Error('Worker '+resp.status+': '+t.slice(0,80));}
     const data=await resp.json();if(data.error)throw new Error(data.error.message);return data.choices?.[0]?.message?.content||'No response';
   }
@@ -6600,8 +6610,8 @@ async function _sendChatWithMsg(msg,skipUserBubble){
   loadDiv.innerHTML=`<div class="ai-tag">${model.emoji} ${model.name}</div><div class="ai-loading"><span></span><span></span><span></span></div><span style="font-size:11px;color:var(--text3);margin-left:4px">Thinking...</span>`;
   loadWrap.appendChild(loadDiv);
   msgs.appendChild(loadWrap);msgs.scrollTop=msgs.scrollHeight;
-  // Safety: auto-remove after 30s if never resolved
-  const _loadTimeout=setTimeout(()=>{const el=document.getElementById(_loadId);if(el)el.remove();},30000);
+  // Safety: auto-remove after 40s if never resolved
+  const _loadTimeout=setTimeout(()=>{const el=document.getElementById(_loadId);if(el)el.remove();},40000);
 
   const logs=getLogs().slice(0,30);
   const dreams=getDreams().slice(0,15);
@@ -6748,7 +6758,7 @@ ${ctx}`;
       method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:750,temperature:0.88,
         messages:[{role:'system',content:sys},{role:'user',content:msg}]}),
-      signal:AbortSignal.timeout(25000)
+      signal:AbortSignal.timeout(35000)
     });
     if(!resp.ok){const t=await resp.text().catch(()=>'');throw new Error('Worker '+resp.status+': '+t.slice(0,100));}
     const d=await resp.json();
@@ -6763,7 +6773,7 @@ ${ctx}`;
         method:'POST',headers:{'Content-Type':'application/json'},
         body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:400,temperature:0.8,
           messages:[{role:'user',content:msg}]}),
-        signal:AbortSignal.timeout(22000)
+        signal:AbortSignal.timeout(28000)
       });
       if(!simple.ok)throw new Error('Worker '+simple.status);
       const sd=await simple.json();
@@ -11928,11 +11938,8 @@ function buildCOSBrainContext() {
 // ── PATCH sendChat TO USE COS_BRAIN ───────────────────────────────────
 const _origSendChat = sendChat;
 sendChat = async function() {
-  // Sync brain before every AI call
-  cosBrainSync();
-  // Inject CIL into userContext by patching the context building
-  // We do this by temporarily overriding how context is built
-  const origFn = sendChat;
+  // Sync brain before every AI call — wrapped in try/catch so it never blocks chat
+  try { cosBrainSync(); } catch(e) { console.warn('[COS] cosBrainSync error (ignored):', e); }
   return _origSendChat.apply(this, arguments);
 };
 
@@ -13038,7 +13045,7 @@ async function askAI(prompt, systemPrompt, maxTok) {
         { role: 'user',   content: prompt }
       ]
     }),
-    signal: AbortSignal.timeout(25000)
+    signal: AbortSignal.timeout(35000)
   });
   if (!res.ok) { const txt = await res.text().catch(()=>''); throw new Error(`Worker error ${res.status}: ${txt.slice(0,120)}`); }
   const data = await res.json();
@@ -15269,7 +15276,14 @@ function handleChatFileSelect(event, ctx) {
     }
     // Focus the input so user can type question immediately
     const chatIn = document.getElementById(ctx === 'chat' ? 'chatInput' : ctx === 'compare' ? 'compareInput' : ctx === 'mirror' ? 'mirrorPrompt' : 'chatInput');
-    if (chatIn) { chatIn.focus(); chatIn.placeholder = '💬 Ask about the image...'; }
+    if (chatIn) {
+      chatIn.focus();
+      chatIn.placeholder = '💬 Image attached! Ask about it...';
+      chatIn.style.borderColor = 'var(--primary)';
+      chatIn.style.boxShadow = '0 0 0 2px rgba(124,58,237,.3)';
+      setTimeout(() => { chatIn.style.borderColor = ''; chatIn.style.boxShadow = ''; }, 3000);
+      chatIn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
   };
   reader.readAsDataURL(file);
   event.target.value = '';
@@ -15288,20 +15302,35 @@ function clearAttach(ctx) {
 
 async function _analyzeImageGemini(base64, mime) {
   const apiKey = typeof GEMINI_KEY !== 'undefined' ? GEMINI_KEY : '';
-  if (!apiKey) throw new Error('No Gemini key');
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-  const body = {
-    contents: [{
-      parts: [
-        { inline_data: { mime_type: mime, data: base64 } },
-        { text: 'Analyze this image in detail. Describe what you see, identify key elements, text, charts, or data present, and extract any actionable information. Be thorough and structured.' }
-      ]
-    }]
-  };
-  const resp = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: AbortSignal.timeout(20000) });
-  if (!resp.ok) throw new Error('Gemini vision error ' + resp.status);
-  const data = await resp.json();
-  return data.candidates?.[0]?.content?.parts?.[0]?.text || 'Image analyzed but no description returned.';
+  if (apiKey) {
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+      const body = {
+        contents: [{
+          parts: [
+            { inline_data: { mime_type: mime, data: base64 } },
+            { text: 'Analyze this image in detail. Describe what you see, identify key elements, text, charts, or data present, and extract any actionable information. Be thorough and structured.' }
+          ]
+        }]
+      };
+      const resp = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: AbortSignal.timeout(20000) });
+      if (!resp.ok) throw new Error('Gemini vision error ' + resp.status);
+      const data = await resp.json();
+      if (data.error) throw new Error(data.error.message);
+      const result = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (result) return result;
+      throw new Error('No vision result');
+    } catch(e) {
+      console.warn('[COS] Gemini vision failed, using Groq text fallback:', e.message);
+    }
+  }
+  // Groq fallback — can't do real vision but describes image context
+  const groqFallback = await callGroqFast(
+    `The user attached an image (${mime}, base64 length: ${base64.length} chars). Since I cannot perform visual analysis right now, please acknowledge the attachment and ask the user to describe what's in the image or what they'd like to know about it. Be helpful and concise.`,
+    'You are a helpful AI assistant.',
+    200
+  );
+  return groqFallback || 'Image attached. Please describe what you see or ask your question about it.';
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -15318,15 +15347,13 @@ async function aiWebSearch(ctx) {
   const inputEl = document.getElementById(inputId);
   const query = inputEl ? inputEl.value.trim() : '';
   if (!query) {
-    // Pulse the input box to guide the user
-    if(inputEl){
-      inputEl.focus();
-      inputEl.style.transition='box-shadow .15s';
-      inputEl.style.boxShadow='0 0 0 3px rgba(124,58,237,.5)';
-      setTimeout(()=>{inputEl.style.boxShadow='';},1200);
+    const q = (window.prompt ? window.prompt('🔍 Enter your search question:') : null) || '';
+    if (!q.trim()) {
+      if(inputEl){ inputEl.focus(); inputEl.style.transition='box-shadow .15s'; inputEl.style.boxShadow='0 0 0 3px rgba(124,58,237,.5)'; setTimeout(()=>{inputEl.style.boxShadow='';},1200); }
+      showToast('💡 Type your question first, then tap 🔍 Search');
+      return;
     }
-    showToast('💡 Type your question first, then tap 🔍 Search');
-    return;
+    if(inputEl) inputEl.value = q.trim();
   }
   const statusId = ctx + 'ToolbarStatus';
   const statusEl = document.getElementById(statusId);
@@ -15411,17 +15438,14 @@ async function aiDeepResearch(ctx) {
   const inputEl = document.getElementById(inputId);
   const query = inputEl ? inputEl.value.trim() : '';
   if (!query) {
-    if(inputEl){
-      inputEl.focus();
-      inputEl.style.transition='box-shadow .15s';
-      inputEl.style.boxShadow='0 0 0 3px rgba(124,58,237,.5)';
-      setTimeout(()=>{inputEl.style.boxShadow='';},1200);
+    const q = (window.prompt ? window.prompt('🔬 Enter your research question:') : null) || '';
+    if (!q.trim()) {
+      if(inputEl){ inputEl.focus(); inputEl.style.transition='box-shadow .15s'; inputEl.style.boxShadow='0 0 0 3px rgba(124,58,237,.5)'; setTimeout(()=>{inputEl.style.boxShadow='';},1200); }
+      showToast('💡 Type your question first, then tap 🔬 Research');
+      return;
     }
-    showToast('💡 Type your question first, then tap 🔬 Research');
-    return;
+    if(inputEl) inputEl.value = q.trim();
   }
-
-  // Open overlay
   const overlay = document.getElementById('aiResearchOverlay');
   const stepsEl = document.getElementById('researchSteps');
   const resultEl = document.getElementById('researchResult');
