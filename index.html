@@ -71,35 +71,21 @@ const GEMINI_KEY=_k;
 // No key in this file. No key in localStorage. Nothing to leak.
 let GROQ_KEY = 'worker-proxy'; // placeholder so existing references don't crash
 const _WORKER_URL='https://hidden-wildflower-3301.vikramsandhu90341.workers.dev';
-async function callGroqFast(prompt,system,maxTokens,attempt){
+async function callGroqFast(prompt,system,maxTokens){
   system=system||'You are an expert strategic AI inside Consciousness OS. Titan Protocol: first-principles, counterarguments first, no fluff, action > theory. Be precise, specific, direct.';
   maxTokens=maxTokens||800;
-  attempt=attempt||1;
-  // attempt 1: llama-3.3-70b, 18s timeout
-  // attempt 2: llama-3.1-8b (faster), 15s timeout, smaller tokens
-  const _model = attempt===1 ? 'llama-3.3-70b-versatile' : 'llama-3.1-8b-instant';
-  const _timeout = attempt===1 ? 18000 : 15000;
-  const _tokens = attempt===1 ? maxTokens : Math.min(maxTokens,500);
-  try{
-    const resp=await fetch(_WORKER_URL,{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:_model,max_tokens:_tokens,temperature:0.8,messages:[{role:'system',content:system},{role:'user',content:prompt}]}),
-      signal:AbortSignal.timeout(_timeout)
-    });
-    if(!resp.ok){const txt=await resp.text().catch(()=>'');throw new Error('Worker '+resp.status+': '+txt.slice(0,80));}
-    const d=await resp.json();
-    if(d.error)throw new Error(d.error.message||'Groq error');
-    const content=d.choices?.[0]?.message?.content;
-    if(!content)throw new Error('Empty response');
-    return content;
-  }catch(e){
-    // Auto-retry once with faster smaller model
-    if(attempt===1 && (e.name==='TimeoutError'||e.message.includes('timeout')||e.message.includes('network')||e.message.includes('504')||e.message.includes('502'))){
-      return callGroqFast(prompt,system,maxTokens,2);
-    }
-    throw e;
-  }
+  const resp=await fetch(_WORKER_URL,{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:maxTokens,temperature:0.8,messages:[{role:'system',content:system},{role:'user',content:prompt}]}),
+    signal:AbortSignal.timeout(15000)
+  });
+  if(!resp.ok){const txt=await resp.text().catch(()=>'');throw new Error(`Worker error ${resp.status}: ${txt.slice(0,120)}`);}
+  const d=await resp.json();
+  if(d.error)throw new Error(d.error.message||'Groq error');
+  const content=d.choices?.[0]?.message?.content;
+  if(!content)throw new Error('Groq returned empty content');
+  return content;
 }
 async function callGroqJSON(prompt,system,maxTokens){
   const raw=await callGroqFast(prompt,system||'Return ONLY valid JSON. No markdown.',maxTokens||600);
@@ -833,7 +819,7 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
 
   /* ── Topbar: compact on mobile ── */
   :root {
-    --topbar-h: 72px;
+    --topbar-h: 62px;
     --sidebar-w: 0px;
   }
   .topbar {
@@ -1315,7 +1301,7 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
 <body>
 
 <!-- ══ LOGIN OVERLAY ══ -->
-<div class="login-overlay" id="loginOverlay" style="display:none">
+<div class="login-overlay" id="loginOverlay" style="display:flex">
   <div class="login-card">
     <div style="text-align:center;margin-bottom:20px">
       <div style="font-size:48px">🧠</div>
@@ -1513,7 +1499,7 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
       <div style="font-size:26px;margin-bottom:6px">🚀</div>
       <div style="font-family:Syne,sans-serif;font-size:17px;font-weight:800;color:#10b981;margin-bottom:4px">All Features Free Right Now</div>
       <div style="font-size:11px;color:var(--text3);margin-bottom:12px;line-height:1.6">No credit card. No payment. No catch.<br>We'll notify you before anything becomes paid.</div>
-      <button id="startFreeBtn" onclick="startFreeTrialFromModal()" style="width:100%;background:linear-gradient(135deg,#10b981,#06b6d4);color:#fff;border:none;border-radius:12px;padding:14px;font-size:15px;font-weight:800;cursor:pointer;letter-spacing:.3px;transition:all .3s">
+      <button onclick="startFreeTrialFromModal()" style="width:100%;background:linear-gradient(135deg,#10b981,#06b6d4);color:#fff;border:none;border-radius:12px;padding:14px;font-size:15px;font-weight:800;cursor:pointer;letter-spacing:.3px">
         ✨ Start Free — Unlock Everything
       </button>
     </div>
@@ -1645,15 +1631,14 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
 <div class="topbar">
   <!-- Row 1: Brand + desktop quick actions -->
   <div class="topbar-row1">
-    <div style="display:flex;flex-direction:column;flex:1 1 0;min-width:0;justify-content:center;overflow:visible">
+    <div style="display:flex;flex-direction:column;flex:1 1 0;min-width:0;justify-content:center;overflow:hidden">
       <div class="topbar-brand" style="line-height:1;font-size:11px;letter-spacing:0px;white-space:nowrap;overflow:hidden;text-overflow:clip">🧠 Consciousness OS</div>
-      <div id="proUpgradeBar" onclick="proBarTap()" style="margin-top:2px;border-radius:5px;padding:4px 8px;font-size:8px;font-weight:900;color:#fff;letter-spacing:.1px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:linear-gradient(135deg,#7c3aed,#06b6d4);max-width:100%;position:relative;z-index:10;-webkit-tap-highlight-color:rgba(255,255,255,.3);touch-action:manipulation;min-height:22px;display:flex;align-items:center">
-        🎁 Free Trial — Premium Access
+      <div id="proUpgradeBar" onclick="proBarTap()" style="display:block;margin-top:2px;border-radius:5px;padding:2px 6px;font-size:8px;font-weight:900;color:#fff;letter-spacing:.1px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:linear-gradient(135deg,#7c3aed,#06b6d4);max-width:100%">
+        🎁 Free Trial — All Features Open
       </div>
     </div>
-    <!-- Mobile-only quick actions: 📖 Guide icon + lang flag btn + theme + account -->
+    <!-- Mobile-only quick actions: lang flag btn + theme + account -->
     <div class="topbar-quick topbar-mobile-only" style="margin-left:6px;flex-shrink:0;display:flex;align-items:center;gap:3px">
-      <button class="tb-btn" id="appGuideIconBtn" onclick="openAppGuideModal()" title="App Guide" style="font-size:15px;min-width:30px;width:30px;padding:4px;height:30px">📖</button>
       <button class="tb-btn" id="langFlagBtn" onclick="toggleLangGrid(event)" title="Language" style="font-size:15px;min-width:30px;width:30px;padding:4px;height:30px">🌐</button>
       <button class="tb-btn" onclick="toggleTheme()" id="themeBtnMob" title="Toggle theme" style="min-width:30px;width:30px;height:30px;padding:4px">🌙</button>
       <button class="tb-btn" onclick="openProfileSwitcher()" id="profileTopBtnMob" title="Account" style="min-width:30px;width:30px;height:30px;padding:4px">👤</button>
@@ -1662,7 +1647,7 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
   </div>
   <!-- Row 2: Desktop quick action buttons -->
   <div class="topbar-row2">
-    <button class="tb-btn" onclick="openAppGuideModal()" title="App Guide">📖 Guide</button>
+    <button class="tb-btn" onclick="switchTab('guide')" title="Guide">❓ Guide</button>
     <button class="tb-btn tour-btn" onclick="showOnboarding()" title="Tour">✨ Tour</button>
     <select class="lang-sel" id="langSel" onchange="setLang(this.value)" title="Language">
       <option value="en">🌐 EN</option><option value="hi">🇮🇳 HI</option><option value="es">🇪🇸 ES</option>
@@ -1696,59 +1681,6 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
 .lfg-btn:active,.lfg-btn.cur{border-color:var(--primary);background:rgba(124,58,237,.18)}
 .lfg-code{font-size:7.5px;font-weight:800;color:var(--text3);line-height:1;margin-top:1px}
 .lfg-name{font-size:6.5px;color:var(--text3);line-height:1;max-width:42px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;text-align:center}
-
-/* ═══ AI ENHANCED INPUT SYSTEM ═══ */
-.ai-enhanced-input-wrap{position:relative}
-.ai-input-toolbar{display:flex;align-items:center;gap:4px;padding:4px 2px;margin-bottom:3px}
-.ai-tool-btn{background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:6px 10px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;color:var(--text);line-height:1;white-space:nowrap;min-height:32px;display:inline-flex;align-items:center;gap:3px;-webkit-tap-highlight-color:rgba(124,58,237,.2);touch-action:manipulation;user-select:none;position:relative;z-index:1}
-.ai-tool-btn:active,.ai-tool-btn.active{background:rgba(124,58,237,.18);border-color:var(--primary);transform:scale(.95)}
-.ai-tool-btn.loading{opacity:.6;pointer-events:none;animation:ai-pulse 1s infinite}
-.ai-input-toolbar{display:flex;align-items:center;gap:6px;padding:4px 0;flex-wrap:wrap}
-@keyframes ai-pulse{0%,100%{opacity:.6}50%{opacity:1}}
-/* Chat message action row */
-.chat-msg-wrap{position:relative;margin-bottom:4px}
-.chat-msg-actions{display:flex;gap:4px;margin-top:3px;justify-content:flex-end;opacity:.45;transition:opacity .2s}
-.chat-msg-wrap:hover .chat-msg-actions,.chat-msg-wrap.show-actions .chat-msg-actions,.chat-msg-wrap:focus-within .chat-msg-actions{opacity:1}
-.chat-msg.user+.chat-msg-actions,.chat-msg-wrap .chat-msg-actions{opacity:.45}
-.msg-action-btn{font-size:10px;color:var(--text3);background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:1px 5px;cursor:pointer;transition:all .12s}
-.msg-action-btn:hover{color:var(--primary);border-color:var(--primary)}
-.chat-msg.user .chat-msg-actions{justify-content:flex-end}
-.chat-msg.ai .chat-msg-actions{justify-content:flex-start}
-.chat-msg.editing{border:1.5px solid var(--primary)!important;background:rgba(124,58,237,.07)!important}
-/* App Guide Modal */
-#appGuideModal{display:none;position:fixed;inset:0;z-index:9600;background:rgba(0,0,0,.8);align-items:flex-end;justify-content:center}
-#appGuideModal.open{display:flex}
-.guide-modal-card{background:var(--bg);border-radius:24px 24px 0 0;padding:0;width:100%;max-width:480px;overflow:hidden;max-height:88vh;display:flex;flex-direction:column}
-.guide-header{padding:16px 20px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
-.guide-header-title{font-family:Syne,sans-serif;font-size:16px;font-weight:900;color:var(--text)}
-.guide-slides-wrap{overflow:hidden;flex:1;position:relative}
-.guide-slides{display:flex;transition:transform .35s cubic-bezier(.4,0,.2,1);height:100%;align-items:stretch}
-.guide-slide{min-width:100%;padding:20px;overflow-y:auto;box-sizing:border-box}
-.guide-slide-icon{font-size:40px;text-align:center;margin-bottom:8px}
-.guide-slide-title{font-family:Syne,sans-serif;font-size:18px;font-weight:900;text-align:center;margin-bottom:6px;color:var(--text)}
-.guide-slide-sub{font-size:12px;color:var(--text3);text-align:center;margin-bottom:14px;line-height:1.6}
-.guide-feature-list{display:flex;flex-direction:column;gap:8px}
-.guide-feature{display:flex;gap:10px;align-items:flex-start;padding:8px 10px;background:var(--bg3);border-radius:10px;border:1px solid var(--border)}
-.guide-feature-icon{font-size:18px;flex-shrink:0;margin-top:1px}
-.guide-feature-body{}
-.guide-feature-name{font-size:12px;font-weight:700;color:var(--text);margin-bottom:2px}
-.guide-feature-desc{font-size:11px;color:var(--text3);line-height:1.5}
-.guide-value-tag{font-size:9px;font-weight:800;color:#10b981;background:rgba(16,185,129,.12);border-radius:4px;padding:1px 5px;display:inline-block;margin-top:3px}
-.guide-nav{display:flex;align-items:center;justify-content:space-between;padding:12px 20px 20px;flex-shrink:0;border-top:1px solid var(--border)}
-.guide-dots{display:flex;gap:5px;align-items:center}
-.guide-dot{width:6px;height:6px;border-radius:50%;background:var(--border);transition:all .2s;cursor:pointer}
-.guide-dot.active{background:var(--primary);width:16px;border-radius:3px}
-.guide-nav-btn{background:var(--bg3);border:1.5px solid var(--border);border-radius:10px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer;color:var(--text);transition:all .15s}
-.guide-nav-btn.primary{background:linear-gradient(135deg,var(--primary),#0891b2);color:#fff;border-color:transparent}
-.guide-nav-btn:active{transform:scale(.96)}
-/* AI Research overlay */
-#aiResearchOverlay{display:none;position:fixed;inset:0;z-index:9700;background:rgba(0,0,0,.85);align-items:center;justify-content:center;padding:20px}
-#aiResearchOverlay.open{display:flex}
-.research-card{background:var(--bg);border-radius:20px;padding:22px;width:100%;max-width:460px;max-height:80vh;overflow-y:auto}
-.research-title{font-family:Syne,sans-serif;font-size:16px;font-weight:900;margin-bottom:12px;color:var(--text)}
-.research-step{display:flex;gap:8px;align-items:flex-start;margin-bottom:10px;font-size:12px;color:var(--text3);padding:8px;background:var(--bg3);border-radius:8px;border-left:3px solid var(--primary)}
-.research-result{font-size:13px;color:var(--text);line-height:1.7;white-space:pre-wrap;margin-top:10px}
-
 </style>
 <div class="lfg-bd" id="lfgBd" onclick="closeLangGrid()"></div>
 <div id="langFlagGrid">
@@ -2395,15 +2327,7 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
         <button class="wave-btn" onclick="setBestMatch('analysis')">📊 Analysis</button>
       </div>
       <div id="bestMatchBadge" style="font-size:12px;color:var(--text3);margin-bottom:8px"></div>
-      <div class="ai-input-toolbar" style="margin-bottom:4px">
-        <button class="ai-tool-btn" onclick="aiAttachFile('compare')" title="Attach photo">📎</button>
-        <button class="ai-tool-btn" onclick="aiWebSearch('compare')" title="Web search">🔍</button>
-        <button class="ai-tool-btn" onclick="aiDeepResearch('compare')" title="Deep research">🔬</button>
-        <span id="compareToolbarStatus" style="font-size:10px;color:var(--text3);margin-left:4px"></span>
-      </div>
-      <div id="compareAttachPreview" style="display:none;padding:6px 8px;background:rgba(124,58,237,.08);border-radius:8px;margin-bottom:4px;font-size:11px;color:var(--primary)"></div>
       <textarea class="chat-input" id="compareInput" placeholder="Ask all AIs a question..." style="height:60px;width:100%;resize:none;margin-bottom:8px"></textarea>
-      <input type="file" id="compareFileInput" accept="image/*" style="display:none" onchange="handleChatFileSelect(event,'compare')">
       <button class="btn btn-primary btn-block" onclick="sendToAllAIs()" id="compareBtn">⚡ Ask All AIs</button>
     </div>
     <div id="compareResults" style="display:grid;gap:10px;margin-bottom:14px"></div>
@@ -2421,38 +2345,15 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
     </div>
     <div class="chat-messages" id="chatMessages"></div>
     <div class="suggested-qs" id="suggestedQs"></div>
-    <div class="ai-enhanced-input-wrap" id="chatInputWrap">
-      <div id="chatAttachPreview" style="display:none;padding:8px 10px;background:rgba(124,58,237,.12);border-radius:10px;margin-bottom:6px;font-size:11px;color:var(--primary);align-items:center;gap:6px;border:1.5px solid rgba(124,58,237,.4)"></div>
-      <div class="chat-input-area">
-        <textarea class="chat-input" id="chatInput" placeholder="Ask me anything about your consciousness, health, dreams..." onkeydown="handleChatKey(event)" rows="1"></textarea>
-        <button class="btn btn-primary" onclick="sendChat()" id="chatSendBtn">➤</button>
-      </div>
-      <!-- Toolbar BELOW input -->
-      <div class="ai-input-toolbar" id="chatToolbar" style="margin-top:6px;padding:2px 0">
-        <button class="ai-tool-btn" id="chatAttachBtn" title="Attach photo/file" style="cursor:pointer" onclick="aiAttachFile('chat')">📎 Attach</button>
-        <button class="ai-tool-btn" id="chatWebSearchBtn" title="Web search — type question then tap" onclick="aiWebSearch('chat')" style="cursor:pointer">🔍 Search</button>
-        <button class="ai-tool-btn" id="chatDeepResBtn" title="Deep research — type question then tap" onclick="aiDeepResearch('chat')" style="cursor:pointer">🔬 Research</button>
-        <span style="flex:1"></span>
-        <span id="chatToolbarStatus" style="font-size:10px;color:var(--text3)"></span>
-      </div>
-      <input type="file" id="chatFileInput" accept="image/*" style="display:none" onchange="handleChatFileSelect(event,'chat')">
+    <div class="chat-input-area">
+      <textarea class="chat-input" id="chatInput" placeholder="Ask me anything about your consciousness, health, dreams..." onkeydown="handleChatKey(event)" rows="1"></textarea>
+      <button class="btn btn-primary" onclick="sendChat()" id="chatSendBtn">➤</button>
     </div>
   </div>
 
   <div class="card" id="aiInsightsCard">
     <div class="card-title"><span class="emoji">📊</span> AI Pattern Analysis</div>
     <div id="aiPatternDisplay"></div>
-  </div>
-
-  <!-- ══ WORKER DIAGNOSTIC CARD ══ -->
-  <div class="card" id="workerDiagCard" style="border:1.5px solid rgba(124,58,237,.3);background:rgba(124,58,237,.04)">
-    <div class="card-title"><span class="emoji">🔧</span> AI Worker Diagnostics</div>
-    <div style="font-size:12px;color:var(--text3);margin-bottom:10px">Use this to test if your Groq Worker is responding correctly.</div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
-      <button onclick="testWorkerConnection()" style="background:linear-gradient(135deg,#7c3aed,#0891b2);color:#fff;border:none;border-radius:10px;padding:10px 16px;font-size:13px;font-weight:700;cursor:pointer;flex:1;min-width:140px">⚡ Test AI Worker</button>
-      <button onclick="testWorkerRaw()" style="background:var(--bg3);border:1.5px solid var(--border);color:var(--text);border-radius:10px;padding:10px 16px;font-size:13px;font-weight:700;cursor:pointer;flex:1;min-width:140px">🔬 Raw Response</button>
-    </div>
-    <div id="workerDiagResult" style="font-size:12px;padding:10px;background:var(--bg3);border-radius:10px;border:1px solid var(--border);min-height:40px;line-height:1.7;display:none;word-break:break-all"></div>
   </div>
 
   <div class="card">
@@ -2680,15 +2581,7 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
     </div>
     <div id="mirrorUnlocked">
       <div style="font-size:12px;color:var(--text3);margin-bottom:12px">Ask the AI to describe you — based entirely on your actual logged data. Not generic advice. A mirror of your specific consciousness.</div>
-      <div class="ai-input-toolbar" style="margin-bottom:4px">
-        <button class="ai-tool-btn" onclick="aiAttachFile('mirror')" title="Attach photo">📎</button>
-        <button class="ai-tool-btn" onclick="aiWebSearch('mirror')" title="Web search">🔍</button>
-        <button class="ai-tool-btn" onclick="aiDeepResearch('mirror')" title="Deep research">🔬</button>
-        <span id="mirrorToolbarStatus" style="font-size:10px;color:var(--text3);margin-left:4px"></span>
-      </div>
-      <div id="mirrorAttachPreview" style="display:none;padding:6px 8px;background:rgba(124,58,237,.08);border-radius:8px;margin-bottom:4px;font-size:11px;color:var(--primary)"></div>
       <textarea class="form-textarea" id="mirrorPrompt" placeholder="e.g., 'Who am I based on my data?' / 'What is my cognitive type?' / 'What should I work on?' / 'Describe my consciousness pattern in one paragraph.'" style="min-height:70px;margin-bottom:8px"></textarea>
-      <input type="file" id="mirrorFileInput" accept="image/*" style="display:none" onchange="handleChatFileSelect(event,'mirror')">
       <button class="btn btn-primary btn-block btn-sm" onclick="askMirrorAI()">🪞 Ask the Mirror</button>
       <div id="mirrorOutput" style="margin-top:10px"></div>
     </div>
@@ -4136,12 +4029,6 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
     <button class="btn btn-secondary btn-sm" onclick="askWealthQ('Bitcoin or Gold — which is better for 2025?')">BTC vs Gold</button>
     <button class="btn btn-secondary btn-sm" onclick="askWealthQ('Best PE ratio stocks India right now?')">PE Stocks</button>
   </div>
-  <div class="ai-input-toolbar" style="margin-bottom:4px">
-    <button class="ai-tool-btn" onclick="aiWebSearch('wealth')" title="Web search (live market data)">🔍</button>
-    <button class="ai-tool-btn" onclick="aiDeepResearch('wealth')" title="Deep research">🔬</button>
-    <span id="wealthToolbarStatus" style="font-size:10px;color:var(--text3);margin-left:4px"></span>
-  </div>
-  <div id="wealthAttachPreview" style="display:none;padding:6px 8px;background:rgba(124,58,237,.08);border-radius:8px;margin-bottom:4px;font-size:11px;color:var(--primary)"></div>
   <textarea id="wealthAICustomQ" class="form-textarea" placeholder="Ask your wealth question... e.g. 'I earn ₹40,000/month. Where should I invest to retire in 20 years?' or 'Which mutual funds beat Nifty?'" style="min-height:70px;margin-bottom:10px"></textarea>
   <div id="wealthAIOutput" style="display:none;background:linear-gradient(135deg,rgba(250,204,21,.08),rgba(15,10,30,.4));border:1px solid rgba(250,204,21,.25);border-radius:12px;padding:14px;font-size:13px;line-height:1.7;color:var(--text);max-height:400px;overflow-y:auto">
     <span style="color:var(--text3)">AI analysis will appear here...</span>
@@ -6292,7 +6179,7 @@ async function callAI(model,messages,userContext){
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:900,temperature:0.85,
         messages:[{role:'system',content:model.persona+'\n\nYou are an advanced AI consciousness coach in Consciousness OS.'+userContext},...messages]}),
-      signal:AbortSignal.timeout(18000)});
+      signal:AbortSignal.timeout(15000)});
     if(!resp.ok){const t=await resp.text().catch(()=>'');throw new Error('Worker '+resp.status+': '+t.slice(0,80));}
     const d=await resp.json();
     if(d.error)throw new Error(d.error.message);
@@ -6300,25 +6187,15 @@ async function callAI(model,messages,userContext){
   }
   const systemMsg=model.persona+'\n\nYou are an advanced AI consciousness coach in Consciousness OS. You have deep knowledge of neuroscience, psychology, meditation, peak performance, sleep, dreams, nutrition, and human potential.'+userContext;
   if(provider==='google'){
-    // Try Gemini first; if key is revoked/rate-limited, fall back to Groq Worker silently
     const gKey=GEMINI_KEY||apiKey;
     const _gCall=async()=>{
       const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model.apiModel}:generateContent?key=${gKey}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:messages.map(m=>({role:m.role==='assistant'?'model':'user',parts:[{text:m.content}]})),systemInstruction:{parts:[{text:systemMsg}]},generationConfig:{maxOutputTokens:900,temperature:0.85}})});
       return r.json();
     };
-    try{
-      let data=await _gCall();
-      if(data.error&&(data.error.code===429||data.error.status==='RESOURCE_EXHAUSTED')){await new Promise(r=>setTimeout(r,4000));data=await _gCall();}
-      if(data.error) throw new Error(data.error.message); // triggers Groq fallback below
-      return data.candidates?.[0]?.content?.parts?.[0]?.text||'No response';
-    }catch(geminiErr){
-      // Gemini failed (revoked key, quota, network) — silently use Groq Worker
-      console.warn('[COS] Gemini failed, using Groq Worker fallback:', geminiErr.message);
-      const resp=await fetch(_WORKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:900,temperature:0.85,messages:[{role:'system',content:systemMsg},...messages]}),signal:AbortSignal.timeout(18000)});
-      if(!resp.ok){const t=await resp.text().catch(()=>'');throw new Error('Worker '+resp.status+': '+t.slice(0,80));}
-      const d=await resp.json();if(d.error)throw new Error(d.error.message);
-      return d.choices?.[0]?.message?.content||'No response';
-    }
+    let data=await _gCall();
+    if(data.error&&(data.error.code===429||data.error.status==='RESOURCE_EXHAUSTED')){await new Promise(r=>setTimeout(r,6000));data=await _gCall();}
+    if(data.error)throw new Error(data.error.message);
+    return data.candidates?.[0]?.content?.parts?.[0]?.text||'No response';
   }else if(provider==='anthropic'){
     const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true','x-api-key':apiKey},body:JSON.stringify({model:model.apiModel,max_tokens:900,system:systemMsg,messages})});
     const data=await resp.json();if(data.error)throw new Error(data.error.message);return data.content?.[0]?.text||'No response';
@@ -6335,17 +6212,8 @@ async function callAI(model,messages,userContext){
     const resp=await fetch('https://api.deepseek.com/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},body:JSON.stringify({model:model.apiModel,max_tokens:900,messages:[{role:'system',content:systemMsg},...messages]})});
     const data=await resp.json();if(data.error)throw new Error(data.error.message);return data.choices?.[0]?.message?.content||'No response';
   }else if(provider==='groq'){
-    // attempt 1: big model 18s; attempt 2: fast model 15s (handled by callGroqFast internally)
-    const resp=await fetch(_WORKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:model.apiModel||'llama-3.3-70b-versatile',max_tokens:900,temperature:0.85,messages:[{role:'system',content:systemMsg},...messages]}),signal:AbortSignal.timeout(18000)});
-    if(!resp.ok){const t=await resp.text().catch(()=>'');
-      // retry with fast model on gateway errors
-      if(resp.status===504||resp.status===502||resp.status===503){
-        const r2=await fetch(_WORKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'llama-3.1-8b-instant',max_tokens:700,temperature:0.85,messages:[{role:'system',content:systemMsg},...messages]}),signal:AbortSignal.timeout(15000)});
-        if(!r2.ok){const t2=await r2.text().catch(()=>'');throw new Error('Worker '+r2.status+': '+t2.slice(0,80));}
-        const d2=await r2.json();if(d2.error)throw new Error(d2.error.message);return d2.choices?.[0]?.message?.content||'No response';
-      }
-      throw new Error('Worker '+resp.status+': '+t.slice(0,80));
-    }
+    const resp=await fetch(_WORKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:model.apiModel||'llama-3.3-70b-versatile',max_tokens:900,temperature:0.85,messages:[{role:'system',content:systemMsg},...messages]}),signal:AbortSignal.timeout(15000)});
+    if(!resp.ok){const t=await resp.text().catch(()=>'');throw new Error('Worker '+resp.status+': '+t.slice(0,80));}
     const data=await resp.json();if(data.error)throw new Error(data.error.message);return data.choices?.[0]?.message?.content||'No response';
   }
   throw new Error('Unknown provider: '+provider);
@@ -6498,100 +6366,12 @@ function askSuggested(q){document.getElementById('chatInput').value=q;sendChat()
 function addChatMsg(role,text,modelId,skipHistory){
   const msgs=document.getElementById('chatMessages');if(!msgs)return;
   const model=AI_MODELS.find(m=>m.id===(modelId||curAIModel));
-  const msgIndex=chatHistory.length+(skipHistory?0:0);
-  const wrap=document.createElement('div');wrap.className='chat-msg-wrap';wrap.dataset.index=msgIndex;
-  const div=document.createElement('div');div.className='chat-msg '+role;div.dataset.role=role;div.dataset.text=text;div.dataset.model=modelId||curAIModel||'';
-  if(role==='ai')div.innerHTML=`<div class="ai-tag">${model?model.emoji+' '+model.name:'AI'}</div><span class="msg-content">${text}</span>`;
-  else{div.innerHTML=`<span class="msg-content"></span>`;div.querySelector('.msg-content').textContent=text;}
-  // Action bar
-  const actions=document.createElement('div');actions.className='chat-msg-actions';
-  if(role==='user'){
-    actions.innerHTML=`<button class="msg-action-btn" onclick="editChatMsg(this)" title="Edit">✏️ Edit</button><button class="msg-action-btn" onclick="deleteChatMsg(this)" title="Delete">🗑️</button>`;
-  } else {
-    actions.innerHTML=`<button class="msg-action-btn" onclick="regenChatMsg(this)" title="Regenerate">🔄 Regen</button><button class="msg-action-btn" onclick="copyChatMsg(this)" title="Copy">📋</button><button class="msg-action-btn" onclick="deleteChatMsg(this)" title="Delete">🗑️</button>`;
-  }
-  wrap.appendChild(div);wrap.appendChild(actions);
-  msgs.appendChild(wrap);msgs.scrollTop=msgs.scrollHeight;
+  const div=document.createElement('div');div.className='chat-msg '+role;
+  if(role==='ai')div.innerHTML=`<div class="ai-tag">${model?model.emoji+' '+model.name:'AI'}</div>${text}`;
+  else div.textContent=text;
+  msgs.appendChild(div);msgs.scrollTop=msgs.scrollHeight;
+  // Only push to history when explicitly requested (avoid double-pushes from sendChat)
   if(!skipHistory)chatHistory.push({role,content:text,model:modelId||curAIModel});
-}
-function editChatMsg(btn){
-  const wrap=btn.closest('.chat-msg-wrap');
-  const div=wrap.querySelector('.chat-msg');
-  const contentEl=div.querySelector('.msg-content');
-  const oldText=div.dataset.text;
-  if(div.classList.contains('editing')){return;}
-  div.classList.add('editing');
-  const ta=document.createElement('textarea');
-  ta.value=oldText;ta.style.cssText='width:100%;background:transparent;border:none;outline:none;color:inherit;font:inherit;resize:none;padding:2px 0;min-height:40px';
-  ta.rows=Math.max(2,Math.ceil(oldText.length/40));
-  contentEl.replaceWith(ta);ta.focus();
-  // Replace action buttons with Save/Cancel
-  const actions=wrap.querySelector('.chat-msg-actions');
-  actions.innerHTML=`<button class="msg-action-btn" style="color:#10b981;border-color:#10b981" onclick="saveEditMsg(this)">✅ Save</button><button class="msg-action-btn" onclick="cancelEditMsg(this)">✕ Cancel</button>`;
-}
-function saveEditMsg(btn){
-  const wrap=btn.closest('.chat-msg-wrap');
-  const div=wrap.querySelector('.chat-msg');
-  const ta=div.querySelector('textarea');
-  const newText=ta.value.trim();if(!newText)return;
-  // Update DOM
-  div.classList.remove('editing');
-  const newSpan=document.createElement('span');newSpan.className='msg-content';newSpan.textContent=newText;
-  ta.replaceWith(newSpan);div.dataset.text=newText;
-  // Update chatHistory — find the last user message with old text
-  const allWraps=Array.from(document.querySelectorAll('.chat-msg-wrap'));
-  const idx=allWraps.indexOf(wrap);
-  if(idx>=0&&chatHistory[idx])chatHistory[idx].content=newText;
-  // Restore action buttons
-  const actions=wrap.querySelector('.chat-msg-actions');
-  actions.innerHTML=`<button class="msg-action-btn" onclick="editChatMsg(this)">✏️ Edit</button><button class="msg-action-btn" onclick="deleteChatMsg(this)">🗑️</button>`;
-  // Remove all subsequent AI messages and re-send
-  const allWrapList=Array.from(document.querySelectorAll('.chat-msg-wrap'));
-  const msgIdx=allWrapList.indexOf(wrap);
-  for(let i=allWrapList.length-1;i>msgIdx;i--){allWrapList[i].remove();}
-  chatHistory=chatHistory.slice(0,msgIdx+1);
-  // Re-trigger AI response
-  _sendChatWithMsg(newText);
-}
-function cancelEditMsg(btn){
-  const wrap=btn.closest('.chat-msg-wrap');
-  const div=wrap.querySelector('.chat-msg');
-  const ta=div.querySelector('textarea');
-  const oldText=div.dataset.text;
-  div.classList.remove('editing');
-  const newSpan=document.createElement('span');newSpan.className='msg-content';newSpan.textContent=oldText;
-  ta.replaceWith(newSpan);
-  const actions=wrap.querySelector('.chat-msg-actions');
-  actions.innerHTML=`<button class="msg-action-btn" onclick="editChatMsg(this)">✏️ Edit</button><button class="msg-action-btn" onclick="deleteChatMsg(this)">🗑️</button>`;
-}
-function deleteChatMsg(btn){
-  const wrap=btn.closest('.chat-msg-wrap');
-  const allWraps=Array.from(document.querySelectorAll('.chat-msg-wrap'));
-  const idx=allWraps.indexOf(wrap);
-  wrap.style.opacity='0';wrap.style.transform='scale(.95)';wrap.style.transition='all .2s';
-  setTimeout(()=>{wrap.remove();if(idx>=0&&idx<chatHistory.length)chatHistory.splice(idx,1);},200);
-}
-async function regenChatMsg(btn){
-  const wrap=btn.closest('.chat-msg-wrap');
-  const allWraps=Array.from(document.querySelectorAll('.chat-msg-wrap'));
-  const idx=allWraps.indexOf(wrap);
-  // Find the preceding user message
-  let userWrap=null,userText='';
-  for(let i=idx-1;i>=0;i--){
-    const d=allWraps[i].querySelector('.chat-msg[data-role="user"]');
-    if(d){userWrap=allWraps[i];userText=d.dataset.text;break;}
-  }
-  if(!userText)return;
-  // Remove this AI message + all after
-  for(let i=allWraps.length-1;i>=idx;i--){allWraps[i].remove();}
-  chatHistory=chatHistory.slice(0,idx);
-  // Re-send
-  await _sendChatWithMsg(userText,true);
-}
-function copyChatMsg(btn){
-  const div=btn.closest('.chat-msg-wrap').querySelector('.chat-msg');
-  const text=div.dataset.text||div.querySelector('.msg-content')?.textContent||'';
-  navigator.clipboard.writeText(text).then(()=>showToast('📋 Copied!')).catch(()=>showToast('Copy failed'));
 }
 function clearAIChat(){chatHistory=[];document.getElementById('chatMessages').innerHTML='';showToast('Chat cleared');}
 function exportChat(){
@@ -6600,25 +6380,18 @@ function exportChat(){
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='consciousness_chat.txt';a.click();
 }
 function handleChatKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendChat();}}
-async function _sendChatWithMsg(msg,skipUserBubble){
-  // Core send logic — also called by edit/regen
-  if(!msg)return;
+async function sendChat(){
   const input=document.getElementById('chatInput');
-  // Prepend any attached image context
-  const attachCtx=window._chatAttachContext||'';
-  if(attachCtx){msg=attachCtx+'\n\n'+msg;window._chatAttachContext='';}
-  // Clear attach preview
-  const prev=document.getElementById('chatAttachPreview');if(prev)prev.style.display='none';
+  let msg=input.value.trim();if(!msg)return;
+  input.value='';
 
   // ── Build API history BEFORE adding user msg to chatHistory ──
   const recentHistorySnap=chatHistory.filter(m=>m.role==='user'||m.role==='ai').slice(-10);
   const apiMessages=[...recentHistorySnap.map(m=>({role:m.role==='ai'?'assistant':'user',content:m.content})),{role:'user',content:msg}];
 
   // Now display user bubble + push to history
-  if(!skipUserBubble){
-    addChatMsg('user',msg,null,true);
-    chatHistory.push({role:'user',content:msg,model:curAIModel});
-  }
+  addChatMsg('user',msg,null,true);
+  chatHistory.push({role:'user',content:msg,model:curAIModel});
 
   // If model uses google but Groq key exists, silently use Groq (faster, no quota)
   let _model=AI_MODELS.find(m=>m.id===curAIModel);
@@ -6628,24 +6401,9 @@ async function _sendChatWithMsg(msg,skipUserBubble){
   }
   const model=_model||AI_MODELS.find(m=>m.id===curAIModel);
   const msgs=document.getElementById('chatMessages');
-  // Use a unique ID so we can reliably find and remove the loading bubble
-  const _loadId='load-'+Date.now();
-  const loadWrap=document.createElement('div');loadWrap.className='chat-msg-wrap';loadWrap.id=_loadId;
   const loadDiv=document.createElement('div');loadDiv.className='chat-msg ai';
-  loadDiv.innerHTML=`<div class="ai-tag">${model.emoji} ${model.name}</div><div class="ai-loading"><span></span><span></span><span></span></div><span style="font-size:11px;color:var(--text3);margin-left:4px">Thinking...</span>`;
-  loadWrap.appendChild(loadDiv);
-  msgs.appendChild(loadWrap);msgs.scrollTop=msgs.scrollHeight;
-  // Safety: if 38s pass and nothing resolved, replace loading with timeout error
-  const _loadTimeout=setTimeout(()=>{
-    const el=document.getElementById(_loadId);
-    if(el){
-      el.innerHTML='<div class="chat-msg ai" style="width:100%"><div class="ai-tag">'+model.emoji+' '+model.name+'</div>'
-        +'<div style="color:#f59e0b;font-size:12px;margin:4px 0">⏱️ No response after 38s — Groq Worker may be slow. Tap Retry.</div>'
-        +'<button onclick="retryLastChat(this)" style="font-size:12px;background:var(--primary);color:#fff;border:none;border-radius:8px;padding:5px 14px;cursor:pointer;margin-top:4px">↩ Retry</button></div>';
-      el.querySelector('button')&&(el.querySelector('[data-retry-msg]')||el.querySelector('.chat-msg'))&&(el.querySelector('.chat-msg').dataset.retryMsg=msg);
-    }
-    showToast('⏱️ AI timed out — tap Retry');
-  },38000);
+  loadDiv.innerHTML=`<div class="ai-tag">${model.emoji} ${model.name}</div><div class="ai-loading"><span></span><span></span><span></span></div>`;
+  msgs.appendChild(loadDiv);msgs.scrollTop=msgs.scrollHeight;
 
   const logs=getLogs().slice(0,30);
   const dreams=getDreams().slice(0,15);
@@ -6684,89 +6442,23 @@ ${L.goal?'CURRENT GOAL: "'+L.goal.slice(0,100)+'"':''}`;
   if(studyData.stField)userContext+=`\n\nSTUDY: field=${studyData.stField} target=${studyData.stTargetCareer||'?'}`;
   userContext+=`\n\nCURRENT TIME: ${new Date().toLocaleString('en-IN',{timeZone:'Asia/Kolkata'})} IST`;
 
-  // Helper: get fresh msgs reference (user may have switched tabs)
-  const _getMsgs=()=>document.getElementById('chatMessages');
-  // Helper: append node to chat — switches to AI Hub tab if needed so message is never lost
-  const _appendToChat=(node)=>{
-    let m=_getMsgs();
-    if(!m){
-      // Switch to AI Hub tab so the message container exists
-      try{ switchTab('aihub'); }catch(ex){}
-      m=_getMsgs();
-    }
-    if(m){m.appendChild(node);m.scrollTop=m.scrollHeight;}
-  };
-
-  let _aiDone=false;
   try{
     const text=await callAI(model,apiMessages,userContext);
-    _aiDone=true;
-    clearTimeout(_loadTimeout);
-    const _lw=document.getElementById(_loadId);if(_lw)_lw.remove();
-    // Guard: if response is empty/null, show error with retry
-    if(!text||typeof text!=='string'||!text.trim()){
-      const errWrap2=document.createElement('div');errWrap2.className='chat-msg-wrap';
-      const errDiv2=document.createElement('div');errDiv2.className='chat-msg ai';
-      errDiv2.innerHTML='<div class="ai-tag">'+model.emoji+' '+model.name+'</div>'
-        +'<span style="color:#f59e0b">⚠️ AI returned empty response — tap Retry.</span> '
-        +'<button onclick="retryLastChat(this)" style="margin-left:6px;font-size:11px;background:var(--primary);color:#fff;border:none;border-radius:6px;padding:2px 8px;cursor:pointer">↩ Retry</button>';
-      errDiv2.dataset.retryMsg=msg;errDiv2.dataset.retryModel=curAIModel;
-      errWrap2.appendChild(errDiv2);_appendToChat(errWrap2);
-      return;
-    }
-    // ── Wrap in chat-msg-wrap so regen/copy/delete buttons work ──
-    const aiWrap=document.createElement('div');aiWrap.className='chat-msg-wrap';
-    const aiDiv=document.createElement('div');aiDiv.className='chat-msg ai';aiDiv.dataset.role='ai';aiDiv.dataset.model=curAIModel;
-    const typeSpan=document.createElement('span');typeSpan.className='msg-content';
+    loadDiv.remove();
+    // ── Use element reference not ID — prevents typeTarget collision across messages ──
+    const aiDiv=document.createElement('div');aiDiv.className='chat-msg ai';
+    const typeSpan=document.createElement('span');
     aiDiv.innerHTML=`<div class="ai-tag">${model.emoji} ${model.name}</div>`;
     aiDiv.appendChild(typeSpan);
-    // Action buttons
-    const aiActions=document.createElement('div');aiActions.className='chat-msg-actions';
-    aiActions.innerHTML='<button class="msg-action-btn" onclick="regenChatMsg(this)" title="Regenerate">🔄 Regen</button>'
-      +'<button class="msg-action-btn" onclick="copyChatMsg(this)" title="Copy">📋</button>'
-      +'<button class="msg-action-btn" onclick="deleteChatMsg(this)" title="Delete">🗑️</button>';
-    aiWrap.appendChild(aiDiv);aiWrap.appendChild(aiActions);
-    _appendToChat(aiWrap);
-    const m2=_getMsgs();
-    let i=0;const type=()=>{
-      if(i<text.length){typeSpan.textContent+=text[i++];if(m2)m2.scrollTop=m2.scrollHeight;setTimeout(type,8);}
-      else{aiDiv.dataset.text=text;}
-    };type();
+    msgs.appendChild(aiDiv);
+    let i=0;const type=()=>{if(i<text.length){typeSpan.textContent+=text[i++];msgs.scrollTop=msgs.scrollHeight;setTimeout(type,8);}};type();
     chatHistory.push({role:'ai',content:text,model:curAIModel});
   }catch(e){
-    clearTimeout(_loadTimeout);
-    const _lw2=document.getElementById(_loadId);if(_lw2)_lw2.remove();
-    // Show proper error with retry button — always visible
-    const errWrap=document.createElement('div');errWrap.className='chat-msg-wrap';
-    const errDiv=document.createElement('div');errDiv.className='chat-msg ai';
-    const isTimeout=e.name==='TimeoutError'||String(e.message).includes('timeout')||String(e.message).includes('504')||String(e.message).includes('502');
-    const errMsg=isTimeout
-      ? '⏱️ Groq Worker timed out. Try again — it usually works on 2nd attempt.'
-      : ('❌ '+(e.message||'Connection failed'));
-    errDiv.innerHTML='<div class="ai-tag">'+model.emoji+' '+model.name+'</div>'
-      +'<div style="color:#f59e0b;font-size:12px;margin:4px 0">⚠️ '+errMsg+'</div>'
-      +'<button onclick="retryLastChat(this)" style="font-size:12px;background:var(--primary);color:#fff;border:none;border-radius:8px;padding:5px 14px;cursor:pointer;margin-top:4px">↩ Retry</button>';
-    errDiv.dataset.retryMsg=msg;errDiv.dataset.retryModel=curAIModel;
-    errWrap.appendChild(errDiv);_appendToChat(errWrap);
-    showToast('⚠️ AI error — tap Retry in chat');
+    loadDiv.remove();
+    const _fbText=await localAIResponse(msg);
+    addChatMsg('ai',_fbText,curAIModel,true);
   }
-  try{buildSuggestedQs();}catch(ex){}
-}
-async function retryLastChat(btn){
-  const errDiv=btn.closest('.chat-msg');
-  const msg=errDiv?.dataset?.retryMsg;
-  const wrap=btn.closest('.chat-msg-wrap');
-  if(!msg)return;
-  if(wrap)wrap.remove();
-  // Remove last user msg from history so it doesn't double
-  if(chatHistory.length&&chatHistory[chatHistory.length-1].role==='user')chatHistory.pop();
-  await _sendChatWithMsg(msg);
-}
-async function sendChat(){
-  const input=document.getElementById('chatInput');
-  const msg=input.value.trim();if(!msg)return;
-  input.value='';
-  await _sendChatWithMsg(msg);
+  buildSuggestedQs();
 }
 async function localAIResponse(msg){
   const logs=getLogs(), lower=msg.toLowerCase();
@@ -6810,7 +6502,7 @@ ${ctx}`;
       method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:750,temperature:0.88,
         messages:[{role:'system',content:sys},{role:'user',content:msg}]}),
-      signal:AbortSignal.timeout(35000)
+      signal:AbortSignal.timeout(15000)
     });
     if(!resp.ok){const t=await resp.text().catch(()=>'');throw new Error('Worker '+resp.status+': '+t.slice(0,100));}
     const d=await resp.json();
@@ -6825,7 +6517,7 @@ ${ctx}`;
         method:'POST',headers:{'Content-Type':'application/json'},
         body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:400,temperature:0.8,
           messages:[{role:'user',content:msg}]}),
-        signal:AbortSignal.timeout(28000)
+        signal:AbortSignal.timeout(12000)
       });
       if(!simple.ok)throw new Error('Worker '+simple.status);
       const sd=await simple.json();
@@ -9838,23 +9530,7 @@ function openProfileSwitcher(){
   const pb=document.getElementById('profileBar');
   const gnb=document.getElementById('guideNavTopBar');
   if(gnb)gnb.style.display='none';
-  const isHidden=pb.style.display==='none'||pb.style.display==='';
-  if(isHidden){
-    pb.style.display='block';
-    // Always rebuild before showing so chips are never empty
-    if(typeof buildProfileBar==='function') buildProfileBar();
-    // Close on outside tap
-    setTimeout(()=>{
-      document.addEventListener('click',function _closePB(e){
-        if(!pb.contains(e.target)&&e.target.id!=='profileTopBtnMob'&&e.target.id!=='profileTopBtn'){
-          pb.style.display='none';
-          document.removeEventListener('click',_closePB);
-        }
-      });
-    },100);
-  } else {
-    pb.style.display='none';
-  }
+  pb.style.display=pb.style.display==='none'?'':'none';
 }
 
 // Guide nav is now integrated into topbar row 2 — no separate toggle needed
@@ -11990,8 +11666,11 @@ function buildCOSBrainContext() {
 // ── PATCH sendChat TO USE COS_BRAIN ───────────────────────────────────
 const _origSendChat = sendChat;
 sendChat = async function() {
-  // Sync brain before every AI call — wrapped in try/catch so it never blocks chat
-  try { cosBrainSync(); } catch(e) { console.warn('[COS] cosBrainSync error (ignored):', e); }
+  // Sync brain before every AI call
+  cosBrainSync();
+  // Inject CIL into userContext by patching the context building
+  // We do this by temporarily overriding how context is built
+  const origFn = sendChat;
   return _origSendChat.apply(this, arguments);
 };
 
@@ -12000,9 +11679,29 @@ const _origGetUserContext = function(logs, dreams, healthData, studyData) {
   return buildCOSBrainContext();
 };
 
-// NOTE: callAI brain-context injection removed — userContext in _sendChatWithMsg already
-// contains full consciousness data. Double-injection was bloating Worker payloads
-// causing empty/silent responses. callGroqFast patch also removed for same reason.
+// Monkey-patch: Override the context string appended to every AI call
+// by patching callAI to prepend COS_BRAIN context
+const _origCallAI = typeof callAI === 'function' ? callAI : null;
+if (_origCallAI) {
+  callAI = async function(model, messages, extraContext) {
+    // Append COS_BRAIN context to extraContext
+    const brainCtx = buildCOSBrainContext();
+    const fullContext = (extraContext || '') + '\n' + brainCtx;
+    return _origCallAI(model, messages, fullContext);
+  };
+}
+
+// Also patch callGroqFast to include brain context in system prompts when relevant
+const _origCallGroqFast = callGroqFast;
+callGroqFast = async function(prompt, system, maxTokens) {
+  // Only add brain context for long prompts (actual analysis, not quick calls)
+  if (prompt && prompt.length > 100 && system && system.length > 30) {
+    const brainCtx = buildCOSBrainContext();
+    const enhancedSystem = (system || '') + '\n\nYou have access to the user\'s complete Consciousness OS data:\n' + brainCtx;
+    return _origCallGroqFast(prompt, enhancedSystem, maxTokens);
+  }
+  return _origCallGroqFast(prompt, system, maxTokens);
+};
 
 // ── CIL PULSE UI ──────────────────────────────────────────────────────
 function updateCILPulse() {
@@ -13097,7 +12796,7 @@ async function askAI(prompt, systemPrompt, maxTok) {
         { role: 'user',   content: prompt }
       ]
     }),
-    signal: AbortSignal.timeout(35000)
+    signal: AbortSignal.timeout(15000)
   });
   if (!res.ok) { const txt = await res.text().catch(()=>''); throw new Error(`Worker error ${res.status}: ${txt.slice(0,120)}`); }
   const data = await res.json();
@@ -13964,25 +13663,15 @@ function closeProModal() {
 async function startFreeTrialFromModal() {
   // Grant trial in storage
   await PRO.startFreeTrial();
-  // Show "Unlocked" state on button before closing
-  const startBtn = document.getElementById('startFreeBtn');
-  if (startBtn) {
-    startBtn.innerHTML = '🔓 Unlocked — All Features Active!';
-    startBtn.style.background = 'linear-gradient(135deg,#059669,#0891b2)';
-    startBtn.style.boxShadow = '0 0 20px rgba(16,185,129,.5)';
-    startBtn.disabled = true;
-  }
-  setTimeout(() => {
-    closeProModal();
-    // Force-hide ALL gates via JS (belt + suspenders on top of CSS)
-    const gates = ['peakStatesGate','patternsGate','mirrorGate','oraclePredictGate'];
-    const unlocks = ['vaultPeakStates','vaultBehaviorPatterns','mirrorUnlocked','oraclePredictUnlocked','detectPatternsBtn'];
-    gates.forEach(id => { const el = document.getElementById(id); if(el) el.style.display = 'none'; });
-    unlocks.forEach(id => { const el = document.getElementById(id); if(el) el.style.display = 'block'; });
-    if (typeof applyProGates === 'function') applyProGates(true);
-    if (typeof updateProBar === 'function') updateProBar();
-    showToast('🎉 All features unlocked! Everything is free.');
-  }, 900);
+  closeProModal();
+  // Force-hide ALL gates via JS (belt + suspenders on top of CSS)
+  const gates = ['peakStatesGate','patternsGate','mirrorGate','oraclePredictGate'];
+  const unlocks = ['vaultPeakStates','vaultBehaviorPatterns','mirrorUnlocked','oraclePredictUnlocked','detectPatternsBtn'];
+  gates.forEach(id => { const el = document.getElementById(id); if(el) el.style.display = 'none'; });
+  unlocks.forEach(id => { const el = document.getElementById(id); if(el) el.style.display = 'block'; });
+  if (typeof applyProGates === 'function') applyProGates(true);
+  if (typeof updateProBar === 'function') updateProBar();
+  showToast('🎉 All features unlocked! Everything is free.');
 }
 
 function openUPIPayment(plan) {
@@ -14604,9 +14293,7 @@ const LANG_FLAGS = {
   nl:'🇳🇱',pl:'🇵🇱',uk:'🇺🇦',ta:'🏛️',te:'🌺',mr:'🪔',gu:'🌅'
 };
 
-let _langGridLastTap=0;
 function toggleLangGrid(e) {
-  const n=Date.now();if(n-_langGridLastTap<500){if(e)e.preventDefault();return;}_langGridLastTap=n;
   if (e) e.stopPropagation();
   const grid = document.getElementById('langFlagGrid');
   const bd = document.getElementById('lfgBd');
@@ -14664,8 +14351,6 @@ function proBarTap() {
     openProModal('topbar');
   }
 }
-// Debounce wrapper so ontouchstart+onclick don't double-fire
-proBarTap = (function(fn){let t=0;return function(){const n=Date.now();if(n-t<500)return;t=n;fn();}})(proBarTap);
 
 function updateProBar() {
   const bar = document.getElementById('proUpgradeBar');
@@ -14680,7 +14365,7 @@ function updateProBar() {
     return;
   }
   // Free trial or auto-grant — show free trial badge
-  bar.textContent = '🎁 Free Trial — Premium Access';
+  bar.textContent = '🎁 Free Trial — All Features Open';
   bar.style.background = 'linear-gradient(135deg,#7c3aed,#06b6d4)';
   bar.style.display = 'block';
   bar.onclick = () => openProModal('topbar');
@@ -14689,25 +14374,6 @@ function updateProBar() {
 // Run on load and after pro changes
 document.addEventListener('DOMContentLoaded', () => {
   setTimeout(updateProBar, 800);
-  // Ensure no stale backdrop/overlay is blocking topbar buttons
-  const clearStaleOverlays = () => {
-    document.querySelectorAll('.lfg-bd').forEach(el => el.classList.remove('open'));
-    document.getElementById('lfgBd')?.classList.remove('open');
-    document.getElementById('langFlagGrid')?.classList.remove('open');
-    // Raise topbar above any possible overlay ghost
-    const tb = document.querySelector('.topbar');
-    if (tb) tb.style.zIndex = '1000';
-    // Ensure topbar buttons are always tappable
-    document.querySelectorAll('.topbar .tb-btn, #proUpgradeBar').forEach(el => {
-      el.style.position = 'relative';
-      el.style.zIndex = '1001';
-      el.style.webkitTapHighlightColor = 'rgba(124,58,237,.25)';
-      el.style.touchAction = 'manipulation';
-    });
-  };
-  clearStaleOverlays();
-  setTimeout(clearStaleOverlays, 500);
-  setTimeout(clearStaleOverlays, 1500);
   // Force-unlock all gates — runs multiple times to beat lazy tab rendering
   const forceUnlockAll = () => {
     ['peakStatesGate','patternsGate','mirrorGate','oraclePredictGate'].forEach(id => {
@@ -15224,623 +14890,9 @@ function deleteGuestPermanently() {
   }
 }
 
-
-// ═══════════════════════════════════════════════════════════════
-//  APP GUIDE MODAL
-// ═══════════════════════════════════════════════════════════════
-let _guideCurrent = 0;
-const _GUIDE_TOTAL = 5;
-
-let _guideModalLastTap=0;
-function openAppGuideModal() {
-  const n=Date.now();if(n-_guideModalLastTap<500)return;_guideModalLastTap=n;
-  _guideCurrent = 0;
-  const modal = document.getElementById('appGuideModal');
-  if (!modal) return;
-  modal.classList.add('open');
-  _renderGuideDots();
-  _updateGuideSlide();
-}
-function closeAppGuideModal() {
-  const modal = document.getElementById('appGuideModal');
-  if (modal) modal.classList.remove('open');
-}
-function guideNav(dir) {
-  _guideCurrent = Math.max(0, Math.min(_GUIDE_TOTAL - 1, _guideCurrent + dir));
-  _updateGuideSlide();
-}
-function _updateGuideSlide() {
-  const slides = document.getElementById('guideSlides');
-  if (slides) slides.style.transform = `translateX(-${_guideCurrent * 100}%)`;
-  _renderGuideDots();
-  const prevBtn = document.getElementById('guidePrevBtn');
-  const nextBtn = document.getElementById('guideNextBtn');
-  if (prevBtn) prevBtn.style.visibility = _guideCurrent === 0 ? 'hidden' : 'visible';
-  if (nextBtn) {
-    if (_guideCurrent === _GUIDE_TOTAL - 1) {
-      nextBtn.textContent = '✅ Got it!';
-      nextBtn.onclick = closeAppGuideModal;
-    } else {
-      nextBtn.textContent = 'Next →';
-      nextBtn.onclick = () => guideNav(1);
-    }
-  }
-}
-function _renderGuideDots() {
-  const dotsEl = document.getElementById('guideDots');
-  if (!dotsEl) return;
-  dotsEl.innerHTML = '';
-  for (let i = 0; i < _GUIDE_TOTAL; i++) {
-    const d = document.createElement('div');
-    d.className = 'guide-dot' + (i === _guideCurrent ? ' active' : '');
-    d.onclick = () => { _guideCurrent = i; _updateGuideSlide(); };
-    dotsEl.appendChild(d);
-  }
-}
-// Close guide on backdrop tap
-document.addEventListener('click', e => {
-  const modal = document.getElementById('appGuideModal');
-  if (modal && e.target === modal) closeAppGuideModal();
-});
-
-// ═══════════════════════════════════════════════════════════════
-//  AI TOOLBAR — FILE ATTACH (GEMINI VISION)
-// ═══════════════════════════════════════════════════════════════
-// Tracks which context (chat/compare/mirror/wealth) triggered the tool
-let _aiToolContext = 'chat';
-let _aiAttachBase64 = null;
-let _aiAttachMime = null;
-
-function aiAttachFile(ctx) {
-  _aiToolContext = ctx || 'chat';
-  const inputId = ctx === 'compare' ? 'compareFileInput'
-    : ctx === 'mirror' ? 'mirrorFileInput'
-    : 'chatFileInput';
-  const el = document.getElementById(inputId);
-  if (el) {
-    el.value = ''; // reset so same file can be re-selected
-    el.click();
-  } else {
-    // Fallback: create temporary input
-    const tmp = document.createElement('input');
-    tmp.type = 'file'; tmp.accept = 'image/*';
-    tmp.onchange = (e) => handleChatFileSelect(e, ctx);
-    tmp.click();
-  }
-}
-
-function handleChatFileSelect(event, ctx) {
-  const file = event.target.files[0];
-  if (!file) return;
-  _aiToolContext = ctx || 'chat';
-  if (!file.type.startsWith('image/')) {
-    showToast('⚠️ Only image files supported for vision analysis');
-    return;
-  }
-  const reader = new FileReader();
-  reader.onload = async (e) => {
-    const base64 = e.target.result.split(',')[1];
-    const mime = file.type;
-    _aiAttachBase64 = base64;
-    _aiAttachMime = mime;
-    // Show preview
-    const previewId = ctx + 'AttachPreview';
-    const prev = document.getElementById(previewId);
-    if (prev) {
-      prev.style.display = 'flex';
-      prev.innerHTML = `<img src="data:${mime};base64,${base64}" style="width:40px;height:40px;object-fit:cover;border-radius:6px;flex-shrink:0"><span style="flex:1">📎 ${file.name} (${(file.size/1024).toFixed(0)}KB) — AI will analyze with vision</span><button onclick="clearAttach('${ctx}')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px">✕</button>`;
-    }
-    // Pre-analyze with Gemini vision
-    const statusId = ctx + 'ToolbarStatus';
-    const statusEl = document.getElementById(statusId);
-    if (statusEl) statusEl.textContent = '🔍 Analyzing image...';
-    try {
-      const visionResult = await _analyzeImageGemini(base64, mime);
-      window._chatAttachContext = '[IMAGE ANALYSIS]\n' + visionResult;
-      if (statusEl) statusEl.textContent = '✅ Image ready';
-      showToast('📷 Image analyzed — now type your question and send!');
-    } catch (err) {
-      // Fallback: just note the file
-      window._chatAttachContext = '[USER ATTACHED IMAGE: ' + file.name + ' (' + (file.size/1024).toFixed(0) + 'KB) — describe what you see and answer the user question in context of this image.]';
-      if (statusEl) statusEl.textContent = '📎 Image attached';
-      showToast('📎 Image attached — type your question and send!');
-    }
-    // Focus the input so user can type question immediately
-    const chatIn = document.getElementById(ctx === 'chat' ? 'chatInput' : ctx === 'compare' ? 'compareInput' : ctx === 'mirror' ? 'mirrorPrompt' : 'chatInput');
-    if (chatIn) {
-      chatIn.focus();
-      chatIn.placeholder = '💬 Image attached! Type your question about it and tap ➤ Send...';
-      chatIn.style.transition='box-shadow .2s,border-color .2s';
-      chatIn.style.boxShadow='0 0 0 3px rgba(124,58,237,.5)';
-      chatIn.style.borderColor='var(--primary)';
-      chatIn.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      // Reset style after 5s but keep placeholder until they type
-      setTimeout(() => { chatIn.style.boxShadow = ''; chatIn.style.borderColor = ''; }, 5000);
-    }
-  };
-  reader.readAsDataURL(file);
-  event.target.value = '';
-}
-
-function clearAttach(ctx) {
-  _aiAttachBase64 = null; _aiAttachMime = null;
-  window._chatAttachContext = '';
-  const previewId = ctx + 'AttachPreview';
-  const prev = document.getElementById(previewId);
-  if (prev) prev.style.display = 'none';
-  const statusId = ctx + 'ToolbarStatus';
-  const statusEl = document.getElementById(statusId);
-  if (statusEl) statusEl.textContent = '';
-}
-
-async function _analyzeImageGemini(base64, mime) {
-  const apiKey = typeof GEMINI_KEY !== 'undefined' ? GEMINI_KEY : '';
-  if (apiKey) {
-    try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-      const body = {
-        contents: [{
-          parts: [
-            { inline_data: { mime_type: mime, data: base64 } },
-            { text: 'Analyze this image in detail. Describe what you see, identify key elements, text, charts, or data present, and extract any actionable information. Be thorough and structured.' }
-          ]
-        }]
-      };
-      const resp = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: AbortSignal.timeout(20000) });
-      if (!resp.ok) throw new Error('Gemini vision error ' + resp.status);
-      const data = await resp.json();
-      if (data.error) throw new Error(data.error.message);
-      const result = data.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (result) return result;
-      throw new Error('No vision result');
-    } catch(e) {
-      console.warn('[COS] Gemini vision failed, using Groq text fallback:', e.message);
-    }
-  }
-  // Groq fallback — can't do real vision but describes image context
-  const groqFallback = await callGroqFast(
-    `The user attached an image (${mime}, base64 length: ${base64.length} chars). Since I cannot perform visual analysis right now, please acknowledge the attachment and ask the user to describe what's in the image or what they'd like to know about it. Be helpful and concise.`,
-    'You are a helpful AI assistant.',
-    200
-  );
-  return groqFallback || 'Image attached. Please describe what you see or ask your question about it.';
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  AI TOOLBAR — WEB SEARCH (FREE: Wikipedia + DuckDuckGo Instant)
-// ═══════════════════════════════════════════════════════════════
-let _webSearchCtx = 'chat';
-
-async function aiWebSearch(ctx) {
-  _webSearchCtx = ctx || 'chat';
-  const inputId = ctx === 'compare' ? 'compareInput'
-    : ctx === 'mirror' ? 'mirrorPrompt'
-    : ctx === 'wealth' ? 'wealthAICustomQ'
-    : 'chatInput';
-  const inputEl = document.getElementById(inputId);
-  const query = inputEl ? inputEl.value.trim() : '';
-  if (!query) {
-    // Visually guide user to type — pulsing border + placeholder change
-    if(inputEl){
-      inputEl.focus();
-      const oldPlaceholder = inputEl.placeholder;
-      inputEl.placeholder = '🔍 Type your search question here, then tap Search again...';
-      inputEl.style.transition='box-shadow .15s,border-color .15s';
-      inputEl.style.boxShadow='0 0 0 3px rgba(6,182,212,.6)';
-      inputEl.style.borderColor='#06b6d4';
-      setTimeout(()=>{ inputEl.style.boxShadow=''; inputEl.style.borderColor=''; inputEl.placeholder=oldPlaceholder; },3500);
-      inputEl.scrollIntoView({behavior:'smooth',block:'center'});
-    }
-    showToast('💡 Type your question in the box first, then tap 🔍 Search');
-    return;
-  }
-  const statusId = ctx + 'ToolbarStatus';
-  const statusEl = document.getElementById(statusId);
-  // Visually disable the button while searching
-  const searchBtn = document.getElementById(ctx+'WebSearchBtn');
-  if(searchBtn){searchBtn.classList.add('loading');searchBtn.textContent='🔍 Searching...';}
-  if (statusEl) statusEl.textContent = '🔍 Searching live web...';
-  try {
-    const results = await _freeWebSearch(query);
-    // Inject search results as context into _chatAttachContext
-    const searchCtx = '[WEB SEARCH RESULTS for: "' + query + '"]\n' + results;
-    window._chatAttachContext = (window._chatAttachContext || '') + '\n\n' + searchCtx;
-    if (statusEl) statusEl.textContent = '✅ Web results added';
-    if(searchBtn){searchBtn.classList.remove('loading');searchBtn.textContent='✅ Searched';}
-    // Auto-focus input so user can type follow-up
-    const sInput = document.getElementById(ctx==='chat'?'chatInput':ctx==='compare'?'compareInput':ctx==='wealth'?'wealthAICustomQ':'mirrorPrompt');
-    if(sInput) sInput.focus();
-    showToast('🔍 Web data added — send your message now!');
-  } catch (err) {
-    if (statusEl) statusEl.textContent = '⚠️ Search failed';
-    if(searchBtn){searchBtn.classList.remove('loading');searchBtn.textContent='🔍 Search';}
-    showToast('⚠️ Search failed — sending directly will still use AI knowledge');
-  }
-}
-
-async function _freeWebSearch(query) {
-  // Strategy: try DuckDuckGo Instant Answer API (CORS-friendly), then Wikipedia
-  let results = [];
-
-  // 1. DuckDuckGo Instant Answers (free, no key, CORS allowed)
-  try {
-    const ddgUrl = `https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&no_html=1&skip_disambig=1`;
-    const resp = await fetch(ddgUrl, { signal: AbortSignal.timeout(6000) });
-    if (resp.ok) {
-      const data = await resp.json();
-      if (data.AbstractText) results.push('Summary: ' + data.AbstractText.slice(0, 400));
-      if (data.Answer) results.push('Answer: ' + data.Answer);
-      if (data.Definition) results.push('Definition: ' + data.Definition);
-      if (data.RelatedTopics && data.RelatedTopics.length > 0) {
-        const topics = data.RelatedTopics.slice(0, 4).map(t => t.Text || '').filter(Boolean).join(' | ');
-        if (topics) results.push('Related: ' + topics.slice(0, 300));
-      }
-    }
-  } catch(e) {}
-
-  // 2. Wikipedia search (free, CORS-allowed)
-  try {
-    const wikiUrl = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(query.split(' ').slice(0,4).join('_'))}`;
-    const resp = await fetch(wikiUrl, { signal: AbortSignal.timeout(6000) });
-    if (resp.ok) {
-      const data = await resp.json();
-      if (data.extract && data.extract.length > 50) {
-        results.push('Wikipedia: ' + data.extract.slice(0, 500));
-      }
-    }
-  } catch(e) {}
-
-  // 3. Groq Worker — live knowledge synthesis (always available)
-  const groqResult = await callGroqFast(
-    `Search query: "${query}"\n\nProvide a concise, factual answer based on your training knowledge. Include: key facts, current state (as of your knowledge), relevant numbers/data, and 2-3 actionable insights. Be specific and direct. Format as: FACTS: ... | DATA: ... | INSIGHTS: ...`,
-    'You are a real-time research assistant. Provide accurate, current, factual information. If you have knowledge of recent developments, include them. Be concise but complete.',
-    400
-  );
-  results.push('AI Knowledge: ' + groqResult);
-
-  if (results.length === 0) throw new Error('No results from any source');
-  return results.join('\n\n');
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  AI TOOLBAR — DEEP RESEARCH (Multi-step, shows in overlay)
-// ═══════════════════════════════════════════════════════════════
-let _deepResearchCtx = 'chat';
-let _deepResearchFinalAnswer = '';
-
-async function aiDeepResearch(ctx) {
-  _deepResearchCtx = ctx || 'chat';
-  const inputId = ctx === 'compare' ? 'compareInput'
-    : ctx === 'mirror' ? 'mirrorPrompt'
-    : ctx === 'wealth' ? 'wealthAICustomQ'
-    : 'chatInput';
-  const inputEl = document.getElementById(inputId);
-  const query = inputEl ? inputEl.value.trim() : '';
-  if (!query) {
-    // Visually guide user to type — pulsing border + placeholder change
-    if(inputEl){
-      inputEl.focus();
-      const oldPlaceholder2 = inputEl.placeholder;
-      inputEl.placeholder = '🔬 Type your research question here, then tap Research again...';
-      inputEl.style.transition='box-shadow .15s,border-color .15s';
-      inputEl.style.boxShadow='0 0 0 3px rgba(124,58,237,.6)';
-      inputEl.style.borderColor='#7c3aed';
-      setTimeout(()=>{ inputEl.style.boxShadow=''; inputEl.style.borderColor=''; inputEl.placeholder=oldPlaceholder2; },3500);
-      inputEl.scrollIntoView({behavior:'smooth',block:'center'});
-    }
-    showToast('💡 Type your question in the box first, then tap 🔬 Research');
-    return;
-  }
-  const overlay = document.getElementById('aiResearchOverlay');
-  const stepsEl = document.getElementById('researchSteps');
-  const resultEl = document.getElementById('researchResult');
-  const actionsEl = document.getElementById('researchActions');
-  const titleEl = document.getElementById('researchTitle');
-  if (!overlay) return;
-  overlay.classList.add('open');
-  stepsEl.innerHTML = '';
-  resultEl.textContent = '';
-  actionsEl.style.display = 'none';
-  titleEl.textContent = '🔬 Deep Research';
-  _deepResearchFinalAnswer = '';
-
-  function addStep(icon, label, status) {
-    const div = document.createElement('div');
-    div.className = 'research-step';
-    div.id = 'rs_' + label.replace(/\s+/g,'_');
-    div.innerHTML = `<span style="font-size:18px;flex-shrink:0">${icon}</span><div><strong>${label}</strong><br><span class="rs-status" style="color:var(--text3);font-size:11px">${status}</span></div>`;
-    stepsEl.appendChild(div);
-    return div;
-  }
-  function updateStep(label, status, done) {
-    const el = document.getElementById('rs_' + label.replace(/\s+/g,'_'));
-    if (!el) return;
-    const s = el.querySelector('.rs-status');
-    if (s) s.textContent = status;
-    if (done) el.style.borderLeftColor = '#10b981';
-  }
-
-  try {
-    // Step 1: Break down query
-    const s1 = addStep('🧩', 'Query Analysis', 'Decomposing question...');
-    let breakdown;
-    try {
-      const raw = await callGroqJSON(
-        `Query: "${query}"\n\nBreak this into 3 specific sub-questions that together fully answer it. Return JSON: {"sub_questions":["q1","q2","q3"],"core_intent":"one sentence","domain":"topic area"}`,
-        'Return ONLY valid JSON. No markdown, no explanation.',
-        300
-      );
-      breakdown = JSON.parse(raw);
-    } catch(e) { breakdown = { sub_questions: [query], core_intent: query, domain: 'general' }; }
-    updateStep('Query Analysis', `Domain: ${breakdown.domain} | Intent: ${breakdown.core_intent}`, true);
-
-    // Step 2: Web search each sub-question
-    const s2 = addStep('🔍', 'Web Search', 'Searching live sources...');
-    let searchData = [];
-    for (let i = 0; i < Math.min(breakdown.sub_questions.length, 3); i++) {
-      const sq = breakdown.sub_questions[i];
-      updateStep('Web Search', `Searching: "${sq.slice(0,40)}..."`, false);
-      try {
-        const r = await _freeWebSearch(sq);
-        searchData.push({ question: sq, result: r });
-      } catch(e) { searchData.push({ question: sq, result: 'No data found.' }); }
-    }
-    updateStep('Web Search', `${searchData.length} source sets retrieved`, true);
-
-    // Step 3: Synthesize with user consciousness context
-    const s3 = addStep('🧠', 'Context Integration', 'Merging with your personal data...');
-    const logs = typeof getLogs === 'function' ? getLogs().slice(0, 10) : [];
-    const personalCtx = logs.length > 0
-      ? `User has ${logs.length} consciousness logs. Avg mood: ${(logs.reduce((s,l)=>s+(parseFloat(l.mood)||0),0)/logs.length).toFixed(1)}/10, focus: ${(logs.reduce((s,l)=>s+(parseFloat(l.focus)||0),0)/logs.length).toFixed(1)}/10.`
-      : 'No personal logs yet.';
-    updateStep('Context Integration', 'Personal context merged', true);
-
-    // Step 4: Synthesis
-    const s4 = addStep('📝', 'Synthesis', 'Generating deep answer...');
-    const searchSummary = searchData.map((d,i) => `[Source ${i+1}] Q: ${d.question}\nData: ${d.result.slice(0,400)}`).join('\n\n');
-    const finalPrompt = `RESEARCH QUERY: "${query}"\n\nRESEARCH DATA:\n${searchSummary}\n\nUSER CONTEXT: ${personalCtx}\n\nProvide a comprehensive, structured answer with:\n1. DIRECT ANSWER (2-3 sentences)\n2. KEY FINDINGS (3-5 bullet points with specific data)\n3. DEEPER ANALYSIS (mechanisms, why it matters)\n4. ACTIONABLE STEPS (what the user should do with this)\n5. CONTRARIAN VIEW (what most people get wrong)\n\nBe specific, cite the data sources, be direct. No fluff.`;
-
-    const finalAnswer = await callGroqFast(finalPrompt,
-      'You are an elite research synthesizer. You combine live web data with personal context to give the most accurate, actionable, specific answers possible. Lead with counterarguments. No fluff.',
-      900
-    );
-    _deepResearchFinalAnswer = finalAnswer;
-    updateStep('Synthesis', 'Complete', true);
-
-    // Step 5: Show result
-    const s5 = addStep('✅', 'Report Ready', 'Research complete');
-    updateStep('Report Ready', `${finalAnswer.length} char report generated`, true);
-    resultEl.textContent = finalAnswer;
-    if(actionsEl){actionsEl.style.display='flex';}
-
-  } catch (err) {
-    addStep('⚠️', 'Error', err.message || 'Research failed');
-    resultEl.textContent = 'Research failed. Try web search (🔍) instead.';
-  }
-}
-
-function closeResearchOverlay() {
-  const overlay = document.getElementById('aiResearchOverlay');
-  if (overlay) overlay.classList.remove('open');
-}
-
-function useResearchResult() {
-  if (!_deepResearchFinalAnswer) return;
-  window._chatAttachContext = '[DEEP RESEARCH RESULT]\n' + _deepResearchFinalAnswer;
-  closeResearchOverlay();
-  const ctx = _deepResearchCtx;
-  const inputId = ctx === 'compare' ? 'compareInput'
-    : ctx === 'mirror' ? 'mirrorPrompt'
-    : ctx === 'wealth' ? 'wealthAICustomQ'
-    : 'chatInput';
-  const inputEl = document.getElementById(inputId);
-  // Set a summarize prompt if input is empty, then auto-send
-  if (inputEl) {
-    if (!inputEl.value.trim()) inputEl.value = 'Summarize these research findings for me clearly and tell me what action I should take.';
-    inputEl.focus();
-  }
-  // Auto-send for chat context
-  setTimeout(() => {
-    if (ctx === 'chat' || !ctx) sendChat();
-    showToast('📚 Research answer sent to AI!');
-  }, 200);
-}
-
-// Close research overlay on backdrop tap
-document.addEventListener('click', e => {
-  const overlay = document.getElementById('aiResearchOverlay');
-  if (overlay && e.target === overlay) closeResearchOverlay();
-});
-
 // Delete UI is now handled inside the central _handleAuthUser hook above (DOMContentLoaded block)
 
 
-
-<!-- ═══════════════════════════════════════════
-     APP GUIDE MODAL
-═══════════════════════════════════════════ -->
-<div id="appGuideModal">
-  <div class="guide-modal-card">
-    <div class="guide-header">
-      <div class="guide-header-title">📖 Complete App Guide</div>
-      <button onclick="closeAppGuideModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text3)">✕</button>
-    </div>
-    <div class="guide-slides-wrap">
-      <div class="guide-slides" id="guideSlides">
-
-        <!-- SLIDE 1: Overview -->
-        <div class="guide-slide">
-          <div class="guide-slide-icon">🧠</div>
-          <div class="guide-slide-title">Consciousness OS</div>
-          <div class="guide-slide-sub">Your personal mind operating system. Track, analyze, and engineer your mental states — all free, all on-device.</div>
-          <div class="guide-feature-list">
-            <div class="guide-feature"><div class="guide-feature-icon">📋</div><div class="guide-feature-body"><div class="guide-feature-name">Daily Log</div><div class="guide-feature-desc">Log your mood, focus, energy, brainwave state, activity and thoughts every session. The raw data that powers everything else.</div><div class="guide-value-tag">↑ Self-awareness by 3x</div></div></div>
-            <div class="guide-feature"><div class="guide-feature-icon">📊</div><div class="guide-feature-body"><div class="guide-feature-name">Analysis Dashboard</div><div class="guide-feature-desc">See your cognitive patterns, weekly mind report, daily score, and AI-generated insights from your logged data.</div><div class="guide-value-tag">↑ Identify peak performance windows</div></div></div>
-            <div class="guide-feature"><div class="guide-feature-icon">🏛️</div><div class="guide-feature-body"><div class="guide-feature-name">Vault</div><div class="guide-feature-desc">Your encrypted personal data store — behavioral patterns, peak states, health profile, export options.</div><div class="guide-value-tag">↑ Long-term life data ownership</div></div></div>
-          </div>
-        </div>
-
-        <!-- SLIDE 2: AI Features -->
-        <div class="guide-slide">
-          <div class="guide-slide-icon">🤖</div>
-          <div class="guide-slide-title">AI Hub</div>
-          <div class="guide-slide-sub">6 specialized AI personalities trained on your data. Web search, deep research, photo analysis — all built in.</div>
-          <div class="guide-feature-list">
-            <div class="guide-feature"><div class="guide-feature-icon">🧠</div><div class="guide-feature-body"><div class="guide-feature-name">AI Twin</div><div class="guide-feature-desc">Your digital self. Trained on your logs, dreams, patterns. Gives deeply personal insights no generic AI can. Ask it anything about your mind.</div><div class="guide-value-tag">Most powerful personal AI</div></div></div>
-            <div class="guide-feature"><div class="guide-feature-icon">🏋️</div><div class="guide-feature-body"><div class="guide-feature-name">AI Coach</div><div class="guide-feature-desc">Goal-oriented coach. Set targets, get accountability plans, receive push-back on weak strategies.</div><div class="guide-value-tag">↑ Goal completion rate</div></div></div>
-            <div class="guide-feature"><div class="guide-feature-icon">🔮</div><div class="guide-feature-body"><div class="guide-feature-name">AI Sage</div><div class="guide-feature-desc">Philosophy, existential questions, big-picture thinking. Draws from Stoicism, Vedanta, modern science.</div><div class="guide-value-tag">↑ Mental clarity & meaning</div></div></div>
-            <div class="guide-feature"><div class="guide-feature-icon">🔍</div><div class="guide-feature-body"><div class="guide-feature-name">Web Search + Deep Research</div><div class="guide-feature-desc">Tap 🔍 in any AI input to search the live web. Tap 🔬 for multi-step deep research with synthesized reports.</div><div class="guide-value-tag">Real-time knowledge layer</div></div></div>
-            <div class="guide-feature"><div class="guide-feature-icon">📎</div><div class="guide-feature-body"><div class="guide-feature-name">Photo & File Analysis</div><div class="guide-feature-desc">Tap 📎 to attach an image. The AI uses vision to analyze charts, notes, screenshots — then answers in context.</div><div class="guide-value-tag">Multimodal AI reasoning</div></div></div>
-          </div>
-        </div>
-
-        <!-- SLIDE 3: Oracle + Dreams -->
-        <div class="guide-slide">
-          <div class="guide-slide-icon">🔮</div>
-          <div class="guide-slide-title">Oracle & Dreams</div>
-          <div class="guide-slide-sub">Predict your future states. Decode your subconscious. Two of the most powerful tools for self-engineering.</div>
-          <div class="guide-feature-list">
-            <div class="guide-feature"><div class="guide-feature-icon">⚛️</div><div class="guide-feature-body"><div class="guide-feature-name">Oracle — Quantum State</div><div class="guide-feature-desc">Computes your current consciousness probability state from all logged data. Shows focus, creativity, flow probability as quantum metrics.</div><div class="guide-value-tag">↑ Decision timing accuracy</div></div></div>
-            <div class="guide-feature"><div class="guide-feature-icon">🌀</div><div class="guide-feature-body"><div class="guide-feature-name">Deep Prediction</div><div class="guide-feature-desc">AI predicts your next 24–72h cognitive state based on patterns, cycles, and historical data. Plan high-stakes work around your peaks.</div><div class="guide-value-tag">↑ Output quality by scheduling right</div></div></div>
-            <div class="guide-feature"><div class="guide-feature-icon">🌙</div><div class="guide-feature-body"><div class="guide-feature-name">Dreams Journal</div><div class="guide-feature-desc">Log dreams immediately on wake. AI analyzes symbols, emotional tone, recurring themes. Tracks lucidity scores over time.</div><div class="guide-value-tag">↑ Subconscious pattern access</div></div></div>
-            <div class="guide-feature"><div class="guide-feature-icon">⏰</div><div class="guide-feature-body"><div class="guide-feature-name">Morning Debrief</div><div class="guide-feature-desc">Guided recall protocol. Lie still, replay, then dump everything before it fades. Builds lucid dreaming skill over weeks.</div><div class="guide-value-tag">Builds lucid dreaming skill</div></div></div>
-          </div>
-        </div>
-
-        <!-- SLIDE 4: Neural Beats + Analysis -->
-        <div class="guide-slide">
-          <div class="guide-slide-icon">🎵</div>
-          <div class="guide-slide-title">Neural Beats & Analysis</div>
-          <div class="guide-slide-sub">Engineer your brainwave states with sound. Then measure if it worked with your data.</div>
-          <div class="guide-feature-list">
-            <div class="guide-feature"><div class="guide-feature-icon">🎵</div><div class="guide-feature-body"><div class="guide-feature-name">Neural Beats</div><div class="guide-feature-desc">Binaural beats and isochronic tones tuned to Alpha, Beta, Theta, Delta, Gamma. Select a state, play, log the result.</div><div class="guide-value-tag">↑ Controlled focus sessions</div></div></div>
-            <div class="guide-feature"><div class="guide-feature-icon">📈</div><div class="guide-feature-body"><div class="guide-feature-name">Behavioral Patterns</div><div class="guide-feature-desc">AI detects your emotional cycles, energy rhythms, activity correlations from logged data. Find your hidden patterns.</div><div class="guide-value-tag">↑ Break negative cycles</div></div></div>
-            <div class="guide-feature"><div class="guide-feature-icon">🌟</div><div class="guide-feature-body"><div class="guide-feature-name">Peak States</div><div class="guide-feature-desc">Identifies your best-performing days from logs — what activity, time, brainwave, mood combined to create your top sessions. Replicate them.</div><div class="guide-value-tag">↑ Replicate best performance</div></div></div>
-            <div class="guide-feature"><div class="guide-feature-icon">🪞</div><div class="guide-feature-body"><div class="guide-feature-name">AI Mirror</div><div class="guide-feature-desc">Ask deep questions about yourself — "Who am I based on my data?" "What patterns hold me back?" Gets brutally honest answers from your actual data.</div><div class="guide-value-tag">↑ Radical self-knowledge</div></div></div>
-          </div>
-        </div>
-
-        <!-- SLIDE 5: Vault + Pro -->
-        <div class="guide-slide">
-          <div class="guide-slide-icon">🏛️</div>
-          <div class="guide-slide-title">Vault, Pro & Tips</div>
-          <div class="guide-slide-sub">Everything is free. Supporter tier unlocks early-access features. Here's how to get the most from the app.</div>
-          <div class="guide-feature-list">
-            <div class="guide-feature"><div class="guide-feature-icon">📤</div><div class="guide-feature-body"><div class="guide-feature-name">Export Your Data</div><div class="guide-feature-desc">Export all logs, dreams, chat history as JSON or CSV. Your data stays yours — always downloadable, never locked in.</div><div class="guide-value-tag">Full data ownership</div></div></div>
-            <div class="guide-feature"><div class="guide-feature-icon">🔥</div><div class="guide-feature-body"><div class="guide-feature-name">Streak Engine</div><div class="guide-feature-desc">Log daily to build your streak. 7-day chains unlock milestone celebrations. Consistency is the compound interest of self-knowledge.</div><div class="guide-value-tag">↑ Habit formation 40%</div></div></div>
-            <div class="guide-feature"><div class="guide-feature-icon">💡</div><div class="guide-feature-body"><div class="guide-feature-name">Pro Tips</div><div class="guide-feature-desc">• Log immediately after each session, not hours later.<br>• Use Neural Beats THEN log — test what actually moves your metrics.<br>• Let AI Twin accumulate 14+ logs before asking for deep pattern analysis.<br>• Oracle prediction is most accurate after 30+ logs.</div><div class="guide-value-tag">Max value strategy</div></div></div>
-            <div class="guide-feature"><div class="guide-feature-icon">❤️</div><div class="guide-feature-body"><div class="guide-feature-name">Support the App</div><div class="guide-feature-desc">Built solo, on a phone, with zero funding. ₹25/month keeps development alive and unlocks early access to upcoming features.</div><div class="guide-value-tag">Help build the future</div></div></div>
-          </div>
-        </div>
-
-      </div>
-    </div>
-    <div class="guide-nav">
-      <button class="guide-nav-btn" id="guidePrevBtn" onclick="guideNav(-1)">← Back</button>
-      <div class="guide-dots" id="guideDots"></div>
-      <button class="guide-nav-btn primary" id="guideNextBtn" onclick="guideNav(1)">Next →</button>
-    </div>
-  </div>
-</div>
-
-<!-- ═══ AI RESEARCH OVERLAY ═══ -->
-<div id="aiResearchOverlay">
-  <div class="research-card">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-      <div class="research-title" id="researchTitle">🔬 Deep Research</div>
-      <button onclick="closeResearchOverlay()" style="background:none;border:none;font-size:18px;cursor:pointer;color:var(--text3)">✕</button>
-    </div>
-    <div id="researchSteps"></div>
-    <div id="researchResult" class="research-result"></div>
-    <div id="researchActions" style="display:none;margin-top:12px;gap:8px">
-      <button class="btn btn-primary" onclick="useResearchResult()" style="flex:1">↗ Use This Answer</button>
-      <button class="btn btn-secondary" onclick="closeResearchOverlay()">Close</button>
-    </div>
-  </div>
-</div>
 </script>
-
-<script>
-// ═══════════════════════════════════════════════
-//  WORKER DIAGNOSTICS — tap "Test AI Worker" in AI Hub
-// ═══════════════════════════════════════════════
-async function testWorkerConnection() {
-  const el = document.getElementById('workerDiagResult');
-  if (!el) return;
-  el.style.display = 'block';
-  el.style.color = 'var(--text3)';
-  el.textContent = '⏳ Testing Worker connection...';
-  const t0 = Date.now();
-  try {
-    const resp = await fetch(_WORKER_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
-        max_tokens: 30,
-        temperature: 0.5,
-        messages: [{ role: 'user', content: 'Reply with exactly: WORKER_OK' }]
-      }),
-      signal: AbortSignal.timeout(20000)
-    });
-    const ms = Date.now() - t0;
-    const status = resp.status;
-    const body = await resp.text();
-    let parsed;
-    try { parsed = JSON.parse(body); } catch(e) { parsed = null; }
-    const content = parsed?.choices?.[0]?.message?.content || '';
-    const errMsg = parsed?.error?.message || '';
-
-    if (!resp.ok) {
-      el.style.color = '#ef4444';
-      el.innerHTML = `❌ Worker HTTP ${status} (${ms}ms)<br><b>Raw response:</b> ${body.slice(0, 300)}<br><br>⚠️ <b>FIX:</b> Go to <a href="https://dash.cloudflare.com" target="_blank" style="color:var(--primary)">Cloudflare Dashboard</a> → Workers → hidden-wildflower-3301 → check Groq API key secret is set correctly.`;
-    } else if (errMsg) {
-      el.style.color = '#f59e0b';
-      el.innerHTML = `⚠️ Worker responded but Groq returned error (${ms}ms)<br><b>Error:</b> ${errMsg}<br><br>💡 <b>FIX:</b> Your Groq API key in the Worker secret may be expired or wrong. Go to <a href="https://dash.cloudflare.com" target="_blank" style="color:var(--primary)">Cloudflare</a> → Workers → Settings → Variables → GROQ_API_KEY → update it with a fresh key from <a href="https://console.groq.com" target="_blank" style="color:var(--primary)">console.groq.com</a>.`;
-    } else if (content) {
-      el.style.color = '#10b981';
-      el.innerHTML = `✅ Worker is working! (${ms}ms)<br><b>Response:</b> "${content}"<br><br>🟢 Worker & Groq are healthy. If AI chat still fails, refresh the page and try again.`;
-    } else {
-      el.style.color = '#f59e0b';
-      el.innerHTML = `⚠️ Worker responded but content was empty (${ms}ms)<br><b>Raw:</b> ${body.slice(0, 200)}`;
-    }
-  } catch(e) {
-    const ms = Date.now() - t0;
-    el.style.color = '#ef4444';
-    if (e.name === 'TimeoutError') {
-      el.innerHTML = `❌ Worker TIMED OUT after ${ms}ms — Groq is not responding.<br><br>💡 <b>Possible causes:</b><br>• Groq API key in Worker secret is missing/wrong<br>• Groq service is down (check <a href="https://status.groq.com" target="_blank" style="color:var(--primary)">status.groq.com</a>)<br>• Cloudflare Worker threw an exception<br><br>👉 Check Worker logs at <a href="https://dash.cloudflare.com" target="_blank" style="color:var(--primary)">dash.cloudflare.com</a>`;
-    } else {
-      el.innerHTML = `❌ Connection error (${ms}ms): ${e.message}<br><br>Check console (F12) for details.`;
-    }
-  }
-}
-
-async function testWorkerRaw() {
-  const el = document.getElementById('workerDiagResult');
-  if (!el) return;
-  el.style.display = 'block';
-  el.style.color = 'var(--text3)';
-  el.textContent = '⏳ Fetching raw response from Worker...';
-  try {
-    const resp = await fetch(_WORKER_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
-        max_tokens: 20,
-        messages: [{ role: 'user', content: 'Say: TEST_OK' }]
-      }),
-      signal: AbortSignal.timeout(15000)
-    });
-    const raw = await resp.text();
-    el.style.color = resp.ok ? '#10b981' : '#ef4444';
-    el.innerHTML = `<b>HTTP Status:</b> ${resp.status}<br><b>Worker URL:</b> ${_WORKER_URL}<br><b>Raw body (first 500 chars):</b><br><code style="font-size:10px;word-break:break-all">${raw.slice(0, 500).replace(/</g,'&lt;')}</code>`;
-  } catch(e) {
-    el.style.color = '#ef4444';
-    el.textContent = 'Error: ' + e.message;
-  }
-}
-</script>
-
 </body>
 </html>
