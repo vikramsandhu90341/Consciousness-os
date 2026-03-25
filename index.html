@@ -75,12 +75,17 @@ async function callGroqFast(prompt,system,maxTokens,attempt){
   system=system||'You are an expert strategic AI inside Consciousness OS. Titan Protocol: first-principles, counterarguments first, no fluff, action > theory. Be precise, specific, direct.';
   maxTokens=maxTokens||800;
   attempt=attempt||1;
+  // attempt 1: llama-3.3-70b, 18s timeout
+  // attempt 2: llama-3.1-8b (faster), 15s timeout, smaller tokens
+  const _model = attempt===1 ? 'llama-3.3-70b-versatile' : 'llama-3.1-8b-instant';
+  const _timeout = attempt===1 ? 18000 : 15000;
+  const _tokens = attempt===1 ? maxTokens : Math.min(maxTokens,500);
   try{
     const resp=await fetch(_WORKER_URL,{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:maxTokens,temperature:0.8,messages:[{role:'system',content:system},{role:'user',content:prompt}]}),
-      signal:AbortSignal.timeout(35000)
+      body:JSON.stringify({model:_model,max_tokens:_tokens,temperature:0.8,messages:[{role:'system',content:system},{role:'user',content:prompt}]}),
+      signal:AbortSignal.timeout(_timeout)
     });
     if(!resp.ok){const txt=await resp.text().catch(()=>'');throw new Error('Worker '+resp.status+': '+txt.slice(0,80));}
     const d=await resp.json();
@@ -89,9 +94,9 @@ async function callGroqFast(prompt,system,maxTokens,attempt){
     if(!content)throw new Error('Empty response');
     return content;
   }catch(e){
-    // Auto-retry once with smaller model on timeout
-    if(attempt===1 && (e.name==='TimeoutError'||e.message.includes('timeout')||e.message.includes('network'))){
-      return callGroqFast(prompt,system,Math.min(maxTokens,600),2);
+    // Auto-retry once with faster smaller model
+    if(attempt===1 && (e.name==='TimeoutError'||e.message.includes('timeout')||e.message.includes('network')||e.message.includes('504')||e.message.includes('502'))){
+      return callGroqFast(prompt,system,maxTokens,2);
     }
     throw e;
   }
@@ -6287,7 +6292,7 @@ async function callAI(model,messages,userContext){
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:900,temperature:0.85,
         messages:[{role:'system',content:model.persona+'\n\nYou are an advanced AI consciousness coach in Consciousness OS.'+userContext},...messages]}),
-      signal:AbortSignal.timeout(35000)});
+      signal:AbortSignal.timeout(18000)});
     if(!resp.ok){const t=await resp.text().catch(()=>'');throw new Error('Worker '+resp.status+': '+t.slice(0,80));}
     const d=await resp.json();
     if(d.error)throw new Error(d.error.message);
@@ -6309,7 +6314,7 @@ async function callAI(model,messages,userContext){
     }catch(geminiErr){
       // Gemini failed (revoked key, quota, network) — silently use Groq Worker
       console.warn('[COS] Gemini failed, using Groq Worker fallback:', geminiErr.message);
-      const resp=await fetch(_WORKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:900,temperature:0.85,messages:[{role:'system',content:systemMsg},...messages]}),signal:AbortSignal.timeout(35000)});
+      const resp=await fetch(_WORKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:900,temperature:0.85,messages:[{role:'system',content:systemMsg},...messages]}),signal:AbortSignal.timeout(18000)});
       if(!resp.ok){const t=await resp.text().catch(()=>'');throw new Error('Worker '+resp.status+': '+t.slice(0,80));}
       const d=await resp.json();if(d.error)throw new Error(d.error.message);
       return d.choices?.[0]?.message?.content||'No response';
@@ -6330,8 +6335,17 @@ async function callAI(model,messages,userContext){
     const resp=await fetch('https://api.deepseek.com/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},body:JSON.stringify({model:model.apiModel,max_tokens:900,messages:[{role:'system',content:systemMsg},...messages]})});
     const data=await resp.json();if(data.error)throw new Error(data.error.message);return data.choices?.[0]?.message?.content||'No response';
   }else if(provider==='groq'){
-    const resp=await fetch(_WORKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:model.apiModel||'llama-3.3-70b-versatile',max_tokens:900,temperature:0.85,messages:[{role:'system',content:systemMsg},...messages]}),signal:AbortSignal.timeout(35000)});
-    if(!resp.ok){const t=await resp.text().catch(()=>'');throw new Error('Worker '+resp.status+': '+t.slice(0,80));}
+    // attempt 1: big model 18s; attempt 2: fast model 15s (handled by callGroqFast internally)
+    const resp=await fetch(_WORKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:model.apiModel||'llama-3.3-70b-versatile',max_tokens:900,temperature:0.85,messages:[{role:'system',content:systemMsg},...messages]}),signal:AbortSignal.timeout(18000)});
+    if(!resp.ok){const t=await resp.text().catch(()=>'');
+      // retry with fast model on gateway errors
+      if(resp.status===504||resp.status===502||resp.status===503){
+        const r2=await fetch(_WORKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'llama-3.1-8b-instant',max_tokens:700,temperature:0.85,messages:[{role:'system',content:systemMsg},...messages]}),signal:AbortSignal.timeout(15000)});
+        if(!r2.ok){const t2=await r2.text().catch(()=>'');throw new Error('Worker '+r2.status+': '+t2.slice(0,80));}
+        const d2=await r2.json();if(d2.error)throw new Error(d2.error.message);return d2.choices?.[0]?.message?.content||'No response';
+      }
+      throw new Error('Worker '+resp.status+': '+t.slice(0,80));
+    }
     const data=await resp.json();if(data.error)throw new Error(data.error.message);return data.choices?.[0]?.message?.content||'No response';
   }
   throw new Error('Unknown provider: '+provider);
@@ -6621,8 +6635,17 @@ async function _sendChatWithMsg(msg,skipUserBubble){
   loadDiv.innerHTML=`<div class="ai-tag">${model.emoji} ${model.name}</div><div class="ai-loading"><span></span><span></span><span></span></div><span style="font-size:11px;color:var(--text3);margin-left:4px">Thinking...</span>`;
   loadWrap.appendChild(loadDiv);
   msgs.appendChild(loadWrap);msgs.scrollTop=msgs.scrollHeight;
-  // Safety: auto-remove after 40s if never resolved
-  const _loadTimeout=setTimeout(()=>{const el=document.getElementById(_loadId);if(el)el.remove();},40000);
+  // Safety: if 38s pass and nothing resolved, replace loading with timeout error
+  const _loadTimeout=setTimeout(()=>{
+    const el=document.getElementById(_loadId);
+    if(el){
+      el.innerHTML='<div class="chat-msg ai" style="width:100%"><div class="ai-tag">'+model.emoji+' '+model.name+'</div>'
+        +'<div style="color:#f59e0b;font-size:12px;margin:4px 0">⏱️ No response after 38s — Groq Worker may be slow. Tap Retry.</div>'
+        +'<button onclick="retryLastChat(this)" style="font-size:12px;background:var(--primary);color:#fff;border:none;border-radius:8px;padding:5px 14px;cursor:pointer;margin-top:4px">↩ Retry</button></div>';
+      el.querySelector('button')&&(el.querySelector('[data-retry-msg]')||el.querySelector('.chat-msg'))&&(el.querySelector('.chat-msg').dataset.retryMsg=msg);
+    }
+    showToast('⏱️ AI timed out — tap Retry');
+  },38000);
 
   const logs=getLogs().slice(0,30);
   const dreams=getDreams().slice(0,15);
@@ -6661,9 +6684,25 @@ ${L.goal?'CURRENT GOAL: "'+L.goal.slice(0,100)+'"':''}`;
   if(studyData.stField)userContext+=`\n\nSTUDY: field=${studyData.stField} target=${studyData.stTargetCareer||'?'}`;
   userContext+=`\n\nCURRENT TIME: ${new Date().toLocaleString('en-IN',{timeZone:'Asia/Kolkata'})} IST`;
 
+  // Helper: get fresh msgs reference (user may have switched tabs)
+  const _getMsgs=()=>document.getElementById('chatMessages');
+  // Helper: append node to chat — switches to AI Hub tab if needed so message is never lost
+  const _appendToChat=(node)=>{
+    let m=_getMsgs();
+    if(!m){
+      // Switch to AI Hub tab so the message container exists
+      try{ switchTab('aihub'); }catch(ex){}
+      m=_getMsgs();
+    }
+    if(m){m.appendChild(node);m.scrollTop=m.scrollHeight;}
+  };
+
+  let _aiDone=false;
   try{
     const text=await callAI(model,apiMessages,userContext);
-    clearTimeout(_loadTimeout);const _lw=document.getElementById(_loadId);if(_lw)_lw.remove();
+    _aiDone=true;
+    clearTimeout(_loadTimeout);
+    const _lw=document.getElementById(_loadId);if(_lw)_lw.remove();
     // Guard: if response is empty/null, show error with retry
     if(!text||typeof text!=='string'||!text.trim()){
       const errWrap2=document.createElement('div');errWrap2.className='chat-msg-wrap';
@@ -6672,7 +6711,7 @@ ${L.goal?'CURRENT GOAL: "'+L.goal.slice(0,100)+'"':''}`;
         +'<span style="color:#f59e0b">⚠️ AI returned empty response — tap Retry.</span> '
         +'<button onclick="retryLastChat(this)" style="margin-left:6px;font-size:11px;background:var(--primary);color:#fff;border:none;border-radius:6px;padding:2px 8px;cursor:pointer">↩ Retry</button>';
       errDiv2.dataset.retryMsg=msg;errDiv2.dataset.retryModel=curAIModel;
-      errWrap2.appendChild(errDiv2);msgs.appendChild(errWrap2);msgs.scrollTop=msgs.scrollHeight;
+      errWrap2.appendChild(errDiv2);_appendToChat(errWrap2);
       return;
     }
     // ── Wrap in chat-msg-wrap so regen/copy/delete buttons work ──
@@ -6687,29 +6726,31 @@ ${L.goal?'CURRENT GOAL: "'+L.goal.slice(0,100)+'"':''}`;
       +'<button class="msg-action-btn" onclick="copyChatMsg(this)" title="Copy">📋</button>'
       +'<button class="msg-action-btn" onclick="deleteChatMsg(this)" title="Delete">🗑️</button>';
     aiWrap.appendChild(aiDiv);aiWrap.appendChild(aiActions);
-    msgs.appendChild(aiWrap);
+    _appendToChat(aiWrap);
+    const m2=_getMsgs();
     let i=0;const type=()=>{
-      if(i<text.length){typeSpan.textContent+=text[i++];msgs.scrollTop=msgs.scrollHeight;setTimeout(type,8);}
-      else{aiDiv.dataset.text=text;} // store full text for copy/regen after typing done
+      if(i<text.length){typeSpan.textContent+=text[i++];if(m2)m2.scrollTop=m2.scrollHeight;setTimeout(type,8);}
+      else{aiDiv.dataset.text=text;}
     };type();
     chatHistory.push({role:'ai',content:text,model:curAIModel});
   }catch(e){
-    loadDiv.remove();
-    clearTimeout(_loadTimeout);const _lw2=document.getElementById(_loadId);if(_lw2)_lw2.remove();
-    // Show proper error with retry button
+    clearTimeout(_loadTimeout);
+    const _lw2=document.getElementById(_loadId);if(_lw2)_lw2.remove();
+    // Show proper error with retry button — always visible
     const errWrap=document.createElement('div');errWrap.className='chat-msg-wrap';
     const errDiv=document.createElement('div');errDiv.className='chat-msg ai';
-    const errMsg=e.name==='TimeoutError'||e.message.includes('timeout')
-      ? '⏱️ Worker timed out — Groq may be slow or your Worker key is wrong. <b>Go to AI Hub → 🔧 Diagnostics → Test AI Worker</b> to check.'
-      : ('❌ '+( e.message||'Connection failed')+ ' — <b>Go to AI Hub → 🔧 Diagnostics → Test AI Worker</b> for details.');
+    const isTimeout=e.name==='TimeoutError'||String(e.message).includes('timeout')||String(e.message).includes('504')||String(e.message).includes('502');
+    const errMsg=isTimeout
+      ? '⏱️ Groq Worker timed out. Try again — it usually works on 2nd attempt.'
+      : ('❌ '+(e.message||'Connection failed'));
     errDiv.innerHTML='<div class="ai-tag">'+model.emoji+' '+model.name+'</div>'
-      +'<span style="color:#f59e0b">⚠️ '+errMsg+'</span> '
-      +'<button onclick="retryLastChat(this)" style="margin-left:6px;font-size:11px;background:var(--primary);color:#fff;border:none;border-radius:6px;padding:2px 8px;cursor:pointer">↩ Retry</button>';
+      +'<div style="color:#f59e0b;font-size:12px;margin:4px 0">⚠️ '+errMsg+'</div>'
+      +'<button onclick="retryLastChat(this)" style="font-size:12px;background:var(--primary);color:#fff;border:none;border-radius:8px;padding:5px 14px;cursor:pointer;margin-top:4px">↩ Retry</button>';
     errDiv.dataset.retryMsg=msg;errDiv.dataset.retryModel=curAIModel;
-    errWrap.appendChild(errDiv);msgs.appendChild(errWrap);
-    msgs.scrollTop=msgs.scrollHeight;
+    errWrap.appendChild(errDiv);_appendToChat(errWrap);
+    showToast('⚠️ AI error — tap Retry in chat');
   }
-  buildSuggestedQs();
+  try{buildSuggestedQs();}catch(ex){}
 }
 async function retryLastChat(btn){
   const errDiv=btn.closest('.chat-msg');
@@ -14648,6 +14689,25 @@ function updateProBar() {
 // Run on load and after pro changes
 document.addEventListener('DOMContentLoaded', () => {
   setTimeout(updateProBar, 800);
+  // Ensure no stale backdrop/overlay is blocking topbar buttons
+  const clearStaleOverlays = () => {
+    document.querySelectorAll('.lfg-bd').forEach(el => el.classList.remove('open'));
+    document.getElementById('lfgBd')?.classList.remove('open');
+    document.getElementById('langFlagGrid')?.classList.remove('open');
+    // Raise topbar above any possible overlay ghost
+    const tb = document.querySelector('.topbar');
+    if (tb) tb.style.zIndex = '1000';
+    // Ensure topbar buttons are always tappable
+    document.querySelectorAll('.topbar .tb-btn, #proUpgradeBar').forEach(el => {
+      el.style.position = 'relative';
+      el.style.zIndex = '1001';
+      el.style.webkitTapHighlightColor = 'rgba(124,58,237,.25)';
+      el.style.touchAction = 'manipulation';
+    });
+  };
+  clearStaleOverlays();
+  setTimeout(clearStaleOverlays, 500);
+  setTimeout(clearStaleOverlays, 1500);
   // Force-unlock all gates — runs multiple times to beat lazy tab rendering
   const forceUnlockAll = () => {
     ['peakStatesGate','patternsGate','mirrorGate','oraclePredictGate'].forEach(id => {
@@ -15289,11 +15349,13 @@ function handleChatFileSelect(event, ctx) {
     const chatIn = document.getElementById(ctx === 'chat' ? 'chatInput' : ctx === 'compare' ? 'compareInput' : ctx === 'mirror' ? 'mirrorPrompt' : 'chatInput');
     if (chatIn) {
       chatIn.focus();
-      chatIn.placeholder = '💬 Image attached! Ask about it...';
-      chatIn.style.borderColor = 'var(--primary)';
-      chatIn.style.boxShadow = '0 0 0 2px rgba(124,58,237,.3)';
-      setTimeout(() => { chatIn.style.borderColor = ''; chatIn.style.boxShadow = ''; }, 3000);
+      chatIn.placeholder = '💬 Image attached! Type your question about it and tap ➤ Send...';
+      chatIn.style.transition='box-shadow .2s,border-color .2s';
+      chatIn.style.boxShadow='0 0 0 3px rgba(124,58,237,.5)';
+      chatIn.style.borderColor='var(--primary)';
       chatIn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // Reset style after 5s but keep placeholder until they type
+      setTimeout(() => { chatIn.style.boxShadow = ''; chatIn.style.borderColor = ''; }, 5000);
     }
   };
   reader.readAsDataURL(file);
@@ -15358,13 +15420,19 @@ async function aiWebSearch(ctx) {
   const inputEl = document.getElementById(inputId);
   const query = inputEl ? inputEl.value.trim() : '';
   if (!query) {
-    const q = (window.prompt ? window.prompt('🔍 Enter your search question:') : null) || '';
-    if (!q.trim()) {
-      if(inputEl){ inputEl.focus(); inputEl.style.transition='box-shadow .15s'; inputEl.style.boxShadow='0 0 0 3px rgba(124,58,237,.5)'; setTimeout(()=>{inputEl.style.boxShadow='';},1200); }
-      showToast('💡 Type your question first, then tap 🔍 Search');
-      return;
+    // Visually guide user to type — pulsing border + placeholder change
+    if(inputEl){
+      inputEl.focus();
+      const oldPlaceholder = inputEl.placeholder;
+      inputEl.placeholder = '🔍 Type your search question here, then tap Search again...';
+      inputEl.style.transition='box-shadow .15s,border-color .15s';
+      inputEl.style.boxShadow='0 0 0 3px rgba(6,182,212,.6)';
+      inputEl.style.borderColor='#06b6d4';
+      setTimeout(()=>{ inputEl.style.boxShadow=''; inputEl.style.borderColor=''; inputEl.placeholder=oldPlaceholder; },3500);
+      inputEl.scrollIntoView({behavior:'smooth',block:'center'});
     }
-    if(inputEl) inputEl.value = q.trim();
+    showToast('💡 Type your question in the box first, then tap 🔍 Search');
+    return;
   }
   const statusId = ctx + 'ToolbarStatus';
   const statusEl = document.getElementById(statusId);
@@ -15449,13 +15517,19 @@ async function aiDeepResearch(ctx) {
   const inputEl = document.getElementById(inputId);
   const query = inputEl ? inputEl.value.trim() : '';
   if (!query) {
-    const q = (window.prompt ? window.prompt('🔬 Enter your research question:') : null) || '';
-    if (!q.trim()) {
-      if(inputEl){ inputEl.focus(); inputEl.style.transition='box-shadow .15s'; inputEl.style.boxShadow='0 0 0 3px rgba(124,58,237,.5)'; setTimeout(()=>{inputEl.style.boxShadow='';},1200); }
-      showToast('💡 Type your question first, then tap 🔬 Research');
-      return;
+    // Visually guide user to type — pulsing border + placeholder change
+    if(inputEl){
+      inputEl.focus();
+      const oldPlaceholder2 = inputEl.placeholder;
+      inputEl.placeholder = '🔬 Type your research question here, then tap Research again...';
+      inputEl.style.transition='box-shadow .15s,border-color .15s';
+      inputEl.style.boxShadow='0 0 0 3px rgba(124,58,237,.6)';
+      inputEl.style.borderColor='#7c3aed';
+      setTimeout(()=>{ inputEl.style.boxShadow=''; inputEl.style.borderColor=''; inputEl.placeholder=oldPlaceholder2; },3500);
+      inputEl.scrollIntoView({behavior:'smooth',block:'center'});
     }
-    if(inputEl) inputEl.value = q.trim();
+    showToast('💡 Type your question in the box first, then tap 🔬 Research');
+    return;
   }
   const overlay = document.getElementById('aiResearchOverlay');
   const stepsEl = document.getElementById('researchSteps');
