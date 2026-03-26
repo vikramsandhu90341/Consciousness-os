@@ -74,12 +74,14 @@ const _WORKER_URL='https://hidden-wildflower-3301.vikramsandhu90341.workers.dev'
 async function callGroqFast(prompt,system,maxTokens){
   system=system||'You are an expert strategic AI inside Consciousness OS. Titan Protocol: first-principles, counterarguments first, no fluff, action > theory. Be precise, specific, direct.';
   maxTokens=maxTokens||800;
-  const resp=await fetch(_WORKER_URL,{
+  const _ctrl0=new AbortController();const _t0=setTimeout(()=>_ctrl0.abort(),15000);
+  let resp;
+  try{resp=await fetch(_WORKER_URL,{
     method:'POST',
     headers:{'Content-Type':'application/json'},
     body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:maxTokens,temperature:0.8,messages:[{role:'system',content:system},{role:'user',content:prompt}]}),
-    signal:AbortSignal.timeout(15000)
-  });
+    signal:_ctrl0.signal
+  });}finally{clearTimeout(_t0);}
   if(!resp.ok){const txt=await resp.text().catch(()=>'');throw new Error(`Worker error ${resp.status}: ${txt.slice(0,120)}`);}
   const d=await resp.json();
   if(d.error)throw new Error(d.error.message||'Groq error');
@@ -1499,7 +1501,7 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
       <div style="font-size:26px;margin-bottom:6px">🚀</div>
       <div style="font-family:Syne,sans-serif;font-size:17px;font-weight:800;color:#10b981;margin-bottom:4px">All Features Free Right Now</div>
       <div style="font-size:11px;color:var(--text3);margin-bottom:12px;line-height:1.6">No credit card. No payment. No catch.<br>We'll notify you before anything becomes paid.</div>
-      <button onclick="startFreeTrialFromModal()" style="width:100%;background:linear-gradient(135deg,#10b981,#06b6d4);color:#fff;border:none;border-radius:12px;padding:14px;font-size:15px;font-weight:800;cursor:pointer;letter-spacing:.3px">
+      <button onclick="startFreeTrialFromModal()" id="startFreeBtn" style="width:100%;background:linear-gradient(135deg,#10b981,#06b6d4);color:#fff;border:none;border-radius:12px;padding:14px;font-size:15px;font-weight:800;cursor:pointer;letter-spacing:.3px">
         ✨ Start Free — Unlock Everything
       </button>
     </div>
@@ -1634,7 +1636,7 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
     <div style="display:flex;flex-direction:column;flex:1 1 0;min-width:0;justify-content:center;overflow:hidden">
       <div class="topbar-brand" style="line-height:1;font-size:11px;letter-spacing:0px;white-space:nowrap;overflow:hidden;text-overflow:clip">🧠 Consciousness OS</div>
       <div id="proUpgradeBar" onclick="proBarTap()" style="display:block;margin-top:2px;border-radius:5px;padding:2px 6px;font-size:8px;font-weight:900;color:#fff;letter-spacing:.1px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:linear-gradient(135deg,#7c3aed,#06b6d4);max-width:100%">
-        🎁 Free Trial — All Features Open
+        🎁 Free Trial
       </div>
     </div>
     <!-- Mobile-only quick actions: lang flag btn + theme + account -->
@@ -6175,11 +6177,12 @@ async function callAI(model,messages,userContext){
   if(provider==='groq') apiKey = GROQ_KEY;
   if(!freeProviders.includes(provider)&&!apiKey){
     // No key set → route through Groq with the model's persona (seamless fallback)
-    const resp=await fetch(_WORKER_URL,{method:'POST',
+    const _ctrl2=new AbortController();const _t2=setTimeout(()=>_ctrl2.abort(),15000);
+    let resp;try{resp=await fetch(_WORKER_URL,{method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:900,temperature:0.85,
         messages:[{role:'system',content:model.persona+'\n\nYou are an advanced AI consciousness coach in Consciousness OS.'+userContext},...messages]}),
-      signal:AbortSignal.timeout(15000)});
+      signal:_ctrl2.signal});}finally{clearTimeout(_t2);}
     if(!resp.ok){const t=await resp.text().catch(()=>'');throw new Error('Worker '+resp.status+': '+t.slice(0,80));}
     const d=await resp.json();
     if(d.error)throw new Error(d.error.message);
@@ -6212,9 +6215,10 @@ async function callAI(model,messages,userContext){
     const resp=await fetch('https://api.deepseek.com/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},body:JSON.stringify({model:model.apiModel,max_tokens:900,messages:[{role:'system',content:systemMsg},...messages]})});
     const data=await resp.json();if(data.error)throw new Error(data.error.message);return data.choices?.[0]?.message?.content||'No response';
   }else if(provider==='groq'){
-    const resp=await fetch(_WORKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:model.apiModel||'llama-3.3-70b-versatile',max_tokens:900,temperature:0.85,messages:[{role:'system',content:systemMsg},...messages]}),signal:AbortSignal.timeout(15000)});
-    if(!resp.ok){const t=await resp.text().catch(()=>'');throw new Error('Worker '+resp.status+': '+t.slice(0,80));}
-    const data=await resp.json();if(data.error)throw new Error(data.error.message);return data.choices?.[0]?.message?.content||'No response';
+    const _ctrl1=new AbortController();const _t1=setTimeout(()=>_ctrl1.abort(),15000);
+    let _resp1;try{_resp1=await fetch(_WORKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:model.apiModel||'llama-3.3-70b-versatile',max_tokens:900,temperature:0.85,messages:[{role:'system',content:systemMsg},...messages]}),signal:_ctrl1.signal});}finally{clearTimeout(_t1);}
+    if(!_resp1.ok){const t=await _resp1.text().catch(()=>'');throw new Error('Worker '+_resp1.status+': '+t.slice(0,80));}
+    const data=await _resp1.json();if(data.error)throw new Error(data.error.message);return data.choices?.[0]?.message?.content||'No response';
   }
   throw new Error('Unknown provider: '+provider);
 }
@@ -6442,8 +6446,14 @@ ${L.goal?'CURRENT GOAL: "'+L.goal.slice(0,100)+'"':''}`;
   if(studyData.stField)userContext+=`\n\nSTUDY: field=${studyData.stField} target=${studyData.stTargetCareer||'?'}`;
   userContext+=`\n\nCURRENT TIME: ${new Date().toLocaleString('en-IN',{timeZone:'Asia/Kolkata'})} IST`;
 
+  // Belt-and-suspenders: if callAI somehow hangs (no AbortSignal support, Worker stall),
+  // the race forces a reject after 14s so dots always clear and fallback fires.
   try{
-    const text=await callAI(model,apiMessages,userContext);
+    const _aiRace=Promise.race([
+      callAI(model,apiMessages,userContext),
+      new Promise((_,rej)=>setTimeout(()=>rej(new Error('AI response timeout — using local fallback')),14000))
+    ]);
+    const text=await _aiRace;
     loadDiv.remove();
     // ── Use element reference not ID — prevents typeTarget collision across messages ──
     const aiDiv=document.createElement('div');aiDiv.className='chat-msg ai';
@@ -6498,12 +6508,13 @@ RULE 4: Be sharp, direct, specific. Like a top-tier coach who has read all their
 RULE 5: Always end with ONE high-leverage action they can take TODAY based on their specific weakest metric.
 ${ctx}`;
   try{
-    const resp=await fetch(_WORKER_URL,{
+    const _ctrl3=new AbortController();const _t3=setTimeout(()=>_ctrl3.abort(),15000);
+    let resp;try{resp=await fetch(_WORKER_URL,{
       method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:750,temperature:0.88,
         messages:[{role:'system',content:sys},{role:'user',content:msg}]}),
-      signal:AbortSignal.timeout(15000)
-    });
+      signal:_ctrl3.signal
+    });}finally{clearTimeout(_t3);}
     if(!resp.ok){const t=await resp.text().catch(()=>'');throw new Error('Worker '+resp.status+': '+t.slice(0,100));}
     const d=await resp.json();
     if(d.error)throw new Error(d.error.message||'Groq error');
@@ -6513,12 +6524,13 @@ ${ctx}`;
   }catch(e){
     // Retry with minimal payload (no system prompt, lower tokens)
     try {
-      const simple = await fetch(_WORKER_URL,{
+      const _ctrl4=new AbortController();const _t4=setTimeout(()=>_ctrl4.abort(),12000);
+      let simple;try{simple=await fetch(_WORKER_URL,{
         method:'POST',headers:{'Content-Type':'application/json'},
         body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:400,temperature:0.8,
           messages:[{role:'user',content:msg}]}),
-        signal:AbortSignal.timeout(12000)
-      });
+        signal:_ctrl4.signal
+      });}finally{clearTimeout(_t4);}
       if(!simple.ok)throw new Error('Worker '+simple.status);
       const sd=await simple.json();
       const sc=sd.choices?.[0]?.message?.content;
@@ -12784,7 +12796,8 @@ async function loadScienceNews(){
 async function askAI(prompt, systemPrompt, maxTok) {
   // Single entry point for ALL AI calls → Cloudflare Worker → Groq llama-3.3-70b-versatile
   systemPrompt = systemPrompt || 'You are an advanced strategic intelligence AI inside Consciousness OS. Be precise, specific, and data-driven.';
-  const res = await fetch(_WORKER_URL, {
+  const _ctrl5=new AbortController();const _t5=setTimeout(()=>_ctrl5.abort(),15000);
+  let res;try{res=await fetch(_WORKER_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -12796,8 +12809,8 @@ async function askAI(prompt, systemPrompt, maxTok) {
         { role: 'user',   content: prompt }
       ]
     }),
-    signal: AbortSignal.timeout(15000)
-  });
+    signal: _ctrl5.signal
+  });}finally{clearTimeout(_t5);}
   if (!res.ok) { const txt = await res.text().catch(()=>''); throw new Error(`Worker error ${res.status}: ${txt.slice(0,120)}`); }
   const data = await res.json();
   if (data.error) throw new Error(data.error.message || 'Groq Worker error');
@@ -13670,7 +13683,20 @@ async function startFreeTrialFromModal() {
   gates.forEach(id => { const el = document.getElementById(id); if(el) el.style.display = 'none'; });
   unlocks.forEach(id => { const el = document.getElementById(id); if(el) el.style.display = 'block'; });
   if (typeof applyProGates === 'function') applyProGates(true);
-  if (typeof updateProBar === 'function') updateProBar();
+  // Update the upgrade bar to show unlocked state
+  const bar = document.getElementById('proUpgradeBar');
+  if (bar) {
+    bar.textContent = '✅ Free Trial — All Unlocked';
+    bar.style.background = 'linear-gradient(135deg,#10b981,#059669)';
+    bar.onclick = () => showToast('✅ All features are free & unlocked!');
+  }
+  // Update modal button if modal reopened
+  const freeBtn = document.getElementById('startFreeBtn');
+  if (freeBtn) {
+    freeBtn.textContent = '✅ All Features Unlocked!';
+    freeBtn.style.background = 'linear-gradient(135deg,#059669,#047857)';
+    freeBtn.disabled = false;
+  }
   showToast('🎉 All features unlocked! Everything is free.');
 }
 
@@ -14365,7 +14391,7 @@ function updateProBar() {
     return;
   }
   // Free trial or auto-grant — show free trial badge
-  bar.textContent = '🎁 Free Trial — All Features Open';
+  bar.textContent = '🎁 Free Trial';
   bar.style.background = 'linear-gradient(135deg,#7c3aed,#06b6d4)';
   bar.style.display = 'block';
   bar.onclick = () => openProModal('topbar');
