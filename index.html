@@ -232,6 +232,36 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
 .guide-skip{display:none}
 .guide-label{display:none}
 
+/* ── CHAT TOOLBAR (Attach / Search / Research) ── */
+.chat-toolbar{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;align-items:center}
+.tool-chip{display:flex;align-items:center;gap:4px;padding:6px 11px;border-radius:20px;border:1.5px solid var(--border);background:var(--bg3);color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;min-height:32px;font-family:"DM Sans",sans-serif;flex-shrink:0}
+.tool-chip:hover,.tool-chip:active{border-color:var(--primary);color:var(--primary);background:rgba(124,58,237,.08)}
+.tool-chip.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+.tool-chip.search-active{background:linear-gradient(135deg,#06b6d4,#0891b2);color:#fff;border-color:#06b6d4}
+.tool-chip.research-active{background:linear-gradient(135deg,#7c3aed,#ec4899);color:#fff;border-color:#7c3aed}
+.file-preview-chip{display:none;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;background:rgba(16,185,129,.12);border:1.5px solid #10b981;color:#10b981;font-size:11px;font-weight:600;margin-top:4px}
+.file-preview-chip.show{display:flex}
+.file-clear-btn{cursor:pointer;font-size:14px;line-height:1;opacity:.7;background:none;border:none;color:#10b981;padding:0}
+
+/* ── APP GUIDE BOTTOM SHEET ── */
+#appGuideBackdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9500;backdrop-filter:blur(3px)}
+#appGuideBackdrop.open{display:block;animation:fadeIn .2s ease}
+#appGuideModal{position:fixed;bottom:-100%;left:0;right:0;z-index:9501;background:var(--bg2);border-radius:24px 24px 0 0;padding:0 0 env(safe-area-inset-bottom);max-height:88vh;display:flex;flex-direction:column;transition:bottom .32s cubic-bezier(.32,1.1,.52,1);box-shadow:0 -8px 40px rgba(124,58,237,.18)}
+#appGuideModal.open{bottom:0}
+.guide-sheet-handle{width:40px;height:4px;border-radius:2px;background:var(--border);margin:10px auto 0;flex-shrink:0}
+.guide-sheet-header{display:flex;align-items:center;justify-content:space-between;padding:12px 18px 8px;border-bottom:1px solid var(--border);flex-shrink:0}
+.guide-sheet-title{font-family:"Syne",sans-serif;font-weight:800;font-size:17px;color:var(--text)}
+.guide-sheet-close{background:var(--bg3);border:none;border-radius:50%;width:32px;height:32px;font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text2)}
+.guide-sheet-body{overflow-y:auto;padding:14px 16px 20px;flex:1;scrollbar-width:none}
+.guide-sheet-body::-webkit-scrollbar{display:none}
+.guide-tile{display:flex;align-items:flex-start;gap:11px;padding:11px 13px;border-radius:12px;background:var(--bg3);border:1px solid var(--border);margin-bottom:8px}
+.guide-tile-icon{font-size:22px;flex-shrink:0;width:32px;text-align:center}
+.guide-tile-text{flex:1}
+.guide-tile-title{font-weight:700;font-size:13px;color:var(--text);margin-bottom:2px}
+.guide-tile-desc{font-size:12px;color:var(--text3);line-height:1.5}
+.guide-section-label{font-size:10px;font-weight:800;letter-spacing:1px;color:var(--primary);text-transform:uppercase;margin:12px 0 6px;padding-left:2px}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+
 /* ── VERTICAL LEFT SIDEBAR NAV ── */
 .bottom-nav{display:none}
 .nav-logo{display:none}
@@ -1642,6 +1672,7 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
     <!-- Mobile-only quick actions: lang flag btn + theme + account -->
     <div class="topbar-quick topbar-mobile-only" style="margin-left:6px;flex-shrink:0;display:flex;align-items:center;gap:3px">
       <button class="tb-btn" id="langFlagBtn" onclick="toggleLangGrid(event)" title="Language" style="font-size:15px;min-width:30px;width:30px;padding:4px;height:30px">🌐</button>
+      <button class="tb-btn" onclick="openAppGuide()" title="App Guide" style="min-width:30px;width:30px;height:30px;padding:4px;font-size:15px">📖</button>
       <button class="tb-btn" onclick="toggleTheme()" id="themeBtnMob" title="Toggle theme" style="min-width:30px;width:30px;height:30px;padding:4px">🌙</button>
       <button class="tb-btn" onclick="openProfileSwitcher()" id="profileTopBtnMob" title="Account" style="min-width:30px;width:30px;height:30px;padding:4px">👤</button>
       <button class="tb-btn" onclick="toggleDevPanel()" id="devPanelBtn" title="Dev Panel" style="font-size:13px;display:none;min-width:30px;width:30px;height:30px;padding:4px">🛠️</button>
@@ -2350,6 +2381,25 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
     <div class="chat-input-area">
       <textarea class="chat-input" id="chatInput" placeholder="Ask me anything about your consciousness, health, dreams..." onkeydown="handleChatKey(event)" rows="1"></textarea>
       <button class="btn btn-primary" onclick="sendChat()" id="chatSendBtn">➤</button>
+    </div>
+    <!-- Hidden file input -->
+    <input type="file" id="cosFileInput" accept=".txt,.md,.csv,.json,.pdf,.html,.js,.py,.xml" style="display:none" onchange="handleFileAttach(event)">
+    <!-- File preview chip -->
+    <div class="file-preview-chip" id="filePreviewChip">
+      <span id="filePreviewName">📄 file.txt</span>
+      <button class="file-clear-btn" onclick="clearAttachment()" title="Remove">✕</button>
+    </div>
+    <!-- Chat Toolbar -->
+    <div class="chat-toolbar">
+      <button class="tool-chip" id="attachChip" onclick="triggerFileAttach()" title="Attach file — txt, md, csv, json, pdf">
+        📎 Attach
+      </button>
+      <button class="tool-chip" id="searchChip" onclick="toggleSearchMode()" title="Web Search — searches Wikipedia & feeds result to AI">
+        🔍 Search
+      </button>
+      <button class="tool-chip" id="researchChip" onclick="toggleResearchMode()" title="Deep Research — multi-step AI synthesis (3 Groq calls)">
+        🧬 Research
+      </button>
     </div>
   </div>
 
@@ -14919,6 +14969,406 @@ function deleteGuestPermanently() {
 // Delete UI is now handled inside the central _handleAuthUser hook above (DOMContentLoaded block)
 
 
+</script>
+
+<!-- ═══════════════════════════════════════════
+     APP GUIDE BOTTOM SHEET MODAL
+════════════════════════════════════════════ -->
+<div id="appGuideBackdrop" onclick="closeAppGuide()"></div>
+<div id="appGuideModal" role="dialog" aria-modal="true" aria-label="App Guide">
+  <div class="guide-sheet-handle"></div>
+  <div class="guide-sheet-header">
+    <span class="guide-sheet-title">📖 Consciousness OS Guide</span>
+    <button class="guide-sheet-close" onclick="closeAppGuide()">✕</button>
+  </div>
+  <div class="guide-sheet-body">
+    <div class="guide-section-label">✨ What Is This?</div>
+    <div class="guide-tile">
+      <div class="guide-tile-icon">🧠</div>
+      <div class="guide-tile-text">
+        <div class="guide-tile-title">Your Personal Intelligence OS</div>
+        <div class="guide-tile-desc">Track consciousness dimensions, decode your patterns, and compound your cognitive power daily. Not an app — a self-improving loop.</div>
+      </div>
+    </div>
+
+    <div class="guide-section-label">🗺️ Core Tabs</div>
+    <div class="guide-tile">
+      <div class="guide-tile-icon">📝</div>
+      <div class="guide-tile-text">
+        <div class="guide-tile-title">Daily Log</div>
+        <div class="guide-tile-desc">Log 20 dimensions of your state: mood, focus, energy, dreams, emotions, activities. &lt;10 sec friction — builds your cognitive fingerprint.</div>
+      </div>
+    </div>
+    <div class="guide-tile">
+      <div class="guide-tile-icon">📊</div>
+      <div class="guide-tile-text">
+        <div class="guide-tile-title">Analysis</div>
+        <div class="guide-tile-desc">Trend detection, cognitive scores, pattern predictions, and records — auto-generated from your logs. Gets smarter every day.</div>
+      </div>
+    </div>
+    <div class="guide-tile">
+      <div class="guide-tile-icon">🔮</div>
+      <div class="guide-tile-text">
+        <div class="guide-tile-title">Vault</div>
+        <div class="guide-tile-desc">Cognitive fingerprint detection + AI Mind Mirror. Surfaces your deep patterns and blind spots across all logged data.</div>
+      </div>
+    </div>
+    <div class="guide-tile">
+      <div class="guide-tile-icon">🔵</div>
+      <div class="guide-tile-text">
+        <div class="guide-tile-title">Oracle</div>
+        <div class="guide-tile-desc">Decision intelligence engine — scenario rehearsal, second-order consequence trees, asymmetric bets. Think like a strategist.</div>
+      </div>
+    </div>
+    <div class="guide-tile">
+      <div class="guide-tile-icon">🤖</div>
+      <div class="guide-tile-text">
+        <div class="guide-tile-title">AI Hub</div>
+        <div class="guide-tile-desc">6 AI personas trained on your data: Digital Twin, Coach, Sage, Dr. Mind, Friend, Philosopher. Uses Titan Protocol — no fluff, pure leverage.</div>
+      </div>
+    </div>
+    <div class="guide-tile">
+      <div class="guide-tile-icon">🎵</div>
+      <div class="guide-tile-text">
+        <div class="guide-tile-title">Neural Beats</div>
+        <div class="guide-tile-desc">Binaural beats and solfeggio frequencies to shift brain states: focus, creativity, sleep, deep meditation, testosterone optimization.</div>
+      </div>
+    </div>
+    <div class="guide-tile">
+      <div class="guide-tile-icon">🌙</div>
+      <div class="guide-tile-text">
+        <div class="guide-tile-title">Dreams</div>
+        <div class="guide-tile-desc">Lucid dream protocol, reality checks, hypnagogic tracking, dream recall log with emotion tagging. Expand beyond waking consciousness.</div>
+      </div>
+    </div>
+
+    <div class="guide-section-label">💬 AI Hub Features</div>
+    <div class="guide-tile">
+      <div class="guide-tile-icon">📎</div>
+      <div class="guide-tile-text">
+        <div class="guide-tile-title">Attach File</div>
+        <div class="guide-tile-desc">Upload a .txt, .md, .csv, .json, or .pdf — the AI reads it and answers questions or generates insights from its content.</div>
+      </div>
+    </div>
+    <div class="guide-tile">
+      <div class="guide-tile-icon">🔍</div>
+      <div class="guide-tile-text">
+        <div class="guide-tile-title">Web Search Mode</div>
+        <div class="guide-tile-desc">Fetches live data from Wikipedia + synthesizes it with your query via AI. Best for factual lookups, current science, and research topics.</div>
+      </div>
+    </div>
+    <div class="guide-tile">
+      <div class="guide-tile-icon">🧬</div>
+      <div class="guide-tile-text">
+        <div class="guide-tile-title">Deep Research</div>
+        <div class="guide-tile-desc">3-step AI synthesis: decompose → research each angle → synthesize into a structured report. Takes 20-40s — worth it for complex questions.</div>
+      </div>
+    </div>
+
+    <div class="guide-section-label">⚡ Power Tips</div>
+    <div class="guide-tile">
+      <div class="guide-tile-icon">🎯</div>
+      <div class="guide-tile-text">
+        <div class="guide-tile-title">Log every day for 7 days</div>
+        <div class="guide-tile-desc">That's the threshold where pattern detection becomes meaningful. 30 days = predictive insights. Consistency beats intensity.</div>
+      </div>
+    </div>
+    <div class="guide-tile">
+      <div class="guide-tile-icon">🧬</div>
+      <div class="guide-tile-text">
+        <div class="guide-tile-title">Use the AI Hub like a co-pilot</div>
+        <div class="guide-tile-desc">Ask your AI twin "What pattern is holding me back right now?" — it reads your actual log data. The more you log, the more specific it gets.</div>
+      </div>
+    </div>
+    <div class="guide-tile" style="margin-bottom:4px">
+      <div class="guide-tile-icon">🔑</div>
+      <div class="guide-tile-text">
+        <div class="guide-tile-title">All features are free</div>
+        <div class="guide-tile-desc">AI Twin, Coach, Sage, Dr. Mind, Friend — all free via built-in Groq. Add your own Groq key for even faster responses.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── APP GUIDE MODAL ─────────────────────────────────────────────────────────
+function openAppGuide(){
+  document.getElementById('appGuideBackdrop').classList.add('open');
+  requestAnimationFrame(()=>document.getElementById('appGuideModal').classList.add('open'));
+  document.body.style.overflow='hidden';
+}
+function closeAppGuide(){
+  document.getElementById('appGuideModal').classList.remove('open');
+  document.getElementById('appGuideBackdrop').classList.remove('open');
+  document.body.style.overflow='';
+}
+
+// ─── FILE ATTACHMENT ─────────────────────────────────────────────────────────
+let _attachedFileText = null;
+let _attachedFileName = '';
+
+function triggerFileAttach(){
+  document.getElementById('cosFileInput').click();
+}
+
+function handleFileAttach(event){
+  const file = event.target.files[0];
+  if(!file) return;
+  _attachedFileName = file.name;
+  const reader = new FileReader();
+  reader.onload = function(e){
+    let text = e.target.result;
+    // Truncate large files to avoid payload overflow
+    if(text.length > 8000) text = text.slice(0,8000) + '\n\n[...truncated to 8000 chars]';
+    _attachedFileText = text;
+    const chip = document.getElementById('filePreviewChip');
+    document.getElementById('filePreviewName').textContent = '📄 ' + file.name + ' (' + (file.size/1024).toFixed(1) + ' KB)';
+    chip.classList.add('show');
+    document.getElementById('attachChip').classList.add('active');
+    if(typeof showToast==='function') showToast('📎 File attached: ' + file.name);
+  };
+  reader.onerror = function(){ if(typeof showToast==='function') showToast('❌ Could not read file.'); };
+  // Try readAsText for text files; for PDF attempt as text (works for many PDFs)
+  reader.readAsText(file);
+  // Reset input so same file can be re-attached
+  event.target.value = '';
+}
+
+function clearAttachment(){
+  _attachedFileText = null;
+  _attachedFileName = '';
+  document.getElementById('filePreviewChip').classList.remove('show');
+  document.getElementById('attachChip').classList.remove('active');
+}
+
+// ─── SEARCH / RESEARCH MODE TOGGLES ─────────────────────────────────────────
+let _searchMode = false;
+let _researchMode = false;
+
+function toggleSearchMode(){
+  _searchMode = !_searchMode;
+  if(_searchMode){ _researchMode = false; document.getElementById('researchChip').classList.remove('search-active','research-active'); }
+  document.getElementById('searchChip').classList.toggle('search-active', _searchMode);
+  document.getElementById('chatInput').placeholder = _searchMode
+    ? '🔍 Web Search active — type your query...'
+    : 'Ask me anything about your consciousness, health, dreams...';
+  if(typeof showToast==='function') showToast(_searchMode ? '🔍 Web Search ON — fetches Wikipedia + AI synthesis' : '🔍 Web Search OFF');
+}
+
+function toggleResearchMode(){
+  _researchMode = !_researchMode;
+  if(_researchMode){ _searchMode = false; document.getElementById('searchChip').classList.remove('search-active','research-active'); }
+  document.getElementById('researchChip').classList.toggle('research-active', _researchMode);
+  document.getElementById('chatInput').placeholder = _researchMode
+    ? '🧬 Deep Research active — multi-step AI analysis...'
+    : 'Ask me anything about your consciousness, health, dreams...';
+  if(typeof showToast==='function') showToast(_researchMode ? '🧬 Deep Research ON — 3-step synthesis (20-40s)' : '🧬 Deep Research OFF');
+}
+
+// ─── WIKIPEDIA SEARCH HELPER ─────────────────────────────────────────────────
+async function fetchWikiContext(query){
+  try{
+    // Step 1: search
+    const searchUrl = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&srlimit=3&format=json&origin=*`;
+    const ctrl = new AbortController(); const t = setTimeout(()=>ctrl.abort(),8000);
+    let searchRes;
+    try{ searchRes = await fetch(searchUrl,{signal:ctrl.signal}); }finally{ clearTimeout(t); }
+    const searchData = await searchRes.json();
+    const hits = searchData?.query?.search || [];
+    if(!hits.length) return null;
+
+    // Step 2: get extracts for top 2 results
+    const titles = hits.slice(0,2).map(h=>encodeURIComponent(h.title)).join('|');
+    const extractUrl = `https://en.wikipedia.org/w/api.php?action=query&titles=${titles}&prop=extracts&exintro=1&exchars=600&format=json&origin=*`;
+    const ctrl2 = new AbortController(); const t2 = setTimeout(()=>ctrl2.abort(),8000);
+    let extractRes;
+    try{ extractRes = await fetch(extractUrl,{signal:ctrl2.signal}); }finally{ clearTimeout(t2); }
+    const extractData = await extractRes.json();
+    const pages = Object.values(extractData?.query?.pages||{});
+
+    let context = `=== WEB SEARCH RESULTS for "${query}" ===\n`;
+    pages.forEach(p=>{
+      if(p.extract){
+        const clean = p.extract.replace(/<[^>]+>/g,'').replace(/\n+/g,'\n').trim().slice(0,500);
+        context += `\n[${p.title}]\n${clean}\n`;
+      }
+    });
+    context += `\n=== Use the above as factual grounding. Synthesize for the user. ===`;
+    return context;
+  }catch(e){
+    return null;
+  }
+}
+
+// ─── PATCH sendChat TO SUPPORT ATTACH + SEARCH + RESEARCH ─────────────────
+const _origSendChatV2 = typeof sendChat === 'function' ? sendChat : null;
+
+sendChat = async function(){
+  // Route to specialized handlers if modes are active
+  if(_researchMode){ await _deepResearchChat(); return; }
+  if(_searchMode){ await _webSearchChat(); return; }
+
+  // Attach file context injection
+  const input = document.getElementById('chatInput');
+  const originalMsg = input.value.trim();
+  if(!originalMsg) return;
+
+  if(_attachedFileText){
+    const injected = `[ATTACHED FILE: ${_attachedFileName}]\n\`\`\`\n${_attachedFileText}\n\`\`\`\n\nUser question: ${originalMsg}`;
+    input.value = injected;
+    const result = _origSendChatV2 ? await _origSendChatV2() : null;
+    input.value = '';
+    clearAttachment();
+    return result;
+  }
+
+  // Normal flow
+  if(_origSendChatV2) return _origSendChatV2();
+};
+
+async function _webSearchChat(){
+  const input = document.getElementById('chatInput');
+  const query = input.value.trim();
+  if(!query) return;
+
+  const msgs = document.getElementById('chatMessages');
+  const statusEl = document.getElementById('aiStatusLabel');
+
+  // Show user bubble
+  if(typeof addChatMsg==='function') addChatMsg('user', '🔍 ' + query, null, true);
+  input.value = '';
+
+  // Loading indicator
+  const loadDiv = document.createElement('div');
+  loadDiv.className = 'chat-msg ai';
+  loadDiv.innerHTML = `<div class="ai-tag">🔍 Web Search</div><div class="ai-loading"><span></span><span></span><span></span></div><div style="font-size:11px;color:var(--text3);margin-top:4px">Fetching sources...</div>`;
+  msgs.appendChild(loadDiv); msgs.scrollTop = msgs.scrollHeight;
+  if(statusEl) statusEl.textContent = 'Searching...';
+
+  try{
+    const wikiCtx = await fetchWikiContext(query);
+    if(statusEl) statusEl.textContent = 'Synthesizing...';
+
+    const systemPrompt = `You are the Consciousness OS AI. Titan Protocol: elite strategic partner, first-principles, no fluff.
+${wikiCtx ? 'You have been given live web search results below. Use them as factual grounding — cite the source titles naturally.' : 'No web results found — answer from your training knowledge.'}`;
+
+    const userPrompt = wikiCtx
+      ? `${wikiCtx}\n\nUser query: ${query}\n\nSynthesize the search results into a clear, actionable answer. Cite which Wikipedia article(s) you're drawing from.`
+      : `User query: ${query}\n\nAnswer from your training knowledge. Note that live web search returned no results.`;
+
+    const text = await callGroqFast(userPrompt, systemPrompt, 800);
+    loadDiv.remove();
+
+    const aiDiv = document.createElement('div');
+    aiDiv.className = 'chat-msg ai';
+    const typeSpan = document.createElement('span');
+    aiDiv.innerHTML = `<div class="ai-tag">🔍 Web Search</div>`;
+    aiDiv.appendChild(typeSpan);
+    msgs.appendChild(aiDiv);
+    let i=0;
+    const type=()=>{ if(i<text.length){typeSpan.textContent+=text[i++];msgs.scrollTop=msgs.scrollHeight;setTimeout(type,8);} };
+    type();
+    if(statusEl) statusEl.textContent = 'Ready';
+  }catch(e){
+    loadDiv.remove();
+    if(typeof addChatMsg==='function') addChatMsg('ai','❌ Search failed: ' + (e.message||'Network error') + '. Try again.', null, true);
+    if(statusEl) statusEl.textContent = 'Ready';
+  }
+}
+
+async function _deepResearchChat(){
+  const input = document.getElementById('chatInput');
+  const query = input.value.trim();
+  if(!query) return;
+
+  const msgs = document.getElementById('chatMessages');
+  const statusEl = document.getElementById('aiStatusLabel');
+
+  if(typeof addChatMsg==='function') addChatMsg('user', '🧬 ' + query, null, true);
+  input.value = '';
+
+  // Loading indicator
+  const loadDiv = document.createElement('div');
+  loadDiv.className = 'chat-msg ai';
+  loadDiv.innerHTML = `<div class="ai-tag">🧬 Deep Research</div><div class="ai-loading"><span></span><span></span><span></span></div><div id="researchStatus" style="font-size:11px;color:var(--text3);margin-top:4px">Step 1/3 — Decomposing query...</div>`;
+  msgs.appendChild(loadDiv); msgs.scrollTop = msgs.scrollHeight;
+
+  const setStep = (txt) => {
+    const s = document.getElementById('researchStatus');
+    if(s) s.textContent = txt;
+  };
+
+  try{
+    // STEP 1: Decompose into sub-questions (fast, 300 tokens)
+    if(statusEl) statusEl.textContent = 'Step 1/3...';
+    const outlineRaw = await callGroqFast(
+      `Break this research question into 3 specific sub-questions that together fully answer it. Return ONLY a JSON array of 3 strings. Question: "${query}"`,
+      'Return ONLY valid JSON array of 3 strings. No markdown, no explanation.',
+      300
+    );
+    let subQuestions;
+    try{
+      subQuestions = JSON.parse(outlineRaw.replace(/```json|```/g,'').trim());
+      if(!Array.isArray(subQuestions)||subQuestions.length<2) throw new Error();
+    }catch(_){
+      subQuestions = [query + ' — fundamentals', query + ' — applications', query + ' — implications'];
+    }
+    setStep('Step 2/3 — Researching each angle...');
+    if(statusEl) statusEl.textContent = 'Step 2/3...';
+
+    // STEP 2: Fetch Wikipedia context + research each sub-question (parallel)
+    const [wikiCtx, ...subAnswers] = await Promise.all([
+      fetchWikiContext(query),
+      ...subQuestions.slice(0,3).map(sq =>
+        callGroqFast(
+          `Research this specific angle in depth (4-6 sentences, specific facts): ${sq}`,
+          'You are a research AI. Give specific, factual, dense answers. No fluff.',
+          350
+        ).catch(()=>'[research failed for this angle]')
+      )
+    ]);
+    setStep('Step 3/3 — Synthesizing report...');
+    if(statusEl) statusEl.textContent = 'Step 3/3...';
+
+    // STEP 3: Synthesize final report
+    const researchDump = subQuestions.map((sq,i)=>`Q: ${sq}\nA: ${subAnswers[i]||'N/A'}`).join('\n\n');
+    const finalPrompt = `You are synthesizing a deep research report.
+
+ORIGINAL QUESTION: ${query}
+${wikiCtx ? '\nWEB SEARCH CONTEXT:\n' + wikiCtx + '\n' : ''}
+RESEARCH FINDINGS:
+${researchDump}
+
+Synthesize into a structured report with: 
+1. **Core Answer** (2-3 sentences, most important insight first)
+2. **Key Findings** (bullet points from research)
+3. **Leverage Point** (highest-value actionable insight)
+4. **Uncertainty** (what remains unknown or contested)
+
+Titan Protocol: no fluff, specific, actionable. Max 400 words.`;
+
+    const finalReport = await callGroqFast(finalPrompt,
+      'You are an elite research synthesizer. Dense, structured, actionable.',
+      700
+    );
+
+    loadDiv.remove();
+    const aiDiv = document.createElement('div');
+    aiDiv.className = 'chat-msg ai';
+    const typeSpan = document.createElement('span');
+    aiDiv.innerHTML = `<div class="ai-tag">🧬 Deep Research</div>`;
+    aiDiv.appendChild(typeSpan);
+    msgs.appendChild(aiDiv);
+    let i=0;
+    const type=()=>{ if(i<finalReport.length){typeSpan.textContent+=finalReport[i++];msgs.scrollTop=msgs.scrollHeight;setTimeout(type,6);} };
+    type();
+    if(statusEl) statusEl.textContent = 'Ready';
+  }catch(e){
+    loadDiv.remove();
+    if(typeof addChatMsg==='function') addChatMsg('ai','❌ Deep Research failed: ' + (e.message||'Network error') + '. Retry in a moment.', null, true);
+    if(statusEl) statusEl.textContent = 'Ready';
+  }
+}
 </script>
 </body>
 </html>
