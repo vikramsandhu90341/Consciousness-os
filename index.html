@@ -94,7 +94,37 @@ async function callGroqJSON(prompt,system,maxTokens){
   return raw.replace(/```json|```/g,'').trim();
 }
 
-// ─── AUTO-LOAD FIRESTORE DATA WHEN SESSION RESTORES ─────────
+// ── STRUCTURED AI MARKDOWN FORMATTER ────────────────────────
+// Converts Groq plain-text + markdown into rich HTML with emojis, bullets, badges
+function formatAIMarkdown(text){
+  if(!text) return '';
+  let html = text
+    // Code blocks
+    .replace(/```(\w*)\n?([\s\S]*?)```/g, (_,lang,code)=>`<pre style="background:#1a1040;color:#e2d9f3;border-radius:8px;padding:12px;font-size:12px;overflow-x:auto;margin:8px 0;line-height:1.5"><code>${code.trim().replace(/</g,'&lt;').replace(/>/g,'&gt;')}</code></pre>`)
+    // H3 ###
+    .replace(/^### (.+)$/gm, '<div style="font-size:13px;font-weight:800;color:var(--primary);margin:12px 0 4px;font-family:Syne,sans-serif">$1</div>')
+    // H2 ##
+    .replace(/^## (.+)$/gm, '<div style="font-size:14px;font-weight:800;color:var(--text);margin:14px 0 6px;font-family:Syne,sans-serif;border-bottom:1px solid var(--border);padding-bottom:4px">$1</div>')
+    // H1 #
+    .replace(/^# (.+)$/gm, '<div style="font-size:15px;font-weight:900;color:var(--primary);margin:10px 0 8px;font-family:Syne,sans-serif">$1</div>')
+    // Bold
+    .replace(/\*\*(.+?)\*\*/g, '<strong style="color:var(--text)">$1</strong>')
+    // Italic
+    .replace(/\*(.+?)\*/g, '<em style="color:var(--text2)">$1</em>')
+    // Bullet points — lines starting with - or *
+    .replace(/^[\-\*]\s+(.+)$/gm, '<div style="display:flex;gap:8px;margin:4px 0;align-items:flex-start"><span style="color:var(--accent);flex-shrink:0;margin-top:1px">▸</span><span style="line-height:1.6">$1</span></div>')
+    // Numbered lists
+    .replace(/^(\d+)\.\s+(.+)$/gm, '<div style="display:flex;gap:8px;margin:4px 0;align-items:flex-start"><span style="background:var(--primary);color:#fff;border-radius:50%;width:18px;height:18px;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px">$1</span><span style="line-height:1.6">$2</span></div>')
+    // Horizontal rule
+    .replace(/^---$/gm, '<hr style="border:none;border-top:1px solid var(--border);margin:12px 0">')
+    // Double newline → paragraph break
+    .replace(/\n\n/g, '</p><p style="margin:8px 0">')
+    // Single newline
+    .replace(/\n/g, '<br>');
+  return `<div style="font-size:13px;line-height:1.7;color:var(--text2)"><p style="margin:0">${html}</p></div>`;
+}
+
+
 // ── AUTH STATE + RETURNING USER LOGIC ─────────────────────────────────────
 // FIX: wrapped in DOMContentLoaded so DOM elements exist when we query them
 function initAuthState() {
@@ -354,6 +384,12 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
 .chat-msg.user{align-self:flex-end;background:linear-gradient(135deg,var(--primary),var(--pink));color:#fff;border-bottom-right-radius:3px}
 .chat-msg.ai{align-self:flex-start;background:var(--bg2);border:1px solid var(--border);color:var(--text);border-bottom-left-radius:3px}
 .chat-msg.ai .ai-tag{font-size:10px;font-weight:700;color:var(--primary);margin-bottom:4px}
+.msg-actions{display:flex;gap:4px;margin-top:8px;flex-wrap:wrap}
+.msg-action-btn{background:transparent;border:1px solid var(--border);border-radius:6px;padding:3px 9px;font-size:10px;cursor:pointer;color:var(--text3);transition:all .15s}
+.msg-action-btn:active{background:var(--bg3);color:var(--text)}
+.msg-action-del{color:#ef4444;border-color:rgba(239,68,68,.3)}
+.chat-msg.user .msg-actions{justify-content:flex-end}
+.chat-msg.user .msg-action-btn{border-color:rgba(255,255,255,.3);color:rgba(255,255,255,.8)}
 .chat-input-area{display:flex;gap:8px}
 .chat-input{flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:9px 12px;color:var(--text);font-family:"DM Sans",sans-serif;font-size:14px;outline:none;resize:none;height:44px;max-height:140px;overflow:hidden;transition:border .2s}
 .chat-input:focus{border-color:var(--primary)}
@@ -1532,7 +1568,7 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
       <div style="font-family:Syne,sans-serif;font-size:17px;font-weight:800;color:#10b981;margin-bottom:4px">All Features Free Right Now</div>
       <div style="font-size:11px;color:var(--text3);margin-bottom:12px;line-height:1.6">No credit card. No payment. No catch.<br>We'll notify you before anything becomes paid.</div>
       <button onclick="startFreeTrialFromModal()" id="startFreeBtn" style="width:100%;background:linear-gradient(135deg,#10b981,#06b6d4);color:#fff;border:none;border-radius:12px;padding:14px;font-size:15px;font-weight:800;cursor:pointer;letter-spacing:.3px">
-        ✨ Start Free — Unlock Everything
+        🎁 Free Trial — Unlocked
       </button>
     </div>
 
@@ -2677,7 +2713,7 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
 
   <div class="card">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-      <div style="font-size:13px;font-weight:700;color:var(--text2)">Section <span id="hsCurrent">1</span> of 18</div>
+      <div style="font-size:13px;font-weight:700;color:var(--text2)">Section <span id="hsCurrent">1</span> of 20</div>
       <div style="font-size:12px;color:var(--text3)" id="hsSectionName">Demographics</div>
     </div>
     <div class="health-progress"><div class="health-progress-bar" id="hsProgressBar" style="width:5.5%"></div></div>
@@ -3637,11 +3673,6 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
     <div id="scienceBreakingText" style="font-size:13px;font-weight:700;color:var(--text)"></div>
   </div>
 
-  <div class="card">
-    <div class="card-title"><span class="emoji">💡</span> Super Facts — Reality Expanders</div>
-    <div id="superFactsDisplay"></div>
-  </div>
-
   <!-- ── MIND-BENDING REALITY SHAKERS ── -->
   <div class="card" style="border:2px solid var(--accent);margin-top:0">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
@@ -3658,6 +3689,11 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
       <span style="font-size:22px;animation:cosSpinAnim 1s linear infinite;display:inline-block">✨</span>
       <div style="font-size:12px;margin-top:6px">AI scanning the internet for mind-bending content...</div>
     </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="emoji">💡</span> Super Facts — Reality Expanders</div>
+    <div id="superFactsDisplay"></div>
   </div>
 
   <div class="card" style="border:1.5px solid rgba(6,182,212,.3)">
@@ -3709,13 +3745,15 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
     </div>
   </div>
 
-  <!-- Artifact Modal -->
+  <!-- Artifact Modal — In-App AI Portals (no iframe) -->
   <div id="artifactModal" style="display:none;position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,.85);flex-direction:column">
     <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0">
       <span style="font-weight:700;font-size:14px" id="artifactModalTitle">Portal</span>
       <button onclick="closeArtifactModal()" style="background:var(--danger);color:#fff;border:none;border-radius:8px;padding:5px 12px;cursor:pointer;font-size:13px">✕ Close</button>
     </div>
-    <iframe id="artifactModalFrame" src="" style="flex:1;border:none;width:100%;height:100%;background:#fff"></iframe>
+    <div id="artifactModalBody" style="flex:1;overflow-y:auto;padding:14px;background:var(--bg);display:flex;flex-direction:column;gap:10px">
+      <!-- content injected by openArtifactModal() -->
+    </div>
   </div>
 
 </div>
@@ -6421,11 +6459,57 @@ function addChatMsg(role,text,modelId,skipHistory){
   const msgs=document.getElementById('chatMessages');if(!msgs)return;
   const model=AI_MODELS.find(m=>m.id===(modelId||curAIModel));
   const div=document.createElement('div');div.className='chat-msg '+role;
-  if(role==='ai')div.innerHTML=`<div class="ai-tag">${model?model.emoji+' '+model.name:'AI'}</div>${text}`;
-  else div.textContent=text;
+  const msgId='msg_'+Date.now()+'_'+Math.random().toString(36).slice(2,6);
+  div.dataset.msgid=msgId;
+  if(role==='ai'){
+    const formatted=formatAIMarkdown(text);
+    div.innerHTML=`<div class="ai-tag">${model?model.emoji+' '+model.name:'AI'}</div><div class="chat-msg-content">${formatted}</div>
+<div class="msg-actions">
+  <button class="msg-action-btn" onclick="regenChatMsg(this)" title="Regenerate">↻ Regen</button>
+  <button class="msg-action-btn" onclick="copyMsgText(this,'${encodeURIComponent(text)}')" title="Copy">📋</button>
+  <button class="msg-action-btn msg-action-del" onclick="deleteChatMsg(this)" title="Delete">🗑</button>
+</div>`;
+  } else {
+    div.innerHTML=`<div class="chat-msg-content">${text.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
+<div class="msg-actions">
+  <button class="msg-action-btn" onclick="editChatMsg(this,'${encodeURIComponent(text)}')" title="Edit">✏️ Edit</button>
+  <button class="msg-action-btn msg-action-del" onclick="deleteChatMsg(this)" title="Delete">🗑</button>
+</div>`;
+  }
   msgs.appendChild(div);msgs.scrollTop=msgs.scrollHeight;
-  // Only push to history when explicitly requested (avoid double-pushes from sendChat)
   if(!skipHistory)chatHistory.push({role,content:text,model:modelId||curAIModel});
+}
+function copyMsgText(btn,encoded){
+  const text=decodeURIComponent(encoded);
+  navigator.clipboard.writeText(text).then(()=>showToast('📋 Copied!')).catch(()=>{
+    const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();showToast('📋 Copied!');
+  });
+}
+function deleteChatMsg(btn){
+  const div=btn.closest('.chat-msg');if(!div)return;
+  const msgId=div.dataset.msgid;
+  div.remove();
+  chatHistory=chatHistory.filter((_,i)=>i!==parseInt(msgId));
+  showToast('🗑 Message deleted');
+}
+function editChatMsg(btn,encoded){
+  const text=decodeURIComponent(encoded);
+  const inp=document.getElementById('chatInput');
+  if(inp){inp.value=text;inp.focus();}
+  const div=btn.closest('.chat-msg');if(div)div.remove();
+}
+async function regenChatMsg(btn){
+  const div=btn.closest('.chat-msg');if(!div)return;
+  // Find last user message before this AI message
+  const allMsgs=Array.from(document.querySelectorAll('.chat-msg'));
+  const idx=allMsgs.indexOf(div);
+  let lastUserMsg='';
+  for(let i=idx-1;i>=0;i--){if(allMsgs[i].classList.contains('user')){lastUserMsg=allMsgs[i].querySelector('.chat-msg-content')?.innerText||'';break;}}
+  div.remove();
+  if(!lastUserMsg)return;
+  // Re-send
+  const inp=document.getElementById('chatInput');
+  if(inp){inp.value=lastUserMsg;await sendChat();}
 }
 function clearAIChat(){chatHistory=[];document.getElementById('chatMessages').innerHTML='';showToast('Chat cleared');}
 function exportChat(){
@@ -6505,13 +6589,16 @@ ${L.goal?'CURRENT GOAL: "'+L.goal.slice(0,100)+'"':''}`;
     ]);
     const text=await _aiRace;
     loadDiv.remove();
-    // ── Use element reference not ID — prevents typeTarget collision across messages ──
     const aiDiv=document.createElement('div');aiDiv.className='chat-msg ai';
-    const typeSpan=document.createElement('span');
-    aiDiv.innerHTML=`<div class="ai-tag">${model.emoji} ${model.name}</div>`;
-    aiDiv.appendChild(typeSpan);
-    msgs.appendChild(aiDiv);
-    let i=0;const type=()=>{if(i<text.length){typeSpan.textContent+=text[i++];msgs.scrollTop=msgs.scrollHeight;setTimeout(type,8);}};type();
+    const msgId='msg_'+Date.now();
+    aiDiv.dataset.msgid=msgId;
+    aiDiv.innerHTML=`<div class="ai-tag">${model.emoji} ${model.name}</div><div class="chat-msg-content">${formatAIMarkdown(text)}</div>
+<div class="msg-actions">
+  <button class="msg-action-btn" onclick="regenChatMsg(this)">↻ Regen</button>
+  <button class="msg-action-btn" onclick="copyMsgText(this,'${encodeURIComponent(text)}')">📋</button>
+  <button class="msg-action-btn msg-action-del" onclick="deleteChatMsg(this)">🗑</button>
+</div>`;
+    msgs.appendChild(aiDiv);msgs.scrollTop=msgs.scrollHeight;
     chatHistory.push({role:'ai',content:text,model:curAIModel});
   }catch(e){
     loadDiv.remove();
@@ -6697,6 +6784,8 @@ const HEALTH_SECTIONS=[
   {name:'Preventive Health',icon:'🔬',fields:[{type:'select',id:'hBloodTest',label:'Last Blood Work',options:['Within 6 months','6-12 months ago','1-2 years ago','2+ years ago','Never']},{type:'select',id:'hDental',label:'Last Dental Checkup',options:['Within 6 months','6-12 months','1-2 years','2+ years','Never']},{type:'text',id:'hBioAge',label:'Biological Age Test Result (if done)'}]},
   {name:'Functional Capacity',icon:'🏋️',fields:[{type:'select',id:'hStairs',label:'Climb 3 flights easily?',options:['Easily','Yes with effort','With difficulty','No']},{type:'select',id:'hBalance',label:'Balance',options:['Excellent','Good','Fair','Poor']},{type:'select',id:'hEnergyDay',label:'Energy throughout day',options:['Consistent','Morning peaks','Afternoon crashes','Evening peaks','Very variable']}]},
   {name:'Longevity Markers',icon:'⏳',fields:[{type:'text',id:'hEpigenetic',label:'Epigenetic Clock Result (if known)'},{type:'text',id:'hHormones',label:'Hormone Panel (if known)'},{type:'select',id:'hGrip',label:'Grip Strength',options:['Very strong','Strong','Average','Weak']}]},
+  {name:'Ayurvedic Profile',icon:'🕉️',fields:[{type:'radio',id:'hAyurPrakriti',label:'Body Type (Prakriti)',options:['Vata (thin, dry, creative, anxious)','Pitta (medium, intense, driven, inflammatory)','Kapha (heavy, stable, calm, slow)','Vata-Pitta','Pitta-Kapha','Vata-Kapha','Tridosha (balanced)','Unknown']},{type:'select',id:'hAyurDigFire',label:'Digestive Fire (Agni)',options:['Sharp (digests fast, gets hungry often)','Regular (consistent digestion)','Variable (unpredictable)','Slow (heavy, sluggish)']},{type:'checkbox',id:'hAyurSymp',label:'Current Imbalance Signs',options:['Dry skin/hair','Excess heat/inflammation','Weight gain/fluid retention','Joint cracking/stiffness','Acid reflux/ulcers','Congestion/mucus','Restlessness/insomnia','Fatigue/lethargy','Mood swings','None']},{type:'select',id:'hAyurSeason',label:'Symptoms Worse In',options:['Winter/Cold','Summer/Heat','Monsoon/Humid','All seasons equal']}]},
+  {name:'Symptom Tracker',icon:'🩹',fields:[{type:'checkbox',id:'hSymptoms',label:'Current Symptoms',options:['Fatigue','Headaches','Brain Fog','Low Mood','Anxiety','Insomnia','Weight Gain','Weight Loss','Hair Loss','Skin Issues','Joint Pain','Muscle Pain','Digestive Issues','Low Libido','Frequent Illness','Cold Hands/Feet','Excessive Thirst','Frequent Urination','Vision Issues','Hearing Issues','None']},{type:'select',id:'hSymptomDur',label:'How long?',options:['<1 week','1-4 weeks','1-3 months','3-6 months','6-12 months','>1 year']},{type:'select',id:'hSymptomSev',label:'Severity',options:['Mild — manageable','Moderate — affects daily life','Severe — debilitating']},{type:'textarea',id:'hSymptomTriggers',label:'What makes it worse?'},{type:'textarea',id:'hSymptomRelief',label:'What helps?'}]},
   {name:'Health Goals',icon:'🎯',fields:[{type:'checkbox',id:'hGoals',label:'My Health Priorities',options:['Longevity','Peak Performance','Mental Health','Weight Management','Disease Prevention','Energy & Vitality','Better Sleep','Strength & Fitness','Stress Reduction']},{type:'textarea',id:'hMainConcern',label:'Main Health Concern'},{type:'textarea',id:'hHealthNotes',label:'Anything else?'}]},
 ];
 let hsCurrent=0;
@@ -6733,57 +6822,225 @@ function jumpToSection(i){
   hsCurrent=i;
   document.getElementById('hsCurrent').textContent=i+1;
   document.getElementById('hsSectionName').textContent=HEALTH_SECTIONS[i].name;
-  document.getElementById('hsProgressBar').style.width=((i+1)/18*100)+'%';
+  document.getElementById('hsProgressBar').style.width=((i+1)/20*100)+'%';
   document.getElementById('hsPrevBtn').style.display=i>0?'':'none';
-  document.getElementById('hsNextBtn').textContent=i===17?'✨ Get AI Analysis':'Next →';
+  document.getElementById('hsNextBtn').textContent=i===19?'✨ Get AI Analysis':'Next →';
 }
 function hsPrev(){if(hsCurrent>0)jumpToSection(hsCurrent-1);}
-function hsNext(){if(hsCurrent<17)jumpToSection(hsCurrent+1);else generateHealthAnalysis();}
+function hsNext(){if(hsCurrent<19)jumpToSection(hsCurrent+1);else generateHealthAnalysis();}
+// ── HEALTH PROFILE DATA COLLECTOR ────────────────────────────
+function collectHealthProfile(){
+  const g=(id)=>{const el=document.getElementById(id);return el?el.value||'':'';}; 
+  const gc=(name)=>Array.from(document.querySelectorAll(`input[name="${name}"]:checked`)).map(e=>e.value).join(', ')||'None';
+  const gr=(name)=>{const el=document.querySelector(`input[name="${name}"]:checked`);return el?el.value:'';};
+  const kg=parseFloat(g('hWeight_kg'))||0;const cm=parseFloat(g('hHeight_cm'))||0;
+  const bmi=kg&&cm?(kg/((cm/100)**2)).toFixed(1):'?';
+  return {
+    age:g('hAge'),sex:gr('hSex'),bmi,
+    height:g('hHeight_cm'),weight:g('hWeight_kg'),waist:g('hWaist'),
+    occupation:g('hOccupation'),environment:g('hEnvironment'),
+    conditions:gc('hConditions'),meds:g('hMeds'),allergies:g('hAllergies'),
+    family:gc('hFamily'),
+    meals:g('hMeals'),diet:g('hDiet'),water:g('hWater'),processed:g('hProcessed'),intolerances:g('hIntolerances'),
+    smoking:gr('hSmoking'),alcohol:g('hAlcohol'),caffeine:g('hCaffeine'),
+    exFreq:g('hExerciseFreq'),exTypes:gc('hExTypes'),steps:g('hSteps'),hr:g('hHR'),
+    sleep:g('hSleepDur'),bedtime:g('hBedtime'),wakeTime:g('hWakeTime'),sleepIssues:gc('hSleepIssues'),
+    mood:g('hMoodBaseline'),anxiety:g('hAnxiety'),depression:gr('hDepression'),adhd:gr('hADHD'),burnout:g('hBurnout'),lifeSat:g('hLifeSat'),
+    energyPatt:g('hEnergyPatt'),libido:g('hLibido'),thyroid:gr('hThyroid'),
+    bp:g('hBP'),hba1c:g('hHbA1c'),cholesterol:g('hCholesterol'),heartSymp:gc('hHeartSymp'),
+    digestion:g('hDigestion'),gutIssues:gc('hGutIssues'),bowel:g('hBowel'),
+    immune:g('hImmune'),inflam:gc('hInflam'),
+    headaches:g('hHeadaches'),neuro:gc('hNeuro'),pain:g('hPain'),
+    airQ:g('hAirQ'),screenTime:g('hScreenTime'),envExp:gc('hEnvExp'),
+    bloodTest:g('hBloodTest'),dental:g('hDental'),
+    stairs:g('hStairs'),balance:g('hBalance'),energyDay:g('hEnergyDay'),
+    goals:gc('hGoals'),mainConcern:g('hMainConcern'),notes:g('hHealthNotes')
+  };
+}
+
 async function generateHealthAnalysis(){
   const card=document.getElementById('aiDoctorCard');const output=document.getElementById('aiDoctorOutput');
   card.style.display='block';
-  output.innerHTML='<div class="ai-loading"><span></span><span></span><span></span></div> <span style="font-size:13px;color:var(--text2)">AI Doctor analyzing...</span>';
+  output.innerHTML=`<div style="padding:16px;text-align:center"><div class="ai-loading"><span></span><span></span><span></span></div><div style="font-size:13px;color:var(--text3);margin-top:8px">🩺 AI Doctor analyzing your full health profile...</div></div>`;
   card.scrollIntoView({behavior:'smooth'});
-  const kg=document.getElementById('hWeight_kg')?.value||0;const cm=document.getElementById('hHeight_cm')?.value||0;
-  const bmi=kg&&cm?(kg/((cm/100)**2)).toFixed(1):'Unknown';
-  const age=document.getElementById('hAge')?.value||'Unknown';
-  // Collect all health profile data from form
-  const collectAll=(ids)=>ids.reduce((o,id)=>{const el=document.getElementById(id);if(el)o[id]=el.value||el.textContent||'';return o;},{});
-  const hData={bmi,age,
-    sleep:document.getElementById('hSleepDur')?.value,sleepQ:document.getElementById('hSleepQ')?.value,
-    exercise:document.getElementById('hExerciseFreq')?.value,stress:document.getElementById('hStressLevel')?.value,
-    diet:document.getElementById('hDietType')?.value,water:document.getElementById('hWaterIntake')?.value,
-    energy:document.getElementById('hEnergyLevel')?.value,mood:document.getElementById('hMoodBase')?.value,
-    supplements:document.getElementById('hSupplements')?.value,conditions:document.getElementById('hConditions')?.value,
-    goals:document.getElementById('hHealthGoals')?.value,smoke:document.getElementById('hSmoking')?.value,
-    alcohol:document.getElementById('hAlcohol')?.value,caffeine:document.getElementById('hCaffeine')?.value
-  };
-  const hPrompt=`You are a precise, evidence-based functional medicine doctor AI. Analyze this health profile and give a deeply personalized assessment:
 
-BMI: ${hData.bmi} | Age: ${hData.age}
-Sleep: ${hData.sleep}hrs/night, Quality: ${hData.sleepQ}/10
-Exercise: ${hData.exercise} | Stress: ${hData.stress}/10
-Diet: ${hData.diet} | Water: ${hData.water}L/day
-Energy: ${hData.energy}/10 | Mood baseline: ${hData.mood}/10
-Supplements: ${hData.supplements||'None'}
-Health conditions: ${hData.conditions||'None'}
-Goals: ${hData.goals||'Not specified'}
-Smoking: ${hData.smoke} | Alcohol: ${hData.alcohol} | Caffeine: ${hData.caffeine}
+  const h = collectHealthProfile();
+  localStorage.setItem('cos_health_profile', JSON.stringify(h));
 
-Give: 1) Top 3 specific health risks based on THIS profile 2) 5 personalized, evidence-backed interventions in priority order 3) One specific lab test they should prioritize 4) One lifestyle change with highest ROI for their profile. Be direct, specific, and evidence-based. Reference their actual numbers. 200 words max.`;
+  const profileText = `
+AGE: ${h.age} | SEX: ${h.sex} | BMI: ${h.bmi} | HEIGHT: ${h.height}cm | WEIGHT: ${h.weight}kg | WAIST: ${h.waist}cm
+OCCUPATION: ${h.occupation} | ENVIRONMENT: ${h.environment}
+CONDITIONS: ${h.conditions} | MEDICATIONS: ${h.meds} | ALLERGIES: ${h.allergies}
+FAMILY HISTORY: ${h.family}
+DIET: ${h.diet} | MEALS/DAY: ${h.meals} | WATER: ${h.water} | PROCESSED FOOD: ${h.processed} | INTOLERANCES: ${h.intolerances}
+SMOKING: ${h.smoking} | ALCOHOL: ${h.alcohol} | CAFFEINE: ${h.caffeine}
+EXERCISE: ${h.exFreq} (${h.exTypes}) | STEPS: ${h.steps}/day | RESTING HR: ${h.hr}bpm
+SLEEP: ${h.sleep} | BEDTIME: ${h.bedtime} | WAKE: ${h.wakeTime} | SLEEP ISSUES: ${h.sleepIssues}
+MOOD: ${h.mood} | ANXIETY: ${h.anxiety} | DEPRESSION: ${h.depression} | ADHD: ${h.adhd} | BURNOUT: ${h.burnout}
+BLOOD PRESSURE: ${h.bp} | HbA1c: ${h.hba1c} | CHOLESTEROL: ${h.cholesterol} | HEART SYMPTOMS: ${h.heartSymp}
+DIGESTION: ${h.digestion} | GUT ISSUES: ${h.gutIssues}
+IMMUNE HEALTH: ${h.immune} | INFLAMMATION SIGNS: ${h.inflam}
+PAIN: ${h.pain} | HEADACHES: ${h.headaches} | NEUROLOGICAL: ${h.neuro}
+SCREEN TIME: ${h.screenTime} | ENV EXPOSURES: ${h.envExp}
+HEALTH GOALS: ${h.goals}
+MAIN CONCERN: ${h.mainConcern}
+NOTES: ${h.notes}`;
+
+  const prompt = `You are an elite integrative medicine doctor combining Western, Ayurvedic, Homeopathic, and Naturopathic knowledge. Based on this patient profile, provide a COMPREHENSIVE 360-degree health report.
+
+PATIENT PROFILE:
+${profileText}
+
+Respond in this EXACT markdown format:
+
+## 🏥 Health Assessment
+
+### 📊 Vital Stats
+- **BMI ${h.bmi}**: [interpretation]
+- **Risk Level**: [Low/Moderate/High] — [1 sentence why]
+
+### ⚠️ Top Health Risks (Personalized)
+- **Risk 1**: [name] — [specific reason from their data]
+- **Risk 2**: [name] — [specific reason]
+- **Risk 3**: [name] — [specific reason]
+
+## 💊 Treatment Plan — All Systems
+
+### 🏥 Allopathy (Western Medicine)
+- [Specific recommendation 1]
+- [Specific recommendation 2]
+- [Lab test to prioritize]
+
+### 🌿 Ayurveda
+- **Dosha Assessment**: [Vata/Pitta/Kapha] — [based on their profile]
+- **Herbs**: [2-3 specific herbs with dosage]
+- **Practices**: [Panchakarma or specific practices]
+
+### 💊 Homeopathy
+- **Constitutional Remedy**: [remedy name] — [reason]
+- **Acute Remedy**: [for their main complaint]
+
+### 🌱 Siddha & Unani
+- [1-2 relevant recommendations]
+
+### 🥗 Diet Therapy
+- **Eat More**: [3-5 specific foods for their condition]
+- **Avoid**: [3-5 specific foods to eliminate]
+- **Timing**: [meal timing recommendation]
+
+### 🍎 Fruit Therapy
+- **Best fruits**: [3-5 fruits with specific benefits for their conditions]
+- **Avoid**: [fruits to limit for their profile]
+
+### 🏃 Exercise Protocol
+- **Type**: [specific exercise for their condition]
+- **Frequency**: [days/week]
+- **Priority**: [what to start with]
+
+### 🚫 Abstinence Recommendations
+- [What to stop/avoid with specific reason from their data]
+
+### 💉 Supplements & Injections
+- [Supplement 1 with dose]
+- [Supplement 2 with dose]
+- [Any injection therapy if indicated]
+
+### 🎯 Highest ROI Intervention
+[Single most impactful change for their specific profile — 2 sentences]
+
+---
+⚕️ For educational purposes. Consult qualified physicians before starting treatments.`;
+
   try{
-    const aiText=await callGroqFast(hPrompt,'You are a functional medicine doctor AI. Be precise, personalized, and evidence-based. No generic advice.',600);
-    output.innerHTML=`<div style="background:linear-gradient(135deg,rgba(124,58,237,.1),rgba(16,185,129,.1));border-radius:12px;padding:14px;margin-bottom:12px">
-    <div style="font-weight:800;font-family:Syne,sans-serif;font-size:16px;margin-bottom:8px">📊 Health Analysis</div>
-    <div class="stats-grid"><div class="stat-box"><div class="sv">${bmi}</div><div class="sl">BMI</div></div><div class="stat-box"><div class="sv">${age}</div><div class="sl">Age</div></div></div>
-  </div>
-  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px">
-    <div style="font-weight:700;margin-bottom:8px">⚡ AI Doctor Analysis</div>
-    <div style="font-size:13px;color:var(--text2);line-height:1.8">${aiText.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')}</div>
-    <p style="margin-top:10px;font-size:11px;color:var(--text3)">⚕️ Educational only. Always consult a qualified physician.</p>
-  </div>`;
+    const aiText = await callGroqFast(prompt, 'You are an elite integrative medicine doctor. Use EXACT markdown format specified. Be specific, reference actual patient numbers. No generic advice.', 1200);
+    output.innerHTML = `
+      <div style="background:linear-gradient(135deg,rgba(124,58,237,.1),rgba(16,185,129,.08));border-radius:12px;padding:14px;margin-bottom:12px">
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px">
+          <div style="background:var(--bg2);border-radius:8px;padding:8px;text-align:center"><div style="font-size:20px;font-weight:900;font-family:Syne,sans-serif;color:var(--primary)">${h.bmi}</div><div style="font-size:10px;color:var(--text3)">BMI</div></div>
+          <div style="background:var(--bg2);border-radius:8px;padding:8px;text-align:center"><div style="font-size:20px;font-weight:900;font-family:Syne,sans-serif;color:var(--accent)">${h.age||'?'}</div><div style="font-size:10px;color:var(--text3)">Age</div></div>
+          <div style="background:var(--bg2);border-radius:8px;padding:8px;text-align:center"><div style="font-size:20px;font-weight:900;font-family:Syne,sans-serif;color:var(--success)">${h.sleep||'?'}</div><div style="font-size:10px;color:var(--text3)">Sleep</div></div>
+        </div>
+        <div style="font-size:11px;color:var(--text3);text-align:center">360° Analysis · ${new Date().toLocaleDateString('en-IN')}</div>
+      </div>
+      ${formatAIMarkdown(aiText)}
+      <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+        <button onclick="copyMsgText(this,'${encodeURIComponent(aiText)}')" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:6px 14px;font-size:12px;cursor:pointer;color:var(--text2)">📋 Copy Full Report</button>
+        <button onclick="generateTreatmentPlan()" style="background:linear-gradient(135deg,var(--success),var(--accent));color:#fff;border:none;border-radius:8px;padding:6px 14px;font-size:12px;cursor:pointer;font-weight:700">💊 Detailed Treatment Plan</button>
+      </div>`;
   }catch(e){
-    output.innerHTML=`<div style="font-size:13px;color:var(--text2);line-height:1.7"><p><strong>📊 Health Summary — BMI: ${bmi} | Age: ${age}</strong></p><p>⚕️ AI analysis temporarily unavailable. Based on your profile, focus on: sleep quality, daily movement, stress reduction, and hydration as foundational pillars.</p></div>`;
+    output.innerHTML=`<div style="font-size:13px;color:var(--text2);padding:12px;background:var(--bg2);border-radius:10px">
+      <strong>📊 Health Summary — BMI: ${h.bmi} | Age: ${h.age}</strong><br><br>
+      AI analysis temporarily unavailable. Based on your profile, prioritize: sleep quality, daily movement, stress reduction, and hydration.<br>
+      <span style="font-size:11px;color:var(--text3)">⚕️ Educational only.</span></div>`;
+  }
+}
+
+async function generateTreatmentPlan(){
+  const h = collectHealthProfile();
+  const card=document.getElementById('aiDoctorCard');const output=document.getElementById('aiDoctorOutput');
+  output.innerHTML += `<div id="treatmentLoader" style="padding:12px;text-align:center;color:var(--text3)"><div class="ai-loading"><span></span><span></span><span></span></div><div style="font-size:12px;margin-top:6px">🌿 Generating detailed treatment plan...</div></div>`;
+
+  const prompt = `Patient: Age ${h.age}, BMI ${h.bmi}, Sex ${h.sex}
+Conditions: ${h.conditions} | Diet: ${h.diet} | Sleep: ${h.sleep}
+Main concern: ${h.mainConcern} | Goals: ${h.goals}
+Exercise: ${h.exFreq} | Stress: ${h.burnout} | Mental: ${h.mood} mood, ${h.anxiety} anxiety
+
+Create a DETAILED 30-day treatment protocol covering every system:
+
+## 🗓️ 30-Day Treatment Protocol
+
+### 🌅 Morning Routine (6-9 AM)
+- [Specific time-stamped morning protocol]
+
+### 💊 Supplement Stack
+- [Each supplement with exact dose, timing, and why]
+
+### 🌿 Herbal Protocol (Ayurveda)
+- [Each herb with Sanskrit name, dose, and preparation]
+
+### 🥗 Meal Plan Framework
+- **Breakfast**: [specific foods]
+- **Lunch**: [specific foods]  
+- **Dinner**: [specific foods]
+- **Avoid completely**: [list]
+
+### 🍎 Fruit Prescription
+- [Fruit + condition + timing + quantity]
+
+### 🏃 Weekly Exercise Schedule
+- Mon/Wed/Fri: [specific workout]
+- Tue/Thu: [specific workout]
+- Weekend: [activity]
+
+### 🧘 Stress & Mental Protocol
+- [Specific techniques with duration]
+
+### 💉 Medical Interventions to Discuss with Doctor
+- [Tests to get]
+- [Medications/injections to ask about]
+
+### 📅 Week-by-Week Milestones
+- Week 1: [focus]
+- Week 2: [focus]
+- Week 3-4: [focus]
+
+---
+⚕️ Educational only. Implement with physician guidance.`;
+
+  try{
+    const text = await callGroqFast(prompt, 'You are an integrative medicine specialist. Be very specific with doses, timings, and protocols. Use exact markdown format.', 1200);
+    const loader = document.getElementById('treatmentLoader');
+    if(loader) loader.remove();
+    const div = document.createElement('div');
+    div.style.cssText = 'margin-top:12px;padding:14px;background:linear-gradient(135deg,rgba(16,185,129,.08),rgba(6,182,212,.06));border:1px solid rgba(16,185,129,.3);border-radius:12px';
+    div.innerHTML = `<div style="font-weight:800;font-family:Syne,sans-serif;font-size:14px;margin-bottom:10px;color:var(--success)">💊 Your 30-Day Treatment Protocol</div>
+      ${formatAIMarkdown(text)}
+      <button onclick="copyMsgText(this,'${encodeURIComponent(text)}')" style="margin-top:10px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:6px 14px;font-size:12px;cursor:pointer;color:var(--text2)">📋 Copy Protocol</button>`;
+    output.appendChild(div);
+    div.scrollIntoView({behavior:'smooth'});
+  }catch(e){
+    const loader = document.getElementById('treatmentLoader');
+    if(loader) loader.innerHTML = '<div style="color:var(--danger);font-size:12px;padding:8px">⚠️ Treatment plan temporarily unavailable. Try again.</div>';
   }
 }
 
@@ -7866,8 +8123,7 @@ Return ONLY the JSON array. No markdown. No explanation outside the array.`;
         'You are an elite geopolitical and macroeconomic analyst. Analyze this query with deep causal chain thinking: "' + q + '". Give 4-5 key nodes: Root Cause → First-Order Effect → Second-Order Effect → Strategic Insight. Each node: one short title + 2 sentence explanation.',
         'You are a Rothschild-level strategic analyst with Titan Protocol: lead with counterarguments first, first-principles, systems thinking, no fluff. Be specific, data-driven, non-generic.', 700
       );
-      const formatted = retry.replace(/\n/g,'<br>').replace(/→/g,'<span style="color:var(--pink)">→</span>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');
-      el.innerHTML=`<div class="causal-chain"><div style="font-weight:700;font-size:14px;margin-bottom:12px">🔍 Causal Analysis: "${q}"</div><div style="font-size:13px;color:var(--text2);line-height:1.8">${formatted}</div></div>`;
+      el.innerHTML=`<div class="causal-chain"><div style="font-weight:700;font-size:14px;margin-bottom:12px">🔍 Causal Analysis: "${q}"</div>${formatAIMarkdown(retry)}</div>`;
     } catch(e2) {
       el.innerHTML=`<div class="causal-chain" style="border-color:var(--danger)"><div style="font-weight:700;margin-bottom:8px;color:var(--danger)">⚠️ Geo AI offline</div><div style="font-size:12px;color:var(--text3)">Worker unreachable. Check connection and retry.</div></div>`;
     }
@@ -8133,25 +8389,49 @@ function expandDiscovery(el){el.style.transform=el.style.transform?'':'scale(1.0
 async function askScienceAI(){
   const q=document.getElementById('scienceAskInput').value.trim();if(!q)return;
   const el=document.getElementById('scienceAIResult');
-  el.innerHTML=`<div class="ai-insight-box">⚡ Querying frontier science AI...</div>`;
-  const prompt=`You are a world-class scientist synthesizing frontier research. Explain this with depth, precision, and mind-expanding insight: "${q}"
+  el.innerHTML=`<div class="ai-insight-box">⏳ Querying frontier science AI...</div>`;
+  const prompt=`You are a world-class scientist. Answer this with structured depth: "${q}"
 
-Cover: 1) Core mechanism/principle 2) Current scientific understanding & key discoveries 3) What remains unknown or debated 4) Counterintuitive or mind-bending implication 5) Practical or philosophical significance
+FORMAT YOUR RESPONSE EXACTLY LIKE THIS (use markdown):
+## 🔬 [Concise Headline Answer]
 
-Be specific, cite real concepts/researchers/experiments. No generic filler. 150-200 words max. Make it genuinely fascinating.`;
+### ⚙️ Core Mechanism
+- Bullet point 1 with specific detail
+- Bullet point 2
+
+### 🧪 Key Research & Discoveries
+- **Researcher/Experiment**: what was found
+- **Current consensus**: what science says now
+
+### ❓ What Remains Unknown
+- Open question 1
+- Open question 2
+
+### 💡 Mind-Bending Implication
+[1 paragraph — the counterintuitive or consciousness-expanding insight]
+
+### 🚀 Bottom Line
+[1 powerful sentence]
+
+Be specific, cite real researchers and experiments. Max 250 words. No filler.`;
   try{
-    const text=await callGroqFast(prompt,'You are a brilliant scientist and science communicator. Be precise, specific, and mind-expanding.',500);
-    el.innerHTML=`<div class="ai-insight-box"><div style="font-weight:700;margin-bottom:8px">⚡ Science AI: "${q}"</div><div style="font-size:13px;color:var(--text2);line-height:1.7">${text.replace(/\n/g,'<br>')}</div></div>`;
+    const text=await callGroqFast(prompt,'You are a brilliant scientist. Respond ONLY in the markdown format specified. Use real researchers, real experiments, real data.',700);
+    el.innerHTML=`<div class="ai-insight-box">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+        <span style="font-size:18px">⚡</span>
+        <div style="font-weight:800;font-size:13px;color:var(--accent)">Science AI: "${q}"</div>
+      </div>
+      ${formatAIMarkdown(text)}
+      <div style="display:flex;gap:6px;margin-top:10px">
+        <button onclick="navigator.clipboard.writeText(this.dataset.t).then(()=>showToast('📋 Copied!'))" data-t="${encodeURIComponent(text)}" style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;color:var(--text3)">📋 Copy</button>
+      </div>
+    </div>`;
   }catch(err){
-    // Retry with simpler prompt before showing error
-    try {
-      const retry = await askAI(
-        'You are a frontier scientist. Explain concisely: ' + q,
-        'Be precise and specific. 100-150 words.', 400
-      );
-      el.innerHTML=`<div class="ai-insight-box"><div style="font-weight:700;margin-bottom:8px">🔬 Science AI: "${q}"</div><div style="font-size:13px;color:var(--text2);line-height:1.7">${retry.replace(/\n/g,'<br>')}</div></div>`;
-    } catch(e2) {
-      el.innerHTML=`<div class="ai-insight-box" style="border-color:var(--danger)"><div style="font-weight:700;margin-bottom:8px;color:var(--danger)">⚠️ Science AI offline</div><div style="font-size:12px;color:var(--text3)">Groq Worker unreachable. Check your internet connection or try again in a moment.</div></div>`;
+    try{
+      const retry=await callGroqFast('Explain with bullet points and bold headers: '+q,'Be structured, specific, 150 words.',450);
+      el.innerHTML=`<div class="ai-insight-box"><div style="font-weight:700;margin-bottom:8px">🔬 Science AI: "${q}"</div>${formatAIMarkdown(retry)}</div>`;
+    }catch(e2){
+      el.innerHTML=`<div class="ai-insight-box" style="border-color:var(--danger)"><div style="font-weight:700;margin-bottom:8px;color:var(--danger)">⚠️ Science AI offline</div><div style="font-size:12px;color:var(--text3)">Groq Worker unreachable. Check connection.</div></div>`;
     }
   }
 }
@@ -10026,21 +10306,135 @@ function initNewFeatures_v7(){
 
 
 // ─── ARTIFACT MODAL ──────────────────────────────────────────
+// ── ARTIFACT PORTAL CONFIGS ────────────────────────────────
+const ARTIFACT_PORTALS = {
+  science: {
+    title: '🔬 Science & Tech AI',
+    icon: '🔬',
+    color: '#06b6d4',
+    desc: 'Ask anything about frontier science, AI breakthroughs, physics, biology, space, and emerging tech.',
+    system: 'You are a world-class scientist and science communicator. You give structured, emoji-rich, mind-expanding answers. ALWAYS format your response with: a bold headline, 3-5 bullet points with emojis, a "💡 Mind-Bending Insight" section, and a "🚀 Bottom Line" one-liner. Be specific, cite real researchers and experiments. Never generic.',
+    placeholder: 'e.g. How does CRISPR actually work? Latest in fusion energy? What is dark matter?',
+    starters: ['🧬 Explain CRISPR gene editing', '🤖 Latest breakthroughs in AI 2025', '⚛️ What is quantum entanglement?', '🚀 How close are we to fusion energy?', '🧠 How does neuroplasticity work?']
+  },
+  paisa: {
+    title: '💰 Paisa Finance AI',
+    icon: '💰',
+    color: '#10b981',
+    desc: 'Markets, wealth building, stocks, crypto, Indian finance — ask Paisa AI for wealth intelligence.',
+    system: 'You are an elite financial analyst and wealth strategist specialized in Indian markets (NSE, BSE), global macro, crypto, and zero-to-wealth strategies. ALWAYS format your response with: a bold headline, key data points with 📊 emojis, 3-5 bullet insights, a "⚡ Action Signal" section with specific steps, and a "⚠️ Risk" warning. Be specific, cite real tickers/prices/percentages where relevant. Titan Protocol: lead with counterarguments first.',
+    placeholder: 'e.g. Should I buy Nifty 50 now? Bitcoin outlook? How to invest ₹5000/month?',
+    starters: ['📈 Nifty 50 outlook this month', '₿ Bitcoin — buy or wait?', '💎 Best SIP funds for 2025', '🏦 How to build wealth from ₹0', '🌍 Global recession risk now?']
+  },
+  artifacts: {
+    title: '🛸 Artifacts Hub — Claude AI',
+    icon: '🛸',
+    color: '#7c3aed',
+    desc: 'Build apps, tools, code, UI components and creative artifacts using AI. Describe what you want to build.',
+    system: 'You are Claude, an expert full-stack developer and creative technologist. When asked to build something, you: 1) Describe the architecture clearly 2) Provide complete, working code with comments 3) List the tech stack and why 4) Give deployment steps. Format responses with: bold section headers, code blocks (use triple backticks), emoji-prefixed bullet points, and a "🚀 Deploy Steps" section. Be production-grade, no pseudocode.',
+    placeholder: 'e.g. Build a habit tracker in HTML/CSS/JS. Create a React dashboard. Make a Python script for...',
+    starters: ['🖥️ Build a habit tracker app', '⚛️ Create a React to-do component', '🐍 Python script for daily journaling', '📊 Data viz dashboard template', '🤖 Simple chatbot in vanilla JS']
+  },
+  movies: {
+    title: '🎬 Movie Explainer AI',
+    icon: '🎬',
+    color: '#ec4899',
+    desc: 'Deep analysis of any film — themes, symbolism, director intent, hidden meanings, philosophy.',
+    system: 'You are an elite film critic, philosopher, and cultural analyst. When analyzing a movie, you ALWAYS provide: 🎭 Core Theme (1 sentence), 🔍 Hidden Symbolism (3-5 specific scenes with meaning), 🧠 Philosophical Layer (what deeper truth the film explores), 🎨 Director\'s Intent (technique and vision), 💫 Why It Matters (cultural/psychological impact), and a ⭐ Verdict. Use specific scene references, director names, cinematography terms. Format with bold headers and emoji bullets.',
+    placeholder: 'e.g. Explain Interstellar. What is the meaning of 2001: A Space Odyssey? Analyze Oppenheimer.',
+    starters: ['🌌 Explain Interstellar ending', '🔴 What is 2001: A Space Odyssey about?', '💥 Analyze The Dark Knight deeply', '🕰️ Inception — what\'s real?', '⚛️ Oppenheimer — themes & meaning']
+  }
+};
+
+let _artifactChatHistory = [];
+let _artifactCurrentId = null;
+
 function openArtifactModal(id, title, url){
+  const portal = ARTIFACT_PORTALS[id];
+  if(!portal) return;
+  _artifactCurrentId = id;
+  _artifactChatHistory = [];
   const modal = document.getElementById('artifactModal');
-  document.getElementById('artifactModalTitle').textContent = title;
-  document.getElementById('artifactModalFrame').src = url;
-  modal.style.display = 'flex'; // override inline style
+  document.getElementById('artifactModalTitle').textContent = portal.title;
+  const body = document.getElementById('artifactModalBody');
+  body.innerHTML = `
+    <div style="background:linear-gradient(135deg,${portal.color}22,${portal.color}11);border:1px solid ${portal.color}44;border-radius:12px;padding:14px;margin-bottom:4px">
+      <div style="font-size:28px;margin-bottom:6px">${portal.icon}</div>
+      <div style="font-size:13px;color:var(--text2);line-height:1.6">${portal.desc}</div>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:4px">
+      ${portal.starters.map(s=>`<button onclick="artifactQuickSend(this.textContent)" style="background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:6px 12px;font-size:11px;cursor:pointer;color:var(--text2)">${s}</button>`).join('')}
+    </div>
+    <div id="artifactChatBox" style="display:flex;flex-direction:column;gap:10px;min-height:80px;margin-bottom:6px"></div>
+    <div style="display:flex;gap:8px;position:sticky;bottom:0;padding:8px 0;background:var(--bg)">
+      <input type="text" id="artifactInput" class="form-input" placeholder="${portal.placeholder}" style="flex:1;font-size:13px" onkeydown="if(event.key==='Enter')sendArtifactMsg()">
+      <button onclick="sendArtifactMsg()" style="background:linear-gradient(135deg,${portal.color},${portal.color}cc);color:#fff;border:none;border-radius:10px;padding:10px 16px;cursor:pointer;font-weight:700;font-size:13px">→</button>
+    </div>`;
+  modal.style.display = 'flex';
   modal.classList.add('open');
-  document.body.style.overflow='hidden';
+  document.body.style.overflow = 'hidden';
+  setTimeout(()=>document.getElementById('artifactInput').focus(), 300);
 }
+
+function artifactQuickSend(text){
+  const inp = document.getElementById('artifactInput');
+  if(inp){ inp.value = text; sendArtifactMsg(); }
+}
+
+async function sendArtifactMsg(){
+  const inp = document.getElementById('artifactInput');
+  const msg = inp ? inp.value.trim() : '';
+  if(!msg) return;
+  inp.value = '';
+  const portal = ARTIFACT_PORTALS[_artifactCurrentId];
+  if(!portal) return;
+  const box = document.getElementById('artifactChatBox');
+  if(!box) return;
+
+  // User bubble
+  const userDiv = document.createElement('div');
+  userDiv.style.cssText = 'align-self:flex-end;background:linear-gradient(135deg,var(--primary),var(--pink));color:#fff;border-radius:14px 14px 4px 14px;padding:10px 14px;font-size:13px;max-width:88%;line-height:1.5';
+  userDiv.textContent = msg;
+  box.appendChild(userDiv);
+  box.scrollTop = box.scrollHeight;
+  _artifactChatHistory.push({role:'user', content:msg});
+
+  // AI loading
+  const aiDiv = document.createElement('div');
+  aiDiv.style.cssText = 'align-self:flex-start;background:var(--bg2);border:1px solid var(--border);border-radius:4px 14px 14px 14px;padding:12px 14px;font-size:13px;max-width:92%;line-height:1.7;color:var(--text)';
+  aiDiv.innerHTML = `<span style="color:var(--text3)">⏳ ${portal.icon} thinking...</span>`;
+  box.appendChild(aiDiv);
+  box.scrollTop = box.scrollHeight;
+
+  try {
+    const apiMsgs = _artifactChatHistory.slice(-8).map(m=>({role:m.role==='ai'?'assistant':'user',content:m.content}));
+    const raw = await callGroqFast(JSON.stringify(apiMsgs.map(m=>m.content).join('\n\nLast: ') + '\n\nUser asks: ' + msg, null, 2), portal.system, 900);
+    const formatted = formatAIMarkdown(raw);
+    aiDiv.innerHTML = `<div style="font-size:11px;font-weight:700;color:${portal.color};margin-bottom:6px">${portal.icon} ${portal.title.split(' ').slice(0,3).join(' ')}</div>${formatted}
+      <div style="display:flex;gap:6px;margin-top:8px">
+        <button onclick="copyArtifactMsg(this)" data-text="${encodeURIComponent(raw)}" style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;color:var(--text3)">📋 Copy</button>
+      </div>`;
+    _artifactChatHistory.push({role:'ai', content:raw});
+  } catch(e) {
+    aiDiv.innerHTML = `<span style="color:var(--danger)">⚠️ AI offline — check connection</span>`;
+  }
+  box.scrollTop = box.scrollHeight;
+}
+
+function copyArtifactMsg(btn){
+  const text = decodeURIComponent(btn.dataset.text||'');
+  navigator.clipboard.writeText(text).then(()=>showToast('📋 Copied!')).catch(()=>showToast('Copy failed'));
+}
+
 function closeArtifactModal(){
   const modal = document.getElementById('artifactModal');
   modal.style.display = 'none';
   modal.classList.remove('open');
-  document.getElementById('artifactModalFrame').src='';
-  document.body.style.overflow='';
+  document.body.style.overflow = '';
+  _artifactChatHistory = [];
+  _artifactCurrentId = null;
 }
+
 
 
 // ─── CALORIE TRACKER WITH AI ─────────────────────────────────
@@ -14982,109 +15376,222 @@ function deleteGuestPermanently() {
     <button class="guide-sheet-close" onclick="closeAppGuide()">✕</button>
   </div>
   <div class="guide-sheet-body">
-    <div class="guide-section-label">✨ What Is This?</div>
-    <div class="guide-tile">
-      <div class="guide-tile-icon">🧠</div>
-      <div class="guide-tile-text">
-        <div class="guide-tile-title">Your Personal Intelligence OS</div>
-        <div class="guide-tile-desc">Track consciousness dimensions, decode your patterns, and compound your cognitive power daily. Not an app — a self-improving loop.</div>
-      </div>
+
+    <!-- HERO -->
+    <div style="background:linear-gradient(135deg,rgba(124,58,237,.15),rgba(6,182,212,.1));border:2px solid rgba(124,58,237,.3);border-radius:14px;padding:16px;margin-bottom:16px;text-align:center">
+      <div style="font-size:36px;margin-bottom:6px">🧠</div>
+      <div style="font-family:Syne,sans-serif;font-size:16px;font-weight:900;color:var(--text);margin-bottom:4px">Consciousness OS</div>
+      <div style="font-size:12px;color:var(--text3);line-height:1.6">Not an app. A self-improving cognitive loop.<br>Track → Analyze → Predict → Decide → Act → Improve.</div>
     </div>
 
-    <div class="guide-section-label">🗺️ Core Tabs</div>
+    <!-- SECTION: CORE INTELLIGENCE TABS -->
+    <div class="guide-section-label">🧠 Core Intelligence Tabs</div>
+
     <div class="guide-tile">
       <div class="guide-tile-icon">📝</div>
       <div class="guide-tile-text">
         <div class="guide-tile-title">Daily Log</div>
-        <div class="guide-tile-desc">Log 20 dimensions of your state: mood, focus, energy, dreams, emotions, activities. &lt;10 sec friction — builds your cognitive fingerprint.</div>
+        <div class="guide-tile-desc">Log 20 dimensions: mood, focus, energy, stress, creativity, flow, sleep, emotions, activities, thoughts, dreams, and more. Takes under 10 seconds. Every entry builds your cognitive fingerprint — the foundation everything else runs on. <strong>7 days = pattern detection. 30 days = predictions.</strong></div>
       </div>
     </div>
     <div class="guide-tile">
       <div class="guide-tile-icon">📊</div>
       <div class="guide-tile-text">
-        <div class="guide-tile-title">Analysis</div>
-        <div class="guide-tile-desc">Trend detection, cognitive scores, pattern predictions, and records — auto-generated from your logs. Gets smarter every day.</div>
+        <div class="guide-tile-title">Analysis Dashboard</div>
+        <div class="guide-tile-desc">Auto-generated insights from your logs: trend lines, cognitive scores, personal records, emotion frequency maps, and 7-day vs 14-day deltas. The more you log, the smarter this gets. No manual input needed — just read your patterns.</div>
       </div>
     </div>
     <div class="guide-tile">
       <div class="guide-tile-icon">🔮</div>
       <div class="guide-tile-text">
-        <div class="guide-tile-title">Vault</div>
-        <div class="guide-tile-desc">Cognitive fingerprint detection + AI Mind Mirror. Surfaces your deep patterns and blind spots across all logged data.</div>
+        <div class="guide-tile-title">Vault — Cognitive Fingerprint</div>
+        <div class="guide-tile-desc">AI Mind Mirror: surfaces your deep behavioral patterns and blind spots across all logged data. Tells you what your peak focus state looks like, when your stress spikes, and what activities correlate with your best days. Your psychological blueprint.</div>
       </div>
     </div>
     <div class="guide-tile">
       <div class="guide-tile-icon">🔵</div>
       <div class="guide-tile-text">
-        <div class="guide-tile-title">Oracle</div>
-        <div class="guide-tile-desc">Decision intelligence engine — scenario rehearsal, second-order consequence trees, asymmetric bets. Think like a strategist.</div>
+        <div class="guide-tile-title">Oracle — Decision Intelligence</div>
+        <div class="guide-tile-desc">Scenario rehearsal engine. Feed it any decision → it maps second-order consequences, identifies hidden risks, calculates asymmetric bets, and tells you the highest-leverage move. Think 10 steps ahead before you act.</div>
       </div>
     </div>
     <div class="guide-tile">
       <div class="guide-tile-icon">🤖</div>
       <div class="guide-tile-text">
-        <div class="guide-tile-title">AI Hub</div>
-        <div class="guide-tile-desc">6 AI personas trained on your data: Digital Twin, Coach, Sage, Dr. Mind, Friend, Philosopher. Uses Titan Protocol — no fluff, pure leverage.</div>
+        <div class="guide-tile-title">AI Hub — Your Digital Council</div>
+        <div class="guide-tile-desc">6 AI personas, each trained on your consciousness data: <strong>AI Twin</strong> (mirror self), <strong>Coach</strong> (performance), <strong>Sage</strong> (wisdom), <strong>Dr. Mind</strong> (mental health), <strong>Friend</strong> (casual), <strong>Philosopher</strong> (existential). Deep Research mode: 3-step synthesis for complex questions. Attach files, search the web, get structured answers.</div>
+      </div>
+    </div>
+
+    <!-- SECTION: HEALTH & BODY -->
+    <div class="guide-section-label">❤️ Health & Body</div>
+    <div class="guide-tile">
+      <div class="guide-tile-icon">🩺</div>
+      <div class="guide-tile-text">
+        <div class="guide-tile-title">Health Profile — 360° Assessment</div>
+        <div class="guide-tile-desc">18-section comprehensive health questionnaire: demographics, vitals, sleep, diet, exercise, symptoms, allergies, medications, chronic conditions, mental health, ayurvedic constitution, hormones, and more. Complete it once → AI Doctor generates a personalized health analysis.</div>
+      </div>
+    </div>
+    <div class="guide-tile">
+      <div class="guide-tile-icon">💊</div>
+      <div class="guide-tile-text">
+        <div class="guide-tile-title">AI Treatment Advisor</div>
+        <div class="guide-tile-desc">Based on your health profile, AI recommends treatments across: Allopathy, Homeopathy, Ayurveda, Siddha, Unani, Diet therapy, Exercise protocols, Abstinence plans, and Fruit therapy. Every recommendation is personalized — not generic.</div>
+      </div>
+    </div>
+    <div class="guide-tile">
+      <div class="guide-tile-icon">🔥</div>
+      <div class="guide-tile-text">
+        <div class="guide-tile-title">AI Calorie Tracker</div>
+        <div class="guide-tile-desc">Describe food in plain language ("2 roti + dal 150ml") → AI estimates calories, protein, carbs, fat. Tracks against your TDEE goal (calculated from weight, height, age, activity). Includes AI Nutrition Insight for daily cognitive impact analysis.</div>
+      </div>
+    </div>
+
+    <!-- SECTION: MIND EXPANSION -->
+    <div class="guide-section-label">🌙 Mind Expansion</div>
+    <div class="guide-tile">
+      <div class="guide-tile-icon">🌙</div>
+      <div class="guide-tile-text">
+        <div class="guide-tile-title">Dreams — Lucid Dream Protocol</div>
+        <div class="guide-tile-desc">Log dreams with emotion tags and lucidity scores. Reality check scheduler trains your brain to recognize dream states. Hypnagogic tracking captures the waking-to-sleep transition. Over time, patterns emerge: what triggers your lucid dreams.</div>
       </div>
     </div>
     <div class="guide-tile">
       <div class="guide-tile-icon">🎵</div>
       <div class="guide-tile-text">
-        <div class="guide-tile-title">Neural Beats</div>
-        <div class="guide-tile-desc">Binaural beats and solfeggio frequencies to shift brain states: focus, creativity, sleep, deep meditation, testosterone optimization.</div>
+        <div class="guide-tile-title">Neural Beats — Brainwave Audio</div>
+        <div class="guide-tile-desc">Binaural beats and solfeggio frequencies to shift brain states on demand: 40Hz gamma for focus, 10Hz alpha for creativity, 4Hz theta for deep meditation, 1Hz delta for sleep, 432Hz for testosterone optimization. No headphone required for solfeggio.</div>
       </div>
     </div>
     <div class="guide-tile">
-      <div class="guide-tile-icon">🌙</div>
+      <div class="guide-tile-icon">⚡</div>
       <div class="guide-tile-text">
-        <div class="guide-tile-title">Dreams</div>
-        <div class="guide-tile-desc">Lucid dream protocol, reality checks, hypnagogic tracking, dream recall log with emotion tagging. Expand beyond waking consciousness.</div>
+        <div class="guide-tile-title">Shock Insight Engine</div>
+        <div class="guide-tile-desc">Generates reality-disrupting insights calibrated to your current cognitive state. When you're in a rut, it delivers a pattern interrupt. Best used when you feel mentally stuck or need a frame shift.</div>
       </div>
     </div>
 
-    <div class="guide-section-label">💬 AI Hub Features</div>
+    <!-- SECTION: KNOWLEDGE & WORLD -->
+    <div class="guide-section-label">🌍 Knowledge & World</div>
     <div class="guide-tile">
-      <div class="guide-tile-icon">📎</div>
+      <div class="guide-tile-icon">🔬</div>
       <div class="guide-tile-text">
-        <div class="guide-tile-title">Attach File</div>
-        <div class="guide-tile-desc">Upload a .txt, .md, .csv, .json, or .pdf — the AI reads it and answers questions or generates insights from its content.</div>
+        <div class="guide-tile-title">Science Tab</div>
+        <div class="guide-tile-desc">Frontier science feed filtered by: Neuro, AI, Physics, Space, Biotech. Super Facts cycle daily reality-expanding data points. Mind-Bending Reality Shakers curates YouTube, TED, podcasts and web content. Ask Science AI any frontier question — get structured, emoji-rich answers with cited researchers.</div>
       </div>
     </div>
     <div class="guide-tile">
-      <div class="guide-tile-icon">🔍</div>
+      <div class="guide-tile-icon">🌍</div>
       <div class="guide-tile-text">
-        <div class="guide-tile-title">Web Search Mode</div>
-        <div class="guide-tile-desc">Fetches live data from Wikipedia + synthesizes it with your query via AI. Best for factual lookups, current science, and research topics.</div>
+        <div class="guide-tile-title">World Tab — Geopolitical Intelligence</div>
+        <div class="guide-tile-desc">Causal chain analysis of world events: Root Cause → First-Order → Second-Order → Third-Order Effects → Strategic Insight. Live feeds from TASS, Xinhua, NDTV, ArXiv, NASA. Market ticker with crypto, metals, forex. Ask World AI any geopolitical question.</div>
       </div>
     </div>
     <div class="guide-tile">
-      <div class="guide-tile-icon">🧬</div>
+      <div class="guide-tile-icon">💰</div>
       <div class="guide-tile-text">
-        <div class="guide-tile-title">Deep Research</div>
-        <div class="guide-tile-desc">3-step AI synthesis: decompose → research each angle → synthesize into a structured report. Takes 20-40s — worth it for complex questions.</div>
+        <div class="guide-tile-title">Wealth Tab — Paisa Finance AI</div>
+        <div class="guide-tile-desc">Income strategy builder, skill monetization matrix, savings accelerator, and Paisa Finance AI portal for live market analysis. Tracks financial goals alongside cognitive goals — because wealth and mind compound together.</div>
+      </div>
+    </div>
+    <div class="guide-tile">
+      <div class="guide-tile-icon">💼</div>
+      <div class="guide-tile-text">
+        <div class="guide-tile-title">Career Tab — Path Intelligence</div>
+        <div class="guide-tile-desc">Cognitive trajectory mapping: which skills compound fastest for your target career, optimal study sequencing, and leverage detection. Skill ROI matrix: (market demand × growth rate) / time-to-competency. Know exactly where to invest your time.</div>
       </div>
     </div>
 
-    <div class="guide-section-label">⚡ Power Tips</div>
+    <!-- SECTION: MEMORY & CALENDAR -->
+    <div class="guide-section-label">🧩 Memory & Productivity</div>
+    <div class="guide-tile">
+      <div class="guide-tile-icon">📸</div>
+      <div class="guide-tile-text">
+        <div class="guide-tile-title">Memory Tab</div>
+        <div class="guide-tile-desc">Capture and retrieve your key insights, learnings, and memories. AI-tagged and searchable. Links to your daily log context — so memories are time-stamped to your cognitive state when they were formed.</div>
+      </div>
+    </div>
+    <div class="guide-tile">
+      <div class="guide-tile-icon">📅</div>
+      <div class="guide-tile-text">
+        <div class="guide-tile-title">Calendar Tab</div>
+        <div class="guide-tile-desc">Cognitive calendar that maps your scheduled events against your energy and focus predictions. Plan high-stakes work during your historically peak focus windows. Schedule rest during your historically low-energy periods.</div>
+      </div>
+    </div>
+    <div class="guide-tile">
+      <div class="guide-tile-icon">🎮</div>
+      <div class="guide-tile-text">
+        <div class="guide-tile-title">Games — Brain Training</div>
+        <div class="guide-tile-desc">Cognitive games designed to train working memory, pattern recognition, reaction speed, and focus. Each session logs performance to your cognitive fingerprint — so improvement is tracked over time, not just played.</div>
+      </div>
+    </div>
+
+    <!-- SECTION: AI ARTIFACT PORTALS -->
+    <div class="guide-section-label">🛸 AI Artifact Portals</div>
+    <div class="guide-tile">
+      <div class="guide-tile-icon">🔬</div>
+      <div class="guide-tile-text">
+        <div class="guide-tile-title">Science & Tech AI</div>
+        <div class="guide-tile-desc">Dedicated AI portal for deep science questions — structured answers with mechanism, research citations, open questions, and mind-bending implications. Tap in Science tab → AI Artifact Portals.</div>
+      </div>
+    </div>
+    <div class="guide-tile">
+      <div class="guide-tile-icon">💰</div>
+      <div class="guide-tile-text">
+        <div class="guide-tile-title">Paisa Finance AI</div>
+        <div class="guide-tile-desc">Live finance intelligence: NSE/BSE analysis, crypto signals, SIP recommendations, wealth-from-zero strategies. Gives action signals with specific buy/wait/avoid recommendations.</div>
+      </div>
+    </div>
+    <div class="guide-tile">
+      <div class="guide-tile-icon">🛸</div>
+      <div class="guide-tile-text">
+        <div class="guide-tile-title">Artifacts Hub</div>
+        <div class="guide-tile-desc">Build apps, tools, UI components, and code using AI. Describe what you want → get production-ready code with architecture explanation and deployment steps.</div>
+      </div>
+    </div>
+    <div class="guide-tile">
+      <div class="guide-tile-icon">🎬</div>
+      <div class="guide-tile-text">
+        <div class="guide-tile-title">Movie Explainer AI</div>
+        <div class="guide-tile-desc">Deep film analysis: hidden symbolism, director intent, philosophical layer, cultural impact. More than reviews — genuine philosophical decoding of cinema as a mind-expanding medium.</div>
+      </div>
+    </div>
+
+    <!-- SECTION: POWER TIPS -->
+    <div class="guide-section-label">⚡ Power User Tips</div>
     <div class="guide-tile">
       <div class="guide-tile-icon">🎯</div>
       <div class="guide-tile-text">
-        <div class="guide-tile-title">Log every day for 7 days</div>
-        <div class="guide-tile-desc">That's the threshold where pattern detection becomes meaningful. 30 days = predictive insights. Consistency beats intensity.</div>
+        <div class="guide-tile-title">Log every day for 7 days first</div>
+        <div class="guide-tile-desc">7 days is the minimum for pattern detection. 30 days = predictive insights. 90 days = accurate cognitive forecasting. The AI Twin gets dramatically smarter with every entry. Consistency beats everything.</div>
+      </div>
+    </div>
+    <div class="guide-tile">
+      <div class="guide-tile-icon">🤖</div>
+      <div class="guide-tile-text">
+        <div class="guide-tile-title">Ask the AI Twin the hard questions</div>
+        <div class="guide-tile-desc">"What pattern is holding me back?" · "When am I most creative?" · "What does my stress trajectory look like?" · "What should I work on right now given my state?" — it reads your ACTUAL data, not generic advice.</div>
       </div>
     </div>
     <div class="guide-tile">
       <div class="guide-tile-icon">🧬</div>
       <div class="guide-tile-text">
-        <div class="guide-tile-title">Use the AI Hub like a co-pilot</div>
-        <div class="guide-tile-desc">Ask your AI twin "What pattern is holding me back right now?" — it reads your actual log data. The more you log, the more specific it gets.</div>
+        <div class="guide-tile-title">Use Deep Research for big questions</div>
+        <div class="guide-tile-desc">Deep Research runs a 3-step AI synthesis: decompose the question → research each angle → synthesize into a structured report. Takes 20-40s but delivers PhD-level analysis. Worth it for anything important.</div>
+      </div>
+    </div>
+    <div class="guide-tile">
+      <div class="guide-tile-icon">❤️</div>
+      <div class="guide-tile-text">
+        <div class="guide-tile-title">Complete your Health Profile once</div>
+        <div class="guide-tile-desc">The 18-section health assessment takes ~5 minutes once. After that, the AI Doctor and Treatment Advisor have full context to give you personalized, multi-system treatment recommendations whenever you ask.</div>
       </div>
     </div>
     <div class="guide-tile" style="margin-bottom:4px">
       <div class="guide-tile-icon">🔑</div>
       <div class="guide-tile-text">
-        <div class="guide-tile-title">All features are free</div>
-        <div class="guide-tile-desc">AI Twin, Coach, Sage, Dr. Mind, Friend — all free via built-in Groq. Add your own Groq key for even faster responses.</div>
+        <div class="guide-tile-title">Everything is free — all features unlocked</div>
+        <div class="guide-tile-desc">AI Twin, Coach, Sage, Dr. Mind, Science AI, Paisa Finance AI, Artifact Portals, Deep Research, Neural Beats, Lucid Dreams — all running on Groq's free tier through our Cloudflare Worker. No API key needed. No credit card. Ever.</div>
       </div>
     </div>
   </div>
