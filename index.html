@@ -2419,7 +2419,7 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
       <button class="btn btn-primary" onclick="sendChat()" id="chatSendBtn">➤</button>
     </div>
     <!-- Hidden file input -->
-    <input type="file" id="cosFileInput" accept=".txt,.md,.csv,.json,.pdf,.html,.js,.py,.xml" style="display:none" onchange="handleFileAttach(event)">
+    <input type="file" id="cosFileInput" accept=".txt,.md,.csv,.json,.pdf,.html,.js,.py,.xml,.jpg,.jpeg,.png,.gif,.webp" style="display:none" onchange="handleFileAttach(event)">
     <!-- File preview chip -->
     <div class="file-preview-chip" id="filePreviewChip">
       <span id="filePreviewName">📄 file.txt</span>
@@ -3366,8 +3366,11 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
     <div class="card-title"><span class="emoji">🤖</span> 8D World Chess AI</div>
     <div style="font-size:13px;color:var(--text2);margin-bottom:8px">Ask any question about how world forces connect. Understand causal chains.</div>
     <div class="ai-ask-box">
-      <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:6px">Try asking:</div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <div style="font-size:12px;font-weight:700;color:var(--text2)">Try asking:</div>
+        <button onclick="refreshWorldChessChips()" id="chipsRefreshBtn" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:3px 10px;font-size:10px;cursor:pointer;color:var(--text3);display:flex;align-items:center;gap:4px">🔄 Refresh</button>
+      </div>
+      <div id="worldChessChips" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
         <span class="chip" onclick="setWorldQ('Will war increase gold price?')" style="cursor:pointer">Will war increase gold?</span>
         <span class="chip" onclick="setWorldQ('How does Fed rate hike affect crypto?')" style="cursor:pointer">Fed rates → crypto?</span>
         <span class="chip" onclick="setWorldQ('What happens to markets if China invades Taiwan?')" style="cursor:pointer">China Taiwan → markets?</span>
@@ -3376,7 +3379,7 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
       <div class="ai-ask-row">
         <input type="text" class="form-input" id="worldAskInput" placeholder="Ask about any geopolitical or economic force...">
         <button class="btn btn-primary btn-sm" onclick="askWorldAI()">🔍 Analyze</button>
-        <button class="btn btn-secondary btn-sm" onclick="runAI('#worldAskInput','aiOutput','You are an elite geopolitical and macroeconomic analyst. Give sharp, specific, second-order-effects analysis. No fluff.')" title="Deep analysis via Groq" style="font-size:11px">🤖 Deep</button>
+        <button class="btn btn-secondary btn-sm" id="worldDeepBtn" onclick="askWorldAIDeep()" title="Deep analysis — injects live news context" style="font-size:11px">🌐 Live</button>
       </div>
     </div>
     <div id="worldAIResult" style="margin-top:10px"></div>
@@ -3390,7 +3393,7 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
         <div class="card-title" style="margin-bottom:0"><span class="emoji">🗺️</span> Live Geopolitical Intel</div>
         <button class="btn btn-secondary btn-sm" onclick="geoTieredRefresh()" style="font-size:11px">🔄 Tier Refresh</button>
       </div>
-      <div style="font-size:10px;color:var(--text3);margin-bottom:8px">Showing only events every high-IQ, power-aware mind must know. Tap Tier Refresh to see 12h→6h→3h→1h granularity.</div>
+      <div style="font-size:10px;color:var(--text3);margin-bottom:8px">Showing only events every high-IQ, power-aware mind must know. Tap Tier Refresh to cycle: 1month→2week→1week→1day→6h→1h→30min. Lower tiers auto-refresh.</div>
       <div id="geo-news" style="margin-bottom:8px"></div>
       <div id="worldFeed"></div>
     <div id="geoEventsList"></div>
@@ -3701,7 +3704,7 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
       <div class="card-title" style="margin-bottom:0"><span class="emoji">🔬</span> Live Science Intelligence</div>
       <button class="btn btn-secondary btn-sm" onclick="sciTieredRefresh();loadScienceNews()" style="font-size:11px">🔄 Tier Refresh</button>
     </div>
-    <div style="font-size:10px;color:var(--text3);margin-bottom:8px">High-signal science only — breakthroughs that matter to civilization. Each Tier Refresh drills deeper: 24h→12h→6h→3h→1h.</div>
+    <div style="font-size:10px;color:var(--text3);margin-bottom:8px">High-signal science only — breakthroughs that matter to civilization. Tier Refresh cycles: 1month→2week→1week→1day→6h→1h→30min. Lower tiers auto-refresh.</div>
     <div id="science-news" style="margin-bottom:4px"></div>
     <div id="scienceFeed"></div>
   </div>
@@ -8138,6 +8141,125 @@ function generateCausalChain(q){
   return[{arrow:'🌐',node:'Global System Analysis',detail:`Your query: "${q}"`},{arrow:'→',node:'Multi-Factor Chain',detail:'Complex systems involve multiple interacting forces. Key principle: follow the money and incentives.'},{arrow:'→',node:'First-Order Effects',detail:'Most visible direct impact of the event or force'},{arrow:'→',node:'Second-Order Effects',detail:'Ripple effects that emerge 3–12 months later, often more important than first-order'},{arrow:'💡',node:'8D Chess Insight',detail:'True world-level thinking requires tracking: politics, economics, technology, energy, demographics, and psychology simultaneously.'}];
 }
 
+// ── 8D WORLD CHESS: REFRESHABLE CHIPS ──────────────────────────────────────
+const _CHESS_CHIP_POOLS = [
+  // Tier 1 — always present
+  ['Will war increase gold price?', 'Fed rates → crypto?', 'China Taiwan → markets?', 'Oil → inflation chain'],
+  // Tier 2 — geo/power
+  ['Trump tariffs → global trade?', 'BRICS vs Dollar — who wins?', 'India vs China GDP race', 'Middle East oil shock chain'],
+  // Tier 3 — tech/finance
+  ['AI replacing jobs → economy?', 'US debt ceiling → markets?', 'Bitcoin halving → bull cycle?', 'Rate cuts → real estate?'],
+  // Tier 4 — macro wild cards
+  ['Rupee devaluation chain', 'Nuclear threat → safe haven?', 'Chip war → semiconductor prices?', 'Climate policy → energy stocks?'],
+];
+let _chipsPoolIdx = 0;
+
+async function refreshWorldChessChips() {
+  const el = document.getElementById('worldChessChips');
+  const btn = document.getElementById('chipsRefreshBtn');
+  if (!el) return;
+
+  // Try AI-generated live chips first (grounded in current geo news)
+  if (btn) { btn.textContent = '⏳'; btn.disabled = true; }
+  try {
+    // Get latest geo headlines for context
+    const geoCtx = window._latestGeoHeadlines
+      ? `Current world headlines:\n${window._latestGeoHeadlines.slice(0, 600)}\n\n`
+      : '';
+    const raw = await callGroqFast(
+      `${geoCtx}Generate 4 short, punchy 8D World Chess questions (max 7 words each) that are highly relevant to current global events right now. Cover: geopolitics, markets, economics, tech power dynamics. Return ONLY a JSON array of 4 strings.`,
+      'Return ONLY valid JSON array of 4 strings. No markdown.',
+      200
+    );
+    const chips = JSON.parse(raw.replace(/```json|```/g,'').trim());
+    if (Array.isArray(chips) && chips.length >= 3) {
+      el.innerHTML = chips.slice(0,4).map(c =>
+        `<span class="chip" onclick="setWorldQ(${JSON.stringify(c)})" style="cursor:pointer">${c}</span>`
+      ).join('');
+      if (btn) { btn.textContent = '🔄 Refresh'; btn.disabled = false; }
+      return;
+    }
+  } catch(e) { /* fall through to static pools */ }
+
+  // Fallback: cycle through static pools
+  _chipsPoolIdx = (_chipsPoolIdx + 1) % _CHESS_CHIP_POOLS.length;
+  const pool = _CHESS_CHIP_POOLS[_chipsPoolIdx];
+  el.innerHTML = pool.map(c =>
+    `<span class="chip" onclick="setWorldQ(${JSON.stringify(c)})" style="cursor:pointer">${c}</span>`
+  ).join('');
+  if (btn) { btn.textContent = '🔄 Refresh'; btn.disabled = false; }
+}
+
+// ── 8D WORLD CHESS: LIVE-GROUNDED DEEP ANALYSIS ────────────────────────────
+async function askWorldAIDeep() {
+  const q = document.getElementById('worldAskInput').value.trim();
+  if (!q) { showToast('⚠️ Enter a question first'); return; }
+  const el = document.getElementById('worldAIResult');
+  const btn = document.getElementById('worldDeepBtn');
+  if (btn) { btn.textContent = '⏳'; btn.disabled = true; }
+
+  el.innerHTML = `<div class="causal-chain">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+      <div class="ai-loading"><span></span><span></span><span></span></div>
+      <div style="font-size:12px;color:var(--text3)">🌐 Injecting live geo context + AI analysis…</div>
+    </div>
+  </div>`;
+
+  try {
+    // Gather all available live context
+    const geoHeadlines = window._latestGeoHeadlines || '';
+    const sciHeadlines = window._latestSciHeadlines || '';
+    const mktCtx = (() => {
+      try {
+        const m = JSON.parse(localStorage.getItem('cos_live_markets') || '{}');
+        const parts = [];
+        if (m.crypto?.length) parts.push('Crypto: ' + m.crypto.slice(0,3).map(c=>`${c.name} $${c.price}`).join(', '));
+        if (m.indices?.length) parts.push('Indices: ' + m.indices.slice(0,3).map(i=>`${i.name} ${i.change}`).join(', '));
+        return parts.join(' | ');
+      } catch(e) { return ''; }
+    })();
+
+    const liveCtx = [
+      geoHeadlines ? `=== LIVE WORLD NEWS ===\n${geoHeadlines.slice(0,800)}` : '',
+      mktCtx ? `=== LIVE MARKETS ===\n${mktCtx}` : '',
+      sciHeadlines ? `=== LIVE SCIENCE NEWS ===\n${sciHeadlines.slice(0,400)}` : '',
+    ].filter(Boolean).join('\n\n');
+
+    const prompt = `You are an elite 8D World Chess analyst — thinking across 8 dimensions simultaneously: Politics, Economics, Technology, Energy, Military, Demographics, Psychology, Time.
+
+${liveCtx ? 'LIVE INTELLIGENCE FEED (use this to ground your analysis in current reality):\n' + liveCtx + '\n\n' : ''}
+QUERY: "${q}"
+
+Respond as a JSON causal chain array (6 nodes):
+[
+  {"arrow":"🌐","node":"Current Reality","detail":"What is actually happening RIGHT NOW based on live data — specific, not generic"},
+  {"arrow":"→","node":"First-Order Effect (0-3 months)","detail":"Most immediate consequence with specific actors/numbers"},
+  {"arrow":"→","node":"Second-Order Effect (3-12 months)","detail":"Ripple effects — follow the money and incentives"},
+  {"arrow":"→","node":"Third-Order Effect (1-5 years)","detail":"Structural shifts and paradigm changes"},
+  {"arrow":"🎯","node":"Hidden Variable","detail":"The non-obvious factor most analysts are missing right now"},
+  {"arrow":"💡","node":"Strategic Edge","detail":"What a power-aware mind should do, watch, or position for TODAY"}
+]
+Return ONLY the JSON array.`;
+
+    const raw = await callGroqJSON(prompt, 'Return ONLY valid JSON array. Ground in live data. Be specific.', 900);
+    const chains = JSON.parse(raw);
+    el.innerHTML = `<div class="causal-chain">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px">
+        <span style="font-size:18px">🌐</span>
+        <div style="font-weight:800;font-size:13px">Live 8D Analysis: "${q}"</div>
+        ${liveCtx ? '<span style="font-size:9px;background:#10b981;color:#fff;border-radius:4px;padding:2px 6px;font-weight:700">LIVE DATA</span>' : ''}
+      </div>
+      ${chains.map(c=>`<div class="causal-step"><div class="causal-arrow">${c.arrow}</div><div class="causal-text"><strong>${c.node}</strong><br><span style="font-size:12px;color:var(--text2)">${c.detail}</span></div></div>`).join('')}
+    </div>`;
+  } catch(e) {
+    // Fallback to regular askWorldAI
+    if (btn) { btn.textContent = '🌐 Live'; btn.disabled = false; }
+    await askWorldAI();
+    return;
+  }
+  if (btn) { btn.textContent = '🌐 Live'; btn.disabled = false; }
+}
+
 // ═══════════════════════════════════════════════════════════
 //  FEATURE 3 — THEME ENGINE
 // ═══════════════════════════════════════════════════════════
@@ -11589,19 +11711,27 @@ function renderLiveScienceNews(news) {
     return;
   }
   const catEmoji = { ai: '🤖', neuro: '🧠', longevity: '🧬', space: '🚀', physics: '⚛️', biotech: '🔬', defense: '🛡️', quantum: '⚡', tech: '💻' };
-  el.innerHTML = news.map(n => `
-    <div class="discovery-card" style="border-left:3px solid var(--primary);padding-left:12px;background:var(--bg2);border-radius:0 12px 12px 0;margin-bottom:10px;padding:12px 12px 12px 14px">
+  el.innerHTML = news.map(n => {
+    const desc = (n.desc && n.desc !== 'undefined') ? n.desc : '';
+    const impact = (n.impact && n.impact !== 'undefined') ? n.impact : '';
+    const cat = (n.cat && n.cat !== 'undefined') ? n.cat : 'science';
+    const title = (n.title && n.title !== 'undefined') ? n.title : '';
+    const date = (n.date && n.date !== 'undefined') ? n.date : 'Today';
+    const source = (n.source && n.source !== 'undefined') ? n.source : '';
+    if (!title) return '';
+    return `
+    <div class="discovery-card" style="border-left:3px solid var(--primary);background:var(--bg2);border-radius:0 12px 12px 0;margin-bottom:10px;padding:12px 12px 12px 14px">
       <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
-        <span style="font-size:16px">${catEmoji[n.cat]||'🔬'}</span>
-        <span style="font-size:10px;font-weight:700;color:var(--primary);text-transform:uppercase">${n.cat||'science'}</span>
-        <span style="font-size:10px;color:var(--text3);margin-left:auto">${n.date||'TODAY'} · 🔴 LIVE</span>
+        <span style="font-size:16px">${catEmoji[cat]||'🔬'}</span>
+        <span style="font-size:10px;font-weight:700;color:var(--primary);text-transform:uppercase">${cat}</span>
+        <span style="font-size:10px;color:var(--text3);margin-left:auto">${date} · 🔴 LIVE</span>
       </div>
-      <div style="font-weight:800;font-size:13px;color:var(--text);margin-bottom:4px">${n.title}</div>
-      <div style="font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:4px">${n.desc}</div>
-      <div style="font-size:11px;color:var(--accent);font-weight:600">💡 ${n.impact||''}</div>
-      ${n.source?`<div style="font-size:10px;color:var(--text3);margin-top:3px">📰 ${n.source}</div>`:''}
-    </div>
-  `).join('');
+      <div style="font-weight:800;font-size:13px;color:var(--text);margin-bottom:4px">${title}</div>
+      ${desc ? `<div style="font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:4px">${desc}</div>` : ''}
+      ${impact ? `<div style="font-size:11px;color:var(--accent);font-weight:600">💡 ${impact}</div>` : ''}
+      ${source ? `<div style="font-size:10px;color:var(--text3);margin-top:3px">📰 ${source}</div>` : ''}
+    </div>`;
+  }).join('');
 }
 
 function renderLiveMarkets(m) {
@@ -12591,12 +12721,43 @@ window._sciRefreshTier = 0;
 window._geoRefreshTier = 0;
 
 const NEWS_REFRESH_TIERS = [
-  { label: '🌍 Top Stories (24h)', hours: 24, count: 8, importance: 'most critical global events only' },
-  { label: '⚡ Major Updates (12h)', hours: 12, count: 6, importance: 'significant developments' },
-  { label: '🔥 Hot (6h)', hours: 6, count: 5, importance: 'breaking and important' },
-  { label: '💡 Recent (3h)', hours: 3, count: 5, importance: 'recent key developments' },
-  { label: '⚡ Live (1h)', hours: 1, count: 5, importance: 'latest updates past hour' },
+  { label: '📅 Monthly Overview (1 month)',  hours: 720,  count: 10, importance: 'highest-signal events of the past month', interval: null },
+  { label: '📆 Bi-Weekly (2 weeks)',          hours: 336,  count: 9,  importance: 'major developments past 2 weeks',        interval: null },
+  { label: '🗓️ Weekly Digest (1 week)',       hours: 168,  count: 8,  importance: 'key stories of the week',                interval: null },
+  { label: '🌍 Daily Intel (24h)',            hours: 24,   count: 8,  importance: 'most critical global events today',       interval: 30 * 60 * 1000 },
+  { label: '⚡ Today Hot (6h)',               hours: 6,    count: 6,  importance: 'breaking and important past 6 hours',    interval: 15 * 60 * 1000 },
+  { label: '🔥 Hourly Live (1h)',             hours: 1,    count: 5,  importance: 'latest updates past hour',               interval: 5  * 60 * 1000 },
+  { label: '🚨 Real-Time (30 min)',           hours: 0.5,  count: 5,  importance: 'real-time breaking news',               interval: 2  * 60 * 1000 },
 ];
+
+// Auto-refresh timers per tier — cleared when tier changes
+let _sciAutoRefreshTimer = null;
+let _geoAutoRefreshTimer = null;
+
+function _startSciAutoRefresh(tierIdx) {
+  if (_sciAutoRefreshTimer) clearInterval(_sciAutoRefreshTimer);
+  const t = NEWS_REFRESH_TIERS[tierIdx];
+  if (t && t.interval) {
+    _sciAutoRefreshTimer = setInterval(() => {
+      if (document.getElementById('tab-science')?.classList.contains('active')) {
+        ['cos_live_science_news','cos_science_for_cil'].forEach(k => localStorage.removeItem(k));
+        fetchScienceNews(tierIdx);
+      }
+    }, t.interval);
+  }
+}
+function _startGeoAutoRefresh(tierIdx) {
+  if (_geoAutoRefreshTimer) clearInterval(_geoAutoRefreshTimer);
+  const t = NEWS_REFRESH_TIERS[tierIdx];
+  if (t && t.interval) {
+    _geoAutoRefreshTimer = setInterval(() => {
+      if (document.getElementById('tab-world')?.classList.contains('active')) {
+        ['cos_live_world_news','cos_world_for_cil'].forEach(k => localStorage.removeItem(k));
+        loadGeoNews(tierIdx);
+      }
+    }, t.interval);
+  }
+}
 
 // High-signal science feeds — no fluff, no local noise
 const SCIENCE_FEEDS = [
@@ -12793,9 +12954,12 @@ function renderTabNews(el, items, cfg) {
 }
 
 function renderNewsItem(item, isAI=false) {
+  if (!item || !item.title || item.title === 'undefined') return '';
   const tag = item.tag ? `<span style="background:${tagColors[item.tag]||'var(--primary)'};color:#fff;border-radius:4px;padding:1px 6px;font-size:9px;font-weight:700;margin-right:5px">${item.tag}</span>` : '';
   const date = item.pubDate ? `· ${new Date(item.pubDate).toLocaleDateString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}` : '';
-  const src = item.src || (item.description||'').replace(/<[^>]+>/g,'').slice(0,70);
+  const rawSrc = item.src || '';
+  const rawDesc = (item.description && item.description !== 'undefined') ? item.description : '';
+  const src = rawSrc !== 'undefined' ? (rawSrc || rawDesc.replace(/<[^>]+>/g,'').slice(0,70)) : rawDesc.replace(/<[^>]+>/g,'').slice(0,70);
   return `<div style="padding:9px 0;border-bottom:1px solid var(--border)">
     <a href="${item.link||item.url||'#'}" target="_blank" style="font-size:13px;font-weight:700;color:var(--text);text-decoration:none;display:block;margin-bottom:3px;line-height:1.4">${item.title}</a>
     <div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px;font-size:11px;color:var(--text3)">${tag}<span>${src} ${date}</span>${isAI?'<span style="background:#fbbf24;color:#000;border-radius:3px;padding:1px 4px;font-size:9px;font-weight:700">AI CURATED</span>':''}</div>
@@ -12920,18 +13084,21 @@ async function loadGeoNews(tier){
 function sciTieredRefresh(){
   window._sciRefreshTier = (window._sciRefreshTier + 1) % NEWS_REFRESH_TIERS.length;
   const t = NEWS_REFRESH_TIERS[window._sciRefreshTier];
-  showToast('🔬 ' + t.label + ' — fetching live…');
-  // Clear localStorage cache so re-fetch is forced (never serve stale data)
+  showToast('🔬 ' + t.label + (t.interval ? ' · Auto-refresh ON ⚡' : '') + ' — fetching live…');
   ['cos_live_science_news','cos_science_for_cil'].forEach(k=>localStorage.removeItem(k));
   fetchScienceNews(window._sciRefreshTier);
+  _startSciAutoRefresh(window._sciRefreshTier);
+  // Update tier hint label if it exists
+  const hint = document.querySelector('#science-news .tier-hint');
+  if (hint) hint.textContent = t.label + (t.interval ? ` · auto ⚡${Math.round(t.interval/60000)}min` : '');
 }
 function geoTieredRefresh(){
   window._geoRefreshTier = (window._geoRefreshTier + 1) % NEWS_REFRESH_TIERS.length;
   const t = NEWS_REFRESH_TIERS[window._geoRefreshTier];
-  showToast('🌍 ' + t.label + ' — fetching live…');
-  // Clear localStorage cache so re-fetch is forced
+  showToast('🌍 ' + t.label + (t.interval ? ' · Auto-refresh ON ⚡' : '') + ' — fetching live…');
   ['cos_live_world_news','cos_world_for_cil'].forEach(k=>localStorage.removeItem(k));
   loadGeoNews(window._geoRefreshTier);
+  _startGeoAutoRefresh(window._geoRefreshTier);
 }
 
 async function analyzeSciWithAI(){
@@ -15613,37 +15780,62 @@ function closeAppGuide(){
 // ─── FILE ATTACHMENT ─────────────────────────────────────────────────────────
 let _attachedFileText = null;
 let _attachedFileName = '';
+let _attachedImageB64 = null; // base64 data URL for images
+let _attachedImageMime = null; // e.g. 'image/jpeg'
 
 function triggerFileAttach(){
   document.getElementById('cosFileInput').click();
 }
 
+const _IMAGE_TYPES = ['image/jpeg','image/jpg','image/png','image/gif','image/webp'];
+
 function handleFileAttach(event){
   const file = event.target.files[0];
   if(!file) return;
   _attachedFileName = file.name;
-  const reader = new FileReader();
-  reader.onload = function(e){
-    let text = e.target.result;
-    // Truncate large files to avoid payload overflow
-    if(text.length > 8000) text = text.slice(0,8000) + '\n\n[...truncated to 8000 chars]';
-    _attachedFileText = text;
-    const chip = document.getElementById('filePreviewChip');
-    document.getElementById('filePreviewName').textContent = '📄 ' + file.name + ' (' + (file.size/1024).toFixed(1) + ' KB)';
-    chip.classList.add('show');
-    document.getElementById('attachChip').classList.add('active');
-    if(typeof showToast==='function') showToast('📎 File attached: ' + file.name);
-  };
-  reader.onerror = function(){ if(typeof showToast==='function') showToast('❌ Could not read file.'); };
-  // Try readAsText for text files; for PDF attempt as text (works for many PDFs)
-  reader.readAsText(file);
-  // Reset input so same file can be re-attached
+  _attachedFileText = null;
+  _attachedImageB64 = null;
+  _attachedImageMime = null;
+
+  const chip = document.getElementById('filePreviewChip');
+  const nameEl = document.getElementById('filePreviewName');
+
+  if(_IMAGE_TYPES.includes(file.type)){
+    // Image: read as base64
+    const reader = new FileReader();
+    reader.onload = function(e){
+      _attachedImageB64 = e.target.result; // full data URL
+      _attachedImageMime = file.type;
+      nameEl.textContent = '🖼️ ' + file.name + ' (' + (file.size/1024).toFixed(1) + ' KB)';
+      chip.classList.add('show');
+      document.getElementById('attachChip').classList.add('active');
+      if(typeof showToast==='function') showToast('🖼️ Image attached — AI will analyze it');
+    };
+    reader.onerror = function(){ if(typeof showToast==='function') showToast('❌ Could not read image.'); };
+    reader.readAsDataURL(file);
+  } else {
+    // Text/binary: read as text
+    const reader = new FileReader();
+    reader.onload = function(e){
+      let text = e.target.result;
+      if(text.length > 8000) text = text.slice(0,8000) + '\n\n[...truncated to 8000 chars]';
+      _attachedFileText = text;
+      nameEl.textContent = '📄 ' + file.name + ' (' + (file.size/1024).toFixed(1) + ' KB)';
+      chip.classList.add('show');
+      document.getElementById('attachChip').classList.add('active');
+      if(typeof showToast==='function') showToast('📎 File attached: ' + file.name);
+    };
+    reader.onerror = function(){ if(typeof showToast==='function') showToast('❌ Could not read file.'); };
+    reader.readAsText(file);
+  }
   event.target.value = '';
 }
 
 function clearAttachment(){
   _attachedFileText = null;
   _attachedFileName = '';
+  _attachedImageB64 = null;
+  _attachedImageMime = null;
   document.getElementById('filePreviewChip').classList.remove('show');
   document.getElementById('attachChip').classList.remove('active');
 }
@@ -15710,23 +15902,120 @@ async function fetchWikiContext(query){
 // ─── PATCH sendChat TO SUPPORT ATTACH + SEARCH + RESEARCH ─────────────────
 const _origSendChatV2 = typeof sendChat === 'function' ? sendChat : null;
 
+// ── IMAGE ANALYSIS via Worker (Groq vision fallback: describe with llama) ──
+async function _analyzeImageChat(){
+  const input = document.getElementById('chatInput');
+  const userMsg = input.value.trim() || 'Analyze and explain this image in detail.';
+  const b64 = _attachedImageB64;
+  const mime = _attachedImageMime;
+  const fname = _attachedFileName;
+  input.value = '';
+
+  const msgs = document.getElementById('chatMessages');
+  const statusEl = document.getElementById('aiStatusLabel');
+  if(typeof addChatMsg==='function') addChatMsg('user', '🖼️ [Image: ' + fname + '] ' + userMsg, null, true);
+
+  const loadDiv = document.createElement('div');
+  loadDiv.className = 'chat-msg ai';
+  const model = (typeof AI_MODELS!=='undefined'&&typeof curAIModel!=='undefined') ? AI_MODELS.find(m=>m.id===curAIModel)||{emoji:'🧠',name:'AI Twin'} : {emoji:'🧠',name:'AI Twin'};
+  loadDiv.innerHTML = `<div class="ai-tag">${model.emoji} ${model.name}</div><div class="ai-loading"><span></span><span></span><span></span></div><div style="font-size:11px;color:var(--text3);margin-top:4px">🖼️ Analyzing image...</div>`;
+  msgs.appendChild(loadDiv); msgs.scrollTop = msgs.scrollHeight;
+  if(statusEl) statusEl.textContent = 'Analyzing image...';
+
+  // Strip the data URL prefix to get raw base64
+  const rawB64 = b64.split(',')[1] || b64;
+
+  try {
+    // Send to Worker as multimodal — Worker passes to llama-3.2-11b-vision-preview
+    const _ctrl = new AbortController();
+    const _t = setTimeout(()=>_ctrl.abort(), 20000);
+    let resp;
+    try {
+      resp = await fetch(_WORKER_URL, {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({
+          model: 'llama-3.2-11b-vision-preview',
+          max_tokens: 1000,
+          messages: [{
+            role: 'user',
+            content: [
+              { type: 'image_url', image_url: { url: `data:${mime};base64,${rawB64}` } },
+              { type: 'text', text: userMsg }
+            ]
+          }]
+        }),
+        signal: _ctrl.signal
+      });
+    } finally { clearTimeout(_t); }
+
+    let text;
+    if(resp && resp.ok){
+      const d = await resp.json();
+      text = d.choices?.[0]?.message?.content || null;
+      if(d.error) text = null;
+    }
+
+    // Fallback: if vision model fails, describe the image as best we can with text model
+    if(!text){
+      text = await callGroqFast(
+        `The user attached an image file named "${fname}" and asked: "${userMsg}". The image could not be processed directly. Please acknowledge the image was received, note that direct image analysis requires the Groq vision model to be available, and offer to help if they describe what's in the image.`,
+        'You are the Consciousness OS AI. Be helpful and direct.',
+        400
+      );
+    }
+
+    loadDiv.remove();
+    const aiDiv = document.createElement('div');
+    aiDiv.className = 'chat-msg ai';
+    const msgId = 'msg_'+Date.now();
+    aiDiv.dataset.msgid = msgId;
+    aiDiv.innerHTML = `<div class="ai-tag">${model.emoji} ${model.name}</div><div class="chat-msg-content">${formatAIMarkdown(text)}</div>
+<div class="msg-actions">
+  <button class="msg-action-btn" onclick="copyMsgText(this,'${encodeURIComponent(text)}')">📋</button>
+  <button class="msg-action-btn msg-action-del" onclick="deleteChatMsg(this)">🗑</button>
+</div>`;
+    msgs.appendChild(aiDiv); msgs.scrollTop = msgs.scrollHeight;
+    if(typeof chatHistory!=='undefined') chatHistory.push({role:'ai',content:text,model:curAIModel});
+    if(statusEl) statusEl.textContent = 'Ready';
+  } catch(e){
+    loadDiv.remove();
+    if(typeof addChatMsg==='function') addChatMsg('ai','❌ Image analysis failed: ' + (e.message||'Network error') + '. Try describing the image in text.', null, true);
+    if(statusEl) statusEl.textContent = 'Ready';
+  } finally {
+    clearAttachment();
+  }
+}
+
 sendChat = async function(){
   // Route to specialized handlers if modes are active
   if(_researchMode){ await _deepResearchChat(); return; }
   if(_searchMode){ await _webSearchChat(); return; }
 
-  // Attach file context injection
+  // Image attach — route to vision handler
+  if(_attachedImageB64){ await _analyzeImageChat(); return; }
+
+  // Text file attach — inject context then call original with timeout race
   const input = document.getElementById('chatInput');
   const originalMsg = input.value.trim();
-  if(!originalMsg) return;
+  if(!originalMsg && !_attachedFileText) return;
 
   if(_attachedFileText){
-    const injected = `[ATTACHED FILE: ${_attachedFileName}]\n\`\`\`\n${_attachedFileText}\n\`\`\`\n\nUser question: ${originalMsg}`;
+    const injected = `[ATTACHED FILE: ${_attachedFileName}]\n\`\`\`\n${_attachedFileText}\n\`\`\`\n\nUser question about this file: ${originalMsg||'Please analyze this file and explain what it contains.'}`;
     input.value = injected;
-    const result = _origSendChatV2 ? await _origSendChatV2() : null;
-    input.value = '';
     clearAttachment();
-    return result;
+    // Use timeout race to prevent stuck dots
+    if(_origSendChatV2){
+      await Promise.race([
+        _origSendChatV2(),
+        new Promise((_,rej)=>setTimeout(()=>rej(new Error('Timeout')),18000))
+      ]).catch(()=>{
+        input.value = '';
+        if(typeof addChatMsg==='function') addChatMsg('ai','❌ Request timed out. Try again.', null, true);
+      });
+    }
+    input.value = '';
+    return;
   }
 
   // Normal flow
@@ -15741,11 +16030,9 @@ async function _webSearchChat(){
   const msgs = document.getElementById('chatMessages');
   const statusEl = document.getElementById('aiStatusLabel');
 
-  // Show user bubble
   if(typeof addChatMsg==='function') addChatMsg('user', '🔍 ' + query, null, true);
   input.value = '';
 
-  // Loading indicator
   const loadDiv = document.createElement('div');
   loadDiv.className = 'chat-msg ai';
   loadDiv.innerHTML = `<div class="ai-tag">🔍 Web Search</div><div class="ai-loading"><span></span><span></span><span></span></div><div style="font-size:11px;color:var(--text3);margin-top:4px">Fetching sources...</div>`;
@@ -15756,25 +16043,27 @@ async function _webSearchChat(){
     const wikiCtx = await fetchWikiContext(query);
     if(statusEl) statusEl.textContent = 'Synthesizing...';
 
-    const systemPrompt = `You are the Consciousness OS AI. Titan Protocol: elite strategic partner, first-principles, no fluff.
-${wikiCtx ? 'You have been given live web search results below. Use them as factual grounding — cite the source titles naturally.' : 'No web results found — answer from your training knowledge.'}`;
+    const systemPrompt = `You are the Consciousness OS AI. Titan Protocol: elite strategic partner, first-principles, no fluff. Format responses with clear headers, bullet points, and bold key terms using markdown.
+${wikiCtx ? 'You have live web search results below. Use them as factual grounding — cite source titles naturally.' : 'No web results found — answer from training knowledge.'}`;
 
     const userPrompt = wikiCtx
-      ? `${wikiCtx}\n\nUser query: ${query}\n\nSynthesize the search results into a clear, actionable answer. Cite which Wikipedia article(s) you're drawing from.`
-      : `User query: ${query}\n\nAnswer from your training knowledge. Note that live web search returned no results.`;
+      ? `${wikiCtx}\n\nUser query: ${query}\n\nSynthesize into a structured, actionable answer. Use ## headers, bullet points, **bold** key insights. Cite which Wikipedia article(s) you're drawing from.`
+      : `User query: ${query}\n\nAnswer with clear structure: headers, bullets, bold key insights. Note live search returned no results.`;
 
-    const text = await callGroqFast(userPrompt, systemPrompt, 800);
+    const text = await callGroqFast(userPrompt, systemPrompt, 900);
     loadDiv.remove();
 
     const aiDiv = document.createElement('div');
     aiDiv.className = 'chat-msg ai';
-    const typeSpan = document.createElement('span');
-    aiDiv.innerHTML = `<div class="ai-tag">🔍 Web Search</div>`;
-    aiDiv.appendChild(typeSpan);
-    msgs.appendChild(aiDiv);
-    let i=0;
-    const type=()=>{ if(i<text.length){typeSpan.textContent+=text[i++];msgs.scrollTop=msgs.scrollHeight;setTimeout(type,8);} };
-    type();
+    const msgId = 'msg_'+Date.now();
+    aiDiv.dataset.msgid = msgId;
+    aiDiv.innerHTML = `<div class="ai-tag">🔍 Web Search</div><div class="chat-msg-content">${formatAIMarkdown(text)}</div>
+<div class="msg-actions">
+  <button class="msg-action-btn" onclick="copyMsgText(this,'${encodeURIComponent(text)}')">📋</button>
+  <button class="msg-action-btn msg-action-del" onclick="deleteChatMsg(this)">🗑</button>
+</div>`;
+    msgs.appendChild(aiDiv); msgs.scrollTop = msgs.scrollHeight;
+    if(typeof chatHistory!=='undefined') chatHistory.push({role:'ai',content:text,model:'search'});
     if(statusEl) statusEl.textContent = 'Ready';
   }catch(e){
     loadDiv.remove();
@@ -15794,19 +16083,14 @@ async function _deepResearchChat(){
   if(typeof addChatMsg==='function') addChatMsg('user', '🧬 ' + query, null, true);
   input.value = '';
 
-  // Loading indicator
   const loadDiv = document.createElement('div');
   loadDiv.className = 'chat-msg ai';
   loadDiv.innerHTML = `<div class="ai-tag">🧬 Deep Research</div><div class="ai-loading"><span></span><span></span><span></span></div><div id="researchStatus" style="font-size:11px;color:var(--text3);margin-top:4px">Step 1/3 — Decomposing query...</div>`;
   msgs.appendChild(loadDiv); msgs.scrollTop = msgs.scrollHeight;
 
-  const setStep = (txt) => {
-    const s = document.getElementById('researchStatus');
-    if(s) s.textContent = txt;
-  };
+  const setStep = (txt) => { const s = document.getElementById('researchStatus'); if(s) s.textContent = txt; };
 
   try{
-    // STEP 1: Decompose into sub-questions (fast, 300 tokens)
     if(statusEl) statusEl.textContent = 'Step 1/3...';
     const outlineRaw = await callGroqFast(
       `Break this research question into 3 specific sub-questions that together fully answer it. Return ONLY a JSON array of 3 strings. Question: "${query}"`,
@@ -15823,7 +16107,6 @@ async function _deepResearchChat(){
     setStep('Step 2/3 — Researching each angle...');
     if(statusEl) statusEl.textContent = 'Step 2/3...';
 
-    // STEP 2: Fetch Wikipedia context + research each sub-question (parallel)
     const [wikiCtx, ...subAnswers] = await Promise.all([
       fetchWikiContext(query),
       ...subQuestions.slice(0,3).map(sq =>
@@ -15837,7 +16120,6 @@ async function _deepResearchChat(){
     setStep('Step 3/3 — Synthesizing report...');
     if(statusEl) statusEl.textContent = 'Step 3/3...';
 
-    // STEP 3: Synthesize final report
     const researchDump = subQuestions.map((sq,i)=>`Q: ${sq}\nA: ${subAnswers[i]||'N/A'}`).join('\n\n');
     const finalPrompt = `You are synthesizing a deep research report.
 
@@ -15846,29 +16128,38 @@ ${wikiCtx ? '\nWEB SEARCH CONTEXT:\n' + wikiCtx + '\n' : ''}
 RESEARCH FINDINGS:
 ${researchDump}
 
-Synthesize into a structured report with: 
-1. **Core Answer** (2-3 sentences, most important insight first)
-2. **Key Findings** (bullet points from research)
-3. **Leverage Point** (highest-value actionable insight)
-4. **Uncertainty** (what remains unknown or contested)
+Synthesize into a structured report using markdown formatting:
+## Core Answer
+(2-3 sentences, most important insight first)
 
-Titan Protocol: no fluff, specific, actionable. Max 400 words.`;
+## Key Findings
+- bullet points from research
+
+## Leverage Point
+Highest-value actionable insight
+
+## Uncertainty
+What remains unknown or contested
+
+Titan Protocol: no fluff, specific, actionable. Max 500 words.`;
 
     const finalReport = await callGroqFast(finalPrompt,
-      'You are an elite research synthesizer. Dense, structured, actionable.',
-      700
+      'You are an elite research synthesizer. Dense, structured, actionable. Use markdown headers and bullets.',
+      800
     );
 
     loadDiv.remove();
     const aiDiv = document.createElement('div');
     aiDiv.className = 'chat-msg ai';
-    const typeSpan = document.createElement('span');
-    aiDiv.innerHTML = `<div class="ai-tag">🧬 Deep Research</div>`;
-    aiDiv.appendChild(typeSpan);
-    msgs.appendChild(aiDiv);
-    let i=0;
-    const type=()=>{ if(i<finalReport.length){typeSpan.textContent+=finalReport[i++];msgs.scrollTop=msgs.scrollHeight;setTimeout(type,6);} };
-    type();
+    const msgId = 'msg_'+Date.now();
+    aiDiv.dataset.msgid = msgId;
+    aiDiv.innerHTML = `<div class="ai-tag">🧬 Deep Research</div><div class="chat-msg-content">${formatAIMarkdown(finalReport)}</div>
+<div class="msg-actions">
+  <button class="msg-action-btn" onclick="copyMsgText(this,'${encodeURIComponent(finalReport)}')">📋</button>
+  <button class="msg-action-btn msg-action-del" onclick="deleteChatMsg(this)">🗑</button>
+</div>`;
+    msgs.appendChild(aiDiv); msgs.scrollTop = msgs.scrollHeight;
+    if(typeof chatHistory!=='undefined') chatHistory.push({role:'ai',content:finalReport,model:'research'});
     if(statusEl) statusEl.textContent = 'Ready';
   }catch(e){
     loadDiv.remove();
