@@ -71,8 +71,39 @@ const GEMINI_KEY=_k;
 // No key in this file. No key in localStorage. Nothing to leak.
 let GROQ_KEY = 'worker-proxy'; // placeholder so existing references don't crash
 const _WORKER_URL='https://hidden-wildflower-3301.vikramsandhu90341.workers.dev';
+// ── COS CONTEXT BUILDER (like CLAUDE.md — injected every Groq call) ──────
+function buildCOSContext(){
+  try{
+    const logs=JSON.parse(localStorage.getItem('cos_logs')||'[]').slice(0,5);
+    const user=JSON.parse(localStorage.getItem('cos_memory_user')||'{}');
+    const feedback=JSON.parse(localStorage.getItem('cos_memory_feedback')||'{}');
+    const project=JSON.parse(localStorage.getItem('cos_memory_project')||'{}');
+    const oracle=JSON.parse(localStorage.getItem('cos_oracle_state')||'{}');
+    const streak=JSON.parse(localStorage.getItem('cos_streak')||'{}');
+    const parts=[];
+    if(user.name||user.baseline_energy||user.peak_window)
+      parts.push('USER: '+[user.name,user.baseline_energy&&'energy:'+user.baseline_energy,user.peak_window&&'peak:'+user.peak_window].filter(Boolean).join(', '));
+    if(logs.length){
+      const l=logs[0];
+      parts.push('LAST_LOG: mood='+(l.mood||'?')+'/10 energy='+(l.energy||'?')+'/10 focus='+(l.focus||'?')+'/10 sleep='+(l.sleep||'?')+'h');
+      if(logs.length>=3){
+        const am=(logs.reduce((s,x)=>s+(parseFloat(x.mood)||5),0)/logs.length).toFixed(1);
+        const af=(logs.reduce((s,x)=>s+(parseFloat(x.focus)||5),0)/logs.length).toFixed(1);
+        parts.push('AVG: mood='+am+' focus='+af);
+      }
+    }
+    if(oracle.entropy) parts.push('ORACLE: entropy='+oracle.entropy+' momentum='+oracle.momentum+' coherence='+oracle.coherence);
+    if(streak.current>0) parts.push('STREAK: '+streak.current+' days');
+    if(feedback.what_worked&&feedback.what_worked.length) parts.push('BOOSTERS: '+feedback.what_worked.slice(0,3).join(', '));
+    if(feedback.what_didnt&&feedback.what_didnt.length) parts.push('DRAINS: '+feedback.what_didnt.slice(0,3).join(', '));
+    if(project.current_focus) parts.push('FOCUS: '+project.current_focus);
+    return parts.length ? '\n\n[COS_CONTEXT]\n'+parts.join('\n')+'\n[/COS_CONTEXT]' : '';
+  }catch(e){return '';}
+}
+
 async function callGroqFast(prompt,system,maxTokens){
   system=system||'You are an expert strategic AI inside Consciousness OS. Titan Protocol: first-principles, counterarguments first, no fluff, action > theory. Be precise, specific, direct.';
+  system=system+buildCOSContext(); // inject COS typed memory every call
   maxTokens=maxTokens||800;
   const _ctrl0=new AbortController();const _t0=setTimeout(()=>_ctrl0.abort(),15000);
   let resp;
@@ -754,7 +785,7 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
 [data-theme="galaxy"]{--bg:#050010;--bg2:#0d001e;--bg3:#150030;--text:#e8d8ff;--text2:#b090e0;--text3:#7050a8;--border:#200048;--primary:#9900ff;--primary2:#7700cc;--accent:#00ffcc;--pink:#ff00aa;--card-shadow:0 0 24px rgba(153,0,255,0.2)}
 
 /* ── LOGIN OVERLAY ── */
-.login-overlay{position:fixed;inset:0;background:linear-gradient(135deg,var(--primary),var(--pink));z-index:2000;display:flex;align-items:center;justify-content:center;padding:20px;overflow-y:auto}
+.login-overlay{position:fixed;inset:0;background:linear-gradient(135deg,var(--primary),var(--pink));z-index:2100;display:flex;align-items:center;justify-content:center;padding:20px;overflow-y:auto}
 .login-card{background:rgba(255,255,255,.96);border-radius:24px;width:100%;max-width:400px;padding:28px;box-shadow:0 20px 60px rgba(0,0,0,.25);animation:fadeUp .4s ease}
 [data-theme="dark"] .login-card,[data-theme="scifi"] .login-card,[data-theme="spiritual"] .login-card,[data-theme="masculine"] .login-card,[data-theme="galaxy"] .login-card{background:rgba(20,10,40,.96);color:#fff}
 .login-tabs{display:flex;gap:0;border-radius:12px;overflow:hidden;border:1px solid rgba(124,58,237,.2);margin-bottom:20px}
@@ -3193,153 +3224,6 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
       <div id="debriefResult" style="margin-top:8px"></div>
     </div>
   </div>
-
-  <!-- ══════════════════════════════════════════════════════
-       PROPHETIC HALO — Neurotech Lucidity Engine
-       Software simulation of tFUS + EEG/fNIRS + AI timing
-  ══════════════════════════════════════════════════════ -->
-  <div class="card" style="border:2px solid #7c3aed;background:linear-gradient(135deg,rgba(12,0,30,.95),rgba(0,10,40,.95));margin-top:14px" id="propheticHaloCard">
-    <!-- Header -->
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
-      <div style="font-size:28px;animation:oraclePulse 3s ease-in-out infinite">🔮</div>
-      <div>
-        <div style="font-family:Syne,sans-serif;font-size:16px;font-weight:900;background:linear-gradient(135deg,#a78bfa,#06b6d4,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">Prophetic Halo</div>
-        <div style="font-size:10px;color:#8b7aa8;letter-spacing:.5px;text-transform:uppercase">tFUS · EEG · fNIRS · AI — Software Prototype</div>
-      </div>
-      <div style="margin-left:auto;text-align:right">
-        <div style="font-size:9px;background:#10b981;color:#fff;border-radius:6px;padding:2px 7px;font-weight:700;animation:cilPulseAnim 2s infinite">● ONLINE</div>
-      </div>
-    </div>
-    <div style="font-size:11px;color:#8b7aa8;margin-bottom:14px;line-height:1.5">Software simulation of the Prophetic Halo headband — AI-timed consciousness engineering targeting your dlPFC during REM. No hardware needed. Same protocol, same timing logic.</div>
-
-    <!-- Sub-tabs -->
-    <div style="display:flex;gap:0;border-radius:10px;overflow:hidden;border:1px solid rgba(124,58,237,.3);margin-bottom:14px">
-      <button class="halo-tab active" onclick="switchHaloTab('state',this)" style="flex:1;padding:8px 3px;font-size:10px;font-weight:700;border:none;background:rgba(124,58,237,.5);color:#e9d5ff;cursor:pointer">🧠 Brain State</button>
-      <button class="halo-tab" onclick="switchHaloTab('rem',this)" style="flex:1;padding:8px 3px;font-size:10px;font-weight:700;border:none;background:transparent;color:#6b7280;cursor:pointer">💤 REM Map</button>
-      <button class="halo-tab" onclick="switchHaloTab('stimulate',this)" style="flex:1;padding:8px 3px;font-size:10px;font-weight:700;border:none;background:transparent;color:#6b7280;cursor:pointer">⚡ Stimulate</button>
-      <button class="halo-tab" onclick="switchHaloTab('engineer',this)" style="flex:1;padding:8px 3px;font-size:10px;font-weight:700;border:none;background:transparent;color:#6b7280;cursor:pointer">🤖 Engineer</button>
-    </div>
-
-    <!-- BRAIN STATE PANEL -->
-    <div id="halo-state">
-      <div style="font-size:11px;color:#a78bfa;margin-bottom:10px">Real-time brain state derived from your Consciousness OS data — EEG/fNIRS proxy from logged metrics.</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px" id="haloStateGrid">
-        <div style="background:rgba(124,58,237,.15);border:1px solid rgba(124,58,237,.3);border-radius:10px;padding:10px;text-align:center">
-          <div style="font-size:9px;color:#a78bfa;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">dlPFC Activity</div>
-          <div style="font-family:Syne,sans-serif;font-size:22px;font-weight:900;color:#c4b5fd" id="haloDlPFC">—</div>
-          <div style="font-size:9px;color:#6b7280">self-awareness index</div>
-        </div>
-        <div style="background:rgba(6,182,212,.12);border:1px solid rgba(6,182,212,.3);border-radius:10px;padding:10px;text-align:center">
-          <div style="font-size:9px;color:#06b6d4;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">REM Readiness</div>
-          <div style="font-family:Syne,sans-serif;font-size:22px;font-weight:900;color:#67e8f9" id="haloREMReady">—</div>
-          <div style="font-size:9px;color:#6b7280">% tonight</div>
-        </div>
-        <div style="background:rgba(244,114,182,.1);border:1px solid rgba(244,114,182,.3);border-radius:10px;padding:10px;text-align:center">
-          <div style="font-size:9px;color:#f472b6;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Theta Power</div>
-          <div style="font-family:Syne,sans-serif;font-size:22px;font-weight:900;color:#f9a8d4" id="haloTheta">—</div>
-          <div style="font-size:9px;color:#6b7280">4–8Hz proxy</div>
-        </div>
-        <div style="background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);border-radius:10px;padding:10px;text-align:center">
-          <div style="font-size:9px;color:#10b981;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Gamma Index</div>
-          <div style="font-family:Syne,sans-serif;font-size:22px;font-weight:900;color:#6ee7b7" id="haloGamma">—</div>
-          <div style="font-size:9px;color:#6b7280">30–100Hz proxy</div>
-        </div>
-      </div>
-      <div style="background:rgba(124,58,237,.1);border:1px solid rgba(124,58,237,.2);border-radius:10px;padding:10px;margin-bottom:10px" id="haloStateInsight">
-        <div style="font-size:11px;color:#c4b5fd;line-height:1.6">Tap Scan to compute your current neural state...</div>
-      </div>
-      <button onclick="scanBrainState()" style="width:100%;background:linear-gradient(135deg,#7c3aed,#06b6d4);color:#fff;border:none;border-radius:10px;padding:12px;font-size:13px;font-weight:700;cursor:pointer;min-height:44px">🧠 Scan Brain State</button>
-    </div>
-
-    <!-- REM MAP PANEL -->
-    <div id="halo-rem" style="display:none">
-      <div style="font-size:11px;color:#a78bfa;margin-bottom:10px">Set your sleep time — Halo maps your 90-min REM cycles and marks optimal lucidity intervention windows.</div>
-      <div class="form-row" style="margin-bottom:10px">
-        <div class="form-group">
-          <label class="form-label" style="color:#a78bfa">Sleep Time</label>
-          <input type="time" class="form-input" id="haloSleepTime" value="23:00" style="background:rgba(124,58,237,.15);border-color:rgba(124,58,237,.4);color:#e9d5ff">
-        </div>
-        <div class="form-group">
-          <label class="form-label" style="color:#a78bfa">Wake Time</label>
-          <input type="time" class="form-input" id="haloWakeTime" value="07:00" style="background:rgba(124,58,237,.15);border-color:rgba(124,58,237,.4);color:#e9d5ff">
-        </div>
-      </div>
-      <button onclick="computeREMMap()" style="width:100%;background:linear-gradient(135deg,#06b6d4,#7c3aed);color:#fff;border:none;border-radius:10px;padding:11px;font-size:12px;font-weight:700;cursor:pointer;margin-bottom:12px;min-height:44px">💤 Map My REM Cycles</button>
-      <div id="haloREMDisplay"></div>
-    </div>
-
-    <!-- STIMULATE PANEL -->
-    <div id="halo-stimulate" style="display:none">
-      <div style="font-size:11px;color:#a78bfa;margin-bottom:12px">Software tFUS simulation — 40Hz gamma entrainment targeting dlPFC activation. Use during WBTB window for maximum lucidity induction.</div>
-
-      <!-- Protocol selector -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
-        <div id="haloProto-mild" onclick="selectHaloProtocol('mild')" style="background:rgba(124,58,237,.2);border:2px solid #7c3aed;border-radius:10px;padding:10px;text-align:center;cursor:pointer">
-          <div style="font-size:18px;margin-bottom:4px">🌙</div>
-          <div style="font-size:11px;font-weight:700;color:#c4b5fd">MILD Boost</div>
-          <div style="font-size:9px;color:#6b7280">5 min · gentle</div>
-        </div>
-        <div id="haloProto-wild" onclick="selectHaloProtocol('wild')" style="background:rgba(6,182,212,.1);border:1px solid rgba(6,182,212,.3);border-radius:10px;padding:10px;text-align:center;cursor:pointer">
-          <div style="font-size:18px;margin-bottom:4px">⚡</div>
-          <div style="font-size:11px;font-weight:700;color:#67e8f9">WILD Entry</div>
-          <div style="font-size:9px;color:#6b7280">10 min · intense</div>
-        </div>
-        <div id="haloProto-rem" onclick="selectHaloProtocol('rem')" style="background:rgba(244,114,182,.1);border:1px solid rgba(244,114,182,.3);border-radius:10px;padding:10px;text-align:center;cursor:pointer">
-          <div style="font-size:18px;margin-bottom:4px">🌊</div>
-          <div style="font-size:11px;font-weight:700;color:#f9a8d4">REM Ride</div>
-          <div style="font-size:9px;color:#6b7280">20 min · full cycle</div>
-        </div>
-        <div id="haloProto-deep" onclick="selectHaloProtocol('deep')" style="background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);border-radius:10px;padding:10px;text-align:center;cursor:pointer">
-          <div style="font-size:18px;margin-bottom:4px">🧬</div>
-          <div style="font-size:11px;font-weight:700;color:#6ee7b7">Deep State</div>
-          <div style="font-size:9px;color:#6b7280">30 min · advanced</div>
-        </div>
-      </div>
-
-      <!-- Session display -->
-      <div style="background:rgba(0,0,0,.4);border:1px solid rgba(124,58,237,.4);border-radius:12px;padding:16px;text-align:center;margin-bottom:12px">
-        <div style="font-size:9px;color:#6b7280;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">SESSION STATUS</div>
-        <div style="font-family:Syne,sans-serif;font-size:40px;font-weight:900;color:#a78bfa;font-variant-numeric:tabular-nums" id="haloTimer">05:00</div>
-        <div style="font-size:11px;color:#8b7aa8;margin-top:4px" id="haloPhaseLabel">MILD Boost — 40Hz Gamma Entrainment</div>
-        <div style="height:4px;background:rgba(124,58,237,.2);border-radius:2px;margin:10px 0;overflow:hidden">
-          <div id="haloProgressBar" style="height:100%;width:0%;background:linear-gradient(90deg,#7c3aed,#06b6d4);border-radius:2px;transition:width .5s linear"></div>
-        </div>
-        <div style="font-size:10px;color:#6b7280" id="haloPhaseDesc">tFUS target: dlPFC (Brodmann area 9/46) · Frequency: 40Hz · Power: simulated</div>
-      </div>
-      <div style="display:flex;gap:8px">
-        <button id="haloStartBtn" onclick="startHaloSession()" style="flex:1;background:linear-gradient(135deg,#7c3aed,#06b6d4);color:#fff;border:none;border-radius:10px;padding:12px;font-size:13px;font-weight:700;cursor:pointer;min-height:44px">▶ Start Protocol</button>
-        <button onclick="stopHaloSession()" style="background:rgba(239,68,68,.2);border:1px solid rgba(239,68,68,.4);color:#fca5a5;border-radius:10px;padding:12px 16px;font-size:13px;font-weight:700;cursor:pointer;min-height:44px">■ Stop</button>
-      </div>
-      <div id="haloSessionLog" style="margin-top:10px;font-size:11px;color:#6b7280"></div>
-    </div>
-
-    <!-- ENGINEER PANEL -->
-    <div id="halo-engineer" style="display:none">
-      <div style="font-size:11px;color:#a78bfa;margin-bottom:10px">AI generates your complete personalized tonight protocol — based on your hive data, dream history, stress levels, and sleep patterns.</div>
-      <div class="form-group" style="margin-bottom:10px">
-        <label class="form-label" style="color:#a78bfa;font-size:11px">Tonight's Goal</label>
-        <select class="form-select" id="haloGoal" style="background:rgba(124,58,237,.15);border-color:rgba(124,58,237,.4);color:#e9d5ff;font-size:12px">
-          <option value="first_lucid">Achieve first lucid dream</option>
-          <option value="control">Increase dream control</option>
-          <option value="vivid">Maximize vividness</option>
-          <option value="recall">Improve dream recall</option>
-          <option value="intention">Execute specific intention</option>
-          <option value="deep_exploration">Deep consciousness exploration</option>
-        </select>
-      </div>
-      <button onclick="engineerDream()" style="width:100%;background:linear-gradient(135deg,#7c3aed,#f472b6);color:#fff;border:none;border-radius:10px;padding:12px;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:12px;min-height:44px">🤖 Generate Tonight's Protocol</button>
-      <div id="haloEngineerResult"></div>
-
-      <!-- Dream Pattern Intelligence -->
-      <div style="border-top:1px solid rgba(124,58,237,.2);padding-top:12px;margin-top:12px">
-        <div style="font-size:12px;font-weight:700;color:#c4b5fd;margin-bottom:8px">🔍 Dream Pattern Intelligence</div>
-        <div style="font-size:11px;color:#8b7aa8;margin-bottom:8px">AI scans your dream journal for recurring signs, symbols, and patterns — your personal dream language.</div>
-        <button onclick="analyzeDreamPatterns()" style="width:100%;background:rgba(124,58,237,.2);border:1px solid rgba(124,58,237,.4);color:#c4b5fd;border-radius:10px;padding:10px;font-size:12px;font-weight:700;cursor:pointer;min-height:44px">🌌 Analyze My Dream Patterns</button>
-        <div id="haloPatternsResult" style="margin-top:10px"></div>
-      </div>
-    </div>
-
-  </div><!-- /propheticHaloCard -->
 </div>
 
 <!-- ════════════════════════════════════════════
@@ -6115,6 +5999,85 @@ async function saveLog(){
   // v8.0: behavioral log + shock engine trigger
   logBehavior('log', 'log_saved');
   setTimeout(runShockInsightEngine, 3500);
+  // ── INTELLIGENCE LOOP HOOK ────────────────────────────────────
+  // Every log entry propagates through: [1]DataIn→[2]StateModel→[3]Predict
+  // Like Claude Code PostToolUse hook — fires after every save, zero user effort
+  setTimeout(cosIntelligenceHook, 2000);
+}
+
+// ── COS INTELLIGENCE HOOK ─────────────────────────────────────────────────
+// Fires after every saveLog(). Auto-updates oracle state + user memory baseline.
+// Never blocks the UI. Silently improves context for next AI call.
+async function cosIntelligenceHook(){
+  try{
+    const logs=JSON.parse(localStorage.getItem('cos_logs')||'[]');
+    if(logs.length<1) return;
+
+    // 1. Auto-update user memory baseline from recent logs
+    if(logs.length>=3){
+      const recent=logs.slice(0,7);
+      const avgEnergy=(recent.reduce((s,l)=>s+(parseFloat(l.energy)||5),0)/recent.length).toFixed(1);
+      const avgMood=(recent.reduce((s,l)=>s+(parseFloat(l.mood)||5),0)/recent.length).toFixed(1);
+      const avgFocus=(recent.reduce((s,l)=>s+(parseFloat(l.focus)||5),0)/recent.length).toFixed(1);
+      const avgSleep=(recent.reduce((s,l)=>s+(parseFloat(l.sleep)||7),0)/recent.length).toFixed(1);
+
+      // Find peak window: which timeOfDay has highest combined score
+      const byTime={};
+      recent.forEach(l=>{
+        const t=l.timeOfDay||'unknown';
+        if(!byTime[t]) byTime[t]={sum:0,count:0};
+        byTime[t].sum+=(parseFloat(l.focus)||5)+(parseFloat(l.energy)||5);
+        byTime[t].count++;
+      });
+      let peakWindow='unknown',peakVal=0;
+      Object.entries(byTime).forEach(([t,v])=>{
+        const avg=v.sum/v.count;
+        if(avg>peakVal&&t!=='unknown'){peakVal=avg;peakWindow=t;}
+      });
+
+      const userMem=JSON.parse(localStorage.getItem('cos_memory_user')||'{}');
+      userMem.baseline_energy=avgEnergy;
+      userMem.baseline_mood=avgMood;
+      userMem.baseline_focus=avgFocus;
+      userMem.avg_sleep=avgSleep;
+      if(peakWindow!=='unknown') userMem.peak_window=peakWindow;
+      userMem.last_updated=new Date().toISOString();
+      localStorage.setItem('cos_memory_user', JSON.stringify(userMem));
+    }
+
+    // 2. Auto-detect what helped vs hurt (feedback memory)
+    // If last log has high focus+energy after activity, log it as booster
+    const last=logs[0];
+    if(last && last.focus>=8 && last.energy>=7 && last.activity){
+      const fb=JSON.parse(localStorage.getItem('cos_memory_feedback')||'{}');
+      fb.what_worked=fb.what_worked||[];
+      const act=last.activity.trim();
+      if(act && !fb.what_worked.includes(act)){
+        fb.what_worked.unshift(act);
+        fb.what_worked=fb.what_worked.slice(0,10);
+        localStorage.setItem('cos_memory_feedback', JSON.stringify(fb));
+      }
+    }
+    if(last && last.focus<=3 && last.stress>=7 && last.activity){
+      const fb=JSON.parse(localStorage.getItem('cos_memory_feedback')||'{}');
+      fb.what_didnt=fb.what_didnt||[];
+      const act=last.activity.trim();
+      if(act && !fb.what_didnt.includes(act)){
+        fb.what_didnt.unshift(act);
+        fb.what_didnt=fb.what_didnt.slice(0,10);
+        localStorage.setItem('cos_memory_feedback', JSON.stringify(fb));
+      }
+    }
+
+    // 3. Auto-update current project focus if user entered a goal
+    if(last && last.goal){
+      const proj=JSON.parse(localStorage.getItem('cos_memory_project')||'{}');
+      proj.current_focus=last.goal;
+      proj.last_updated=new Date().toISOString();
+      localStorage.setItem('cos_memory_project', JSON.stringify(proj));
+    }
+
+  }catch(e){ /* silent — never break UI */ }
 }
 
 function renderRecentLogs(){
@@ -6604,7 +6567,11 @@ async function callAI(model,messages,userContext){
   }
   throw new Error('Unknown provider: '+provider);
 }
-let curAIModel='twin',chatHistory=[];
+let curAIModel='twin';
+// ── PERSISTENT CHAT HISTORY (like Claude Code --continue sessions) ────
+// Loads last 20 messages from localStorage, so context survives page reloads
+let chatHistory=(()=>{try{return JSON.parse(localStorage.getItem('cos_chat_history')||'[]');}catch(e){return [];}})();
+function _saveChatHistory(){try{localStorage.setItem('cos_chat_history',JSON.stringify(chatHistory.slice(-20)));}catch(e){}}
 const SUGGESTED_QS=['How\'s my mental performance trending?','What\'s my best time of day?','How do I enter flow state?','What patterns do you see in my stress?','Why does my creativity spike sometimes?','How is my sleep affecting my focus?','What habits should I build?','Am I improving over time?','How\'s my day going today?','What should I focus on right now?','What\'s blocking my peak performance?','Predict my energy tomorrow','Am I close to burnout?','Give me a personal insight','What do my dreams reveal?','How\'s my emotional stability?'];
 const DAILY_TIPS=['Start with your hardest task when your brain is in Beta state — usually 2-4 hours after waking.','Gamma brainwaves peak during moments of insight. Try a 20-minute Alpha meditation before creative work.','The brain consolidates memories during NREM sleep. 7-9 hours is optimal for learning retention.','Stress below 3 is optimal for creativity. Above 7 shrinks the hippocampus over time.','Dopamine is triggered by achieving small goals. Break large tasks into wins every 25 minutes.','Walking 10 minutes increases BDNF (brain fertilizer) and improves mood and focus for 2-3 hours.','Gratitude practice activates the prefrontal cortex and reduces amygdala reactivity.','Your HRV (heart rate variability) reflects nervous system health. High HRV = high resilience.','Dehydration of just 2% impairs cognitive performance by up to 20%. Keep drinking water!','Flow state is 3-5% more activated than your normal baseline. Track when you enter it most.'];
 function buildApiKeysList(){
@@ -6805,7 +6772,7 @@ async function regenChatMsg(btn){
   const inp=document.getElementById('chatInput');
   if(inp){inp.value=lastUserMsg;await sendChat();}
 }
-function clearAIChat(){chatHistory=[];document.getElementById('chatMessages').innerHTML='';showToast('Chat cleared');}
+function clearAIChat(){chatHistory=[];localStorage.removeItem('cos_chat_history');document.getElementById('chatMessages').innerHTML='';showToast('Chat cleared');}
 function exportChat(){
   const text=chatHistory.map(m=>`[${m.role.toUpperCase()}]: ${m.content}`).join('\n\n');
   const blob=new Blob([text],{type:'text/plain'});
@@ -6823,7 +6790,7 @@ async function sendChat(){
 
   // Now display user bubble + push to history
   addChatMsg('user',msg,null,true);
-  chatHistory.push({role:'user',content:msg,model:curAIModel});
+  chatHistory.push({role:'user',content:msg,model:curAIModel});_saveChatHistory();
 
   // If model uses google but Groq key exists, silently use Groq (faster, no quota)
   let _model=AI_MODELS.find(m=>m.id===curAIModel);
@@ -6893,7 +6860,7 @@ ${L.goal?'CURRENT GOAL: "'+L.goal.slice(0,100)+'"':''}`;
   <button class="msg-action-btn msg-action-del" onclick="deleteChatMsg(this)">🗑</button>
 </div>`;
     msgs.appendChild(aiDiv);msgs.scrollTop=msgs.scrollHeight;
-    chatHistory.push({role:'ai',content:text,model:curAIModel});
+    chatHistory.push({role:'ai',content:text,model:curAIModel});_saveChatHistory();
   }catch(e){
     loadDiv.remove();
     const _fbText=await localAIResponse(msg);
@@ -10068,391 +10035,6 @@ function computeLucidProbability(){
   return prob;
 }
 
-
-// ════════════════════════════════════════════════════════════════
-//  PROPHETIC HALO — Neurotech Lucidity Engine
-//  tFUS + EEG/fNIRS + AI — Software Prototype
-// ════════════════════════════════════════════════════════════════
-
-// ── TAB SWITCHER ─────────────────────────────────────────────────
-function switchHaloTab(tab, btn) {
-  ['state','rem','stimulate','engineer'].forEach(t => {
-    const el = document.getElementById('halo-' + t);
-    if (el) el.style.display = t === tab ? '' : 'none';
-  });
-  document.querySelectorAll('.halo-tab').forEach(b => {
-    b.style.background = 'transparent';
-    b.style.color = '#6b7280';
-  });
-  if (btn) { btn.style.background = 'rgba(124,58,237,.5)'; btn.style.color = '#e9d5ff'; }
-}
-
-// ── BRAIN STATE SCAN ──────────────────────────────────────────────
-function scanBrainState() {
-  // Derive EEG/fNIRS proxies from COS_BRAIN hive data
-  const b = window.COS_BRAIN || {};
-  const c = b.consciousness || {};
-  const dreams = window.getDreams ? getDreams() : [];
-  const logs = window.getLogs ? getLogs() : [];
-
-  // dlPFC activity proxy: focus + clarity - stress (executive function bandwidth)
-  const focus = parseFloat(c.focus7d) || 5;
-  const stress = parseFloat(c.stress7d) || 5;
-  const clarity = parseFloat(logs[0]?.clarity) || 5;
-  const dlPFC = Math.round(((focus + clarity) / 2 - stress * 0.3) * 10);
-  const dlPFCPct = Math.min(95, Math.max(10, dlPFC));
-
-  // REM readiness: sleep quality + recent vividness + low stress
-  const sleep = parseFloat(c.sleep7d) || 5;
-  const avgViv = dreams.slice(0,5).reduce((s,d) => s + (d.vividness||5), 0) / Math.max(dreams.slice(0,5).length, 1);
-  const remReady = Math.round(((sleep * 1.5 + avgViv) / 2 - stress * 0.4 + 20) * 2);
-  const remPct = Math.min(95, Math.max(15, remReady));
-
-  // Theta proxy: dream recall × recent journaling consistency (4-8Hz during creativity + memory)
-  const rcCount = parseInt(localStorage.getItem('cos_rc_count') || 0);
-  const theta = Math.round((dreams.length * 2 + rcCount * 1.5 + (logs.length > 7 ? 15 : 0)) / 1.2);
-  const thetaPct = Math.min(90, Math.max(10, theta));
-
-  // Gamma proxy: focus peak × creativity (30-100Hz = binding consciousness)
-  const creativity = parseFloat(c.creativity7d) || 5;
-  const gamma = Math.round((focus * 0.6 + creativity * 0.4) * 9);
-  const gammaPct = Math.min(95, Math.max(10, gamma));
-
-  // Update UI
-  const dlPFCEl = document.getElementById('haloDlPFC');
-  const remEl = document.getElementById('haloREMReady');
-  const thetaEl = document.getElementById('haloTheta');
-  const gammaEl = document.getElementById('haloGamma');
-  if (dlPFCEl) dlPFCEl.textContent = dlPFCPct + '%';
-  if (remEl) remEl.textContent = remPct + '%';
-  if (thetaEl) thetaEl.textContent = thetaPct + '%';
-  if (gammaEl) gammaEl.textContent = gammaPct + '%';
-
-  // Insight
-  const insight = document.getElementById('haloStateInsight');
-  if (insight) {
-    let msg = '';
-    if (dlPFCPct >= 60) msg += '✅ dlPFC highly active — self-awareness system primed for lucidity. ';
-    else msg += '⚠️ dlPFC underactive — reduce stress and improve focus today to prime tonight's session. ';
-    if (remPct >= 60) msg += '✅ Strong REM readiness — sleep architecture favorable. ';
-    else msg += '💤 REM readiness below optimal — prioritize 7+ hours tonight. ';
-    if (gammaPct >= 60) msg += '⚡ High gamma binding — consciousness highly coherent. ';
-    else msg += '🎯 Build gamma: meditation + focused deep work today increases tonight's gamma during REM. ';
-    const overall = Math.round((dlPFCPct + remPct + gammaPct) / 3);
-    msg += '<br><br><strong style="color:#a78bfa">Overall Lucidity Index: ' + overall + '% — ' +
-      (overall >= 70 ? '🔥 Excellent. Engage full WILD protocol tonight.' :
-       overall >= 50 ? '⚡ Good. Use MILD + WBTB for best results.' :
-       '🌱 Building. Focus on sleep quality + daily reality checks.') + '</strong>';
-    insight.innerHTML = '<div style="font-size:11px;color:#c4b5fd;line-height:1.7">' + msg + '</div>';
-  }
-
-  // Store for hive
-  if (window.HIVE_MIND) window.HIVE_MIND.sync('halobrain', { dlPFC: dlPFCPct, rem: remPct, theta: thetaPct, gamma: gammaPct });
-  if (typeof showToast === 'function') showToast('🧠 Brain state scanned');
-}
-
-// ── REM CYCLE MAPPER ──────────────────────────────────────────────
-function computeREMMap() {
-  const sleepT = document.getElementById('haloSleepTime')?.value || '23:00';
-  const wakeT = document.getElementById('haloWakeTime')?.value || '07:00';
-  const el = document.getElementById('haloREMDisplay');
-  if (!el) return;
-
-  // Parse times
-  const [sh, sm] = sleepT.split(':').map(Number);
-  const [wh, wm] = wakeT.split(':').map(Number);
-  const sleepMins = sh * 60 + sm;
-  const wakeMins = (wh < sh ? wh + 24 : wh) * 60 + wm;
-  const totalMins = wakeMins - sleepMins;
-
-  if (totalMins < 180) { el.innerHTML = '<div style="color:#ef4444;font-size:12px;padding:8px">Need at least 3 hours of sleep for REM mapping.</div>'; return; }
-
-  // 90-min NREM/REM cycles — REM gets longer each cycle
-  const cycles = [];
-  const remDurations = [10, 20, 35, 50, 65]; // minutes of REM per cycle
-  let cursor = 0;
-  let cycleNum = 0;
-  while (cursor + 90 <= totalMins && cycleNum < 5) {
-    const nremDur = 90 - (remDurations[cycleNum] || 65);
-    const remDur = remDurations[cycleNum] || 65;
-    const cycleStart = sleepMins + cursor;
-    const remStart = cycleStart + nremDur;
-    const cycleEnd = cycleStart + 90;
-    cycles.push({ num: cycleNum + 1, nremDur, remDur, remStart, cycleEnd, totalStart: cursor });
-    cursor += 90;
-    cycleNum++;
-  }
-
-  const toTime = (mins) => {
-    const h = Math.floor(mins / 60) % 24;
-    const m = mins % 60;
-    return (h < 10 ? '0' : '') + h + ':' + (m < 10 ? '0' : '') + m;
-  };
-
-  // Best WBTB window: after cycle 3 REM (5h in)
-  const wbtbCycle = cycles[2] || cycles[cycles.length - 1];
-  const wbtbTime = wbtbCycle ? toTime(sleepMins + wbtbCycle.totalStart + 90) : null;
-
-  // Best lucidity windows: during cycle 4 and 5 REM
-  const lucidWindows = cycles.slice(3).map(c => toTime(c.remStart));
-
-  el.innerHTML = '<div style="margin-bottom:12px">' +
-    cycles.map(c => {
-      const remStartTime = toTime(c.remStart);
-      const remEndTime = toTime(c.cycleEnd);
-      const isLucidWindow = c.num >= 4;
-      const wbtbAfter = c.num === 3;
-      return '<div style="background:rgba(124,58,237,.08);border:1px solid ' + (isLucidWindow ? 'rgba(244,114,182,.5)' : 'rgba(124,58,237,.2)') + ';border-radius:10px;padding:10px;margin-bottom:8px">' +
-        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">' +
-          '<span style="font-size:11px;font-weight:700;color:' + (isLucidWindow ? '#f472b6' : '#a78bfa') + '">Cycle ' + c.num + (isLucidWindow ? ' 🎯 LUCIDITY WINDOW' : '') + '</span>' +
-          '<span style="font-size:9px;color:#6b7280">' + toTime(sleepMins + c.totalStart) + ' → ' + toTime(c.cycleEnd) + '</span>' +
-        '</div>' +
-        '<div style="display:flex;height:12px;border-radius:6px;overflow:hidden;margin-bottom:6px">' +
-          '<div style="background:rgba(6,182,212,.4);flex:' + c.nremDur + ';display:flex;align-items:center;justify-content:center"><span style="font-size:8px;color:#e0f2fe">NREM ' + c.nremDur + 'm</span></div>' +
-          '<div style="background:' + (isLucidWindow ? 'rgba(244,114,182,.8)' : 'rgba(124,58,237,.6)') + ';flex:' + c.remDur + ';display:flex;align-items:center;justify-content:center"><span style="font-size:8px;color:#fff">REM ' + c.remDur + 'm</span></div>' +
-        '</div>' +
-        '<div style="font-size:10px;color:#8b7aa8">REM window: <strong style="color:#c4b5fd">' + remStartTime + ' → ' + remEndTime + '</strong>' +
-          (isLucidWindow ? ' ← AI stimulation target' : '') + '</div>' +
-        (wbtbAfter ? '<div style="margin-top:4px;font-size:10px;background:rgba(16,185,129,.15);border-radius:6px;padding:4px 8px;color:#6ee7b7">⏰ Set WBTB alarm: <strong>' + wbtbTime + '</strong> (after this cycle)</div>' : '') +
-      '</div>';
-    }).join('') +
-  '</div>' +
-  '<div style="background:rgba(244,114,182,.1);border:1px solid rgba(244,114,182,.3);border-radius:10px;padding:10px;font-size:11px;color:#f9a8d4;line-height:1.6">' +
-    '<strong>🎯 Optimal Protocol:</strong><br>' +
-    (wbtbTime ? '1. Set WBTB alarm for <strong>' + wbtbTime + '</strong><br>' : '') +
-    '2. At WBTB: Stay awake 20–30 min. Read about lucid dreaming.<br>' +
-    '3. During cycles ' + (lucidWindows.length > 0 ? '4-5 (REM at ' + lucidWindows.join(', ') + ')' : '4-5') + ': AI stimulation targets your dlPFC.<br>' +
-    '4. Your dlPFC powers up → you realize you're dreaming → lucidity.' +
-  '</div>';
-}
-
-// ── SESSION TIMER ─────────────────────────────────────────────────
-let _haloSession = null;
-let _haloProtocol = 'mild';
-const _haloProtocols = {
-  mild:     { label: 'MILD Boost — 40Hz Gamma Entrainment', duration: 300, phases: ['Relaxation (40Hz tone — eyes closed)', 'Theta induction (6Hz binaural)', 'Gamma burst (40Hz → dlPFC focus)', 'Intention lock (repeat anchor phrase)', 'Sleep transition — stay still'] },
-  wild:     { label: 'WILD Entry — Wake-to-Dream Bridge', duration: 600, phases: ['Body scan + relaxation', 'Hypnagogic observation mode', 'Theta deepening (6Hz)', 'Dual awareness maintenance', 'Dream scene emergence', 'Stabilization protocol'] },
-  rem:      { label: 'REM Ride — Full Cycle Protocol', duration: 1200, phases: ['NREM deepening', 'First REM detection', '40Hz gamma pulse × 3', 'dlPFC stimulation window', 'Lucidity induction burst', 'Dream stabilization hold'] },
-  deep:     { label: 'Deep State — Advanced Consciousness', duration: 1800, phases: ['Progressive relaxation', 'Theta bridge', 'Hypnagogic zone', 'Body asleep / mind awake', 'REM engagement', 'Dual awareness lock', 'dlPFC max activation', 'Sustained lucidity'] },
-};
-
-function selectHaloProtocol(proto) {
-  _haloProtocol = proto;
-  ['mild','wild','rem','deep'].forEach(p => {
-    const el = document.getElementById('haloProto-' + p);
-    if (!el) return;
-    if (p === proto) {
-      el.style.border = '2px solid #7c3aed';
-      el.style.background = 'rgba(124,58,237,.25)';
-    } else {
-      el.style.border = '1px solid rgba(124,58,237,.2)';
-      el.style.background = 'rgba(124,58,237,.05)';
-    }
-  });
-  const p = _haloProtocols[proto];
-  if (p) {
-    const mins = Math.floor(p.duration / 60);
-    const secs = p.duration % 60;
-    const timerEl = document.getElementById('haloTimer');
-    if (timerEl) timerEl.textContent = (mins < 10 ? '0' : '') + mins + ':' + (secs < 10 ? '0' : '') + secs;
-    const phaseEl = document.getElementById('haloPhaseLabel');
-    if (phaseEl) phaseEl.textContent = p.label;
-    const progEl = document.getElementById('haloProgressBar');
-    if (progEl) progEl.style.width = '0%';
-  }
-}
-
-function startHaloSession() {
-  if (_haloSession) return;
-  const p = _haloProtocols[_haloProtocol];
-  if (!p) return;
-  let elapsed = 0;
-  const total = p.duration;
-  const btn = document.getElementById('haloStartBtn');
-  if (btn) { btn.textContent = '⏳ Running...'; btn.disabled = true; }
-  const logEl = document.getElementById('haloSessionLog');
-  if (logEl) logEl.innerHTML = '<div style="color:#10b981">▶ Session started: ' + p.label + '</div>';
-
-  _haloSession = setInterval(() => {
-    elapsed++;
-    const remaining = total - elapsed;
-    const mins = Math.floor(remaining / 60);
-    const secs = remaining % 60;
-    const timerEl = document.getElementById('haloTimer');
-    if (timerEl) timerEl.textContent = (mins < 10 ? '0' : '') + mins + ':' + (secs < 10 ? '0' : '') + secs;
-    const progEl = document.getElementById('haloProgressBar');
-    if (progEl) progEl.style.width = Math.round((elapsed / total) * 100) + '%';
-
-    // Phase announcements
-    const phaseIdx = Math.floor((elapsed / total) * p.phases.length);
-    const phaseEl = document.getElementById('haloPhaseLabel');
-    if (phaseEl && p.phases[phaseIdx]) phaseEl.textContent = 'Phase ' + (phaseIdx + 1) + ': ' + p.phases[phaseIdx];
-
-    // Key milestones
-    if (elapsed === 60 && logEl) logEl.innerHTML += '<div style="color:#a78bfa">⚡ 40Hz gamma entrainment active — dlPFC engagement rising</div>';
-    if (elapsed === Math.floor(total * 0.5) && logEl) logEl.innerHTML += '<div style="color:#06b6d4">🌊 Midpoint — theta bridge established. Remain still.</div>';
-    if (elapsed === Math.floor(total * 0.8) && logEl) logEl.innerHTML += '<div style="color:#f472b6">🎯 Entering optimal window — prime lucidity induction zone</div>';
-
-    if (elapsed >= total) {
-      stopHaloSession();
-      if (logEl) logEl.innerHTML += '<div style="color:#10b981;font-weight:700">✅ Session complete — ' + p.label + '</div>';
-      // Save session to hive
-      const sessionData = { type: _haloProtocol, duration: total, ts: Date.now() };
-      try { localStorage.setItem('cos_last_bw_session', JSON.stringify(sessionData)); } catch(e) {}
-      if (typeof cosBrainSync === 'function') setTimeout(cosBrainSync, 200);
-      if (typeof showToast === 'function') showToast('✅ Halo session complete! Sleep now.');
-    }
-  }, 1000);
-}
-
-function stopHaloSession() {
-  if (_haloSession) { clearInterval(_haloSession); _haloSession = null; }
-  const btn = document.getElementById('haloStartBtn');
-  if (btn) { btn.textContent = '▶ Start Protocol'; btn.disabled = false; }
-}
-
-// ── DREAM ENGINEER ────────────────────────────────────────────────
-async function engineerDream() {
-  const goal = document.getElementById('haloGoal')?.value || 'first_lucid';
-  const el = document.getElementById('haloEngineerResult');
-  if (!el) return;
-  el.innerHTML = '<div style="display:flex;align-items:center;gap:8px;padding:12px;color:#a78bfa"><div class="ai-loading"><span></span><span></span><span></span></div><span style="font-size:12px">AI engineering tonight's protocol from your full consciousness data...</span></div>';
-
-  const hiveCtx = typeof getHiveContextFor === 'function' ? getHiveContextFor('dreams') : '';
-  const dreams = typeof getDreams === 'function' ? getDreams() : [];
-  const lucidCount = dreams.filter(d => d.type === 'lucid').length;
-  const avgLucidity = dreams.length ? (dreams.reduce((s,d) => s + (d.lucidity||0), 0) / dreams.length).toFixed(1) : 0;
-  const recentSigns = dreams.slice(0,5).map(d => d.signs).filter(Boolean).join(', ');
-  const prob = typeof computeLucidProbability === 'function' ? computeLucidProbability() : 50;
-
-  const goalLabels = { first_lucid: 'achieve first lucid dream', control: 'increase dream control and duration', vivid: 'maximize dream vividness and sensory depth', recall: 'dramatically improve dream recall on waking', intention: 'execute a specific lucid dream intention', deep_exploration: 'achieve deep consciousness exploration and transcendence' };
-
-  const prompt = `You are the Prophetic Halo AI — an expert in lucid dream induction combining neuroscience, tFUS research, and practical oneironautics.
-
-GOAL: ${goalLabels[goal] || goal}
-CURRENT LUCID PROBABILITY: ${prob}%
-DREAM HISTORY: ${dreams.length} dreams logged, ${lucidCount} lucid, avg lucidity ${avgLucidity}/10
-RECURRING DREAM SIGNS: ${recentSigns || 'none logged yet'}
-${hiveCtx}
-
-Generate a COMPLETE personalized tonight protocol in exact markdown:
-
-## 🔮 Tonight's Prophetic Halo Protocol
-
-**Goal**: ${goalLabels[goal]}
-**Estimated Success Probability**: [X]% (adjusted from baseline ${prob}%)
-
-### ☀️ Daytime Preparation (Do NOW)
-- [Specific action 1 with exact timing]
-- [Specific action 2]
-- [Reality check schedule: X times, at these moments]
-
-### 🌅 Pre-Sleep Window (2 hours before bed)
-- **[Time]**: [action — specific]
-- **[Time]**: [action]
-- **Screen protocol**: [exact what to do]
-- **Environment**: [temperature, light, sound — specific numbers]
-
-### 🧘 The Halo Session (During WBTB)
-- **WBTB alarm**: [X hours after sleep]
-- **On waking**: [exact sequence — do NOT skip any step]
-- **Halo protocol to run**: [MILD/WILD/REM/Deep — with reason]
-- **Duration**: [minutes]
-
-### 🎯 Lucidity Trigger (Personalized)
-Based on your recurring signs (${recentSigns || 'none yet'}):
-- **Your personal trigger**: [specific to their dream history]
-- **Anchor phrase**: [personalized — not generic]
-- **Visualization**: [exact scene to hold — vivid, specific]
-
-### 🌊 If You Become Lucid
-1. [Immediate stabilization step]
-2. [Sensory grounding technique]
-3. [How to execute your goal: ${goalLabels[goal]}]
-
-### 🌅 Morning Protocol (Do IMMEDIATELY on waking)
-- [Do NOT do this first]
-- [Write these specific things FIRST]
-- [Voice memo technique]
-
-### ⚡ Halo Optimization Tips
-- [1 counterintuitive insight about tonight specifically]
-- [What your data says to do differently]
-
-⚕️ Educational protocol. Results vary. Consistency over weeks is key.`;
-
-  try {
-    const text = await callGroqFast(prompt, 'You are the Prophetic Halo AI — expert in lucid dream induction. Be SPECIFIC and PERSONALIZED to their data. No generic advice. Use exact times, numbers, techniques.', 1200);
-    el.innerHTML = '<div style="background:linear-gradient(135deg,rgba(124,58,237,.12),rgba(244,114,182,.08));border:1px solid rgba(124,58,237,.3);border-radius:12px;padding:14px">' +
-      formatAIMarkdown(text) +
-      '<button onclick="copyMsgText(this,'' + encodeURIComponent(text) + '')" style="margin-top:10px;background:rgba(124,58,237,.3);border:1px solid rgba(124,58,237,.5);color:#e9d5ff;border-radius:8px;padding:6px 14px;font-size:11px;cursor:pointer;font-weight:700">📋 Copy Protocol</button>' +
-      '</div>';
-  } catch(e) {
-    el.innerHTML = '<div style="color:#ef4444;font-size:12px;padding:8px">❌ ' + e.message + '</div>';
-  }
-}
-
-// ── DREAM PATTERN INTELLIGENCE ────────────────────────────────────
-async function analyzeDreamPatterns() {
-  const el = document.getElementById('haloPatternsResult');
-  if (!el) return;
-  const dreams = typeof getDreams === 'function' ? getDreams() : [];
-  if (dreams.length < 3) { el.innerHTML = '<div style="color:#6b7280;font-size:12px;padding:8px">Log at least 3 dreams to unlock pattern analysis.</div>'; return; }
-
-  el.innerHTML = '<div style="display:flex;align-items:center;gap:8px;padding:12px;color:#a78bfa"><div class="ai-loading"><span></span><span></span><span></span></div><span style="font-size:12px">Scanning ' + dreams.length + ' dreams for patterns...</span></div>';
-
-  const dreamSummary = dreams.slice(0, 20).map((d, i) =>
-    'Dream ' + (i+1) + ': "' + (d.title||'Untitled') + '" — Type: ' + (d.type||'regular') + ', Lucidity: ' + (d.lucidity||0) + '/10, Signs: ' + (d.signs||'none') + ', Emotions: ' + (d.emotions||'none') + ', Desc: ' + (d.desc||'').slice(0, 100)
-  ).join('
-');
-
-  const prompt = `You are a dream analyst and oneironaut expert. Analyze this dream journal for patterns.
-
-DREAM JOURNAL (${dreams.length} dreams total):
-${dreamSummary}
-
-Analyze in exact markdown:
-
-## 🌌 Dream Pattern Intelligence Report
-
-### 🔮 Recurring Dream Signs (Your Lucidity Triggers)
-[List the elements/places/people/situations that appear repeatedly — these are your personal reality check triggers]
-
-### 🎭 Dominant Themes
-- **Theme 1**: [name] — appeared in X dreams — [what it means for lucidity]
-- **Theme 2**: [name]
-- **Theme 3**: [name]
-
-### 🧠 Consciousness Signature
-Your dreams show a [adjective] consciousness style: [2-sentence description of their unique dream psychology]
-
-### 💡 Personal Dream Signs to Reality-Check
-These specific elements appeared in your dreams and are YOURS to watch for:
-1. [Specific sign from their data — not generic]
-2. [Specific sign]
-3. [Specific sign]
-
-### ⚡ Lucidity Leverage Points
-Based on your patterns, you are most likely to become lucid when:
-- [Specific trigger pattern from their data]
-- [Second trigger]
-
-### 🎯 Tonight's Specific Intention
-Given your dream history, the highest-probability lucid dream scenario tonight:
-"[Complete specific scene description based on their recurring themes]"
-
-### 📈 Progression Analysis
-[1-2 sentences on how their lucid dreaming is developing and what the next breakthrough will be]`;
-
-  try {
-    const text = await callGroqFast(prompt, 'You are an expert dream analyst. ONLY reference patterns actually present in the provided dream journal. Be specific to their data. No generic dream interpretation.', 1000);
-    el.innerHTML = '<div style="background:rgba(124,58,237,.1);border:1px solid rgba(124,58,237,.3);border-radius:12px;padding:14px;margin-top:4px">' +
-      formatAIMarkdown(text) + '</div>';
-  } catch(e) {
-    el.innerHTML = '<div style="color:#ef4444;font-size:12px;padding:8px">❌ ' + e.message + '</div>';
-  }
-}
-
 // ─── WAVE 6 — EXPERIENCE DIVERSITY ENGINE ─────────────────
 function computeDiversity(){
   const logs=getLogs();
@@ -12182,7 +11764,25 @@ function init(){
   }, 60000);
   const sl=localStorage.getItem('cos_lang')||'en';curLang=sl;
   try{document.getElementById('langSel').value=sl;}catch(e){}try{document.getElementById('settingLang').value=sl;}catch(e){}try{document.getElementById('langSelMobile').value=sl;}catch(e){}
-  setTimeout(()=>{const logs=getLogs();addChatMsg('ai',logs.length?`Hello! 👋 I see you have ${logs.length} consciousness entries. ${Math.random()>.5?'How are you feeling today?':'What\'s on your mind?'}`:"Welcome to Consciousness OS! 🧠 I'm your AI Digital Twin. Fill your first Daily Log and I'll start learning your patterns. What's your name?",'twin');},600);
+  setTimeout(()=>{
+    // Restore previous chat session (like Claude Code --continue)
+    const msgs=document.getElementById('chatMessages');
+    if(msgs && chatHistory.length>0){
+      // Replay last N messages as bubbles without re-pushing to history
+      const replay=chatHistory.slice(-12);
+      replay.forEach(m=>addChatMsg(m.role,m.content,m.model||'twin',true));
+      msgs.scrollTop=msgs.scrollHeight;
+      // Brief context note so user knows session resumed
+      const note=document.createElement('div');
+      note.style.cssText='text-align:center;font-size:10px;color:var(--text3);padding:6px 0 2px;';
+      note.textContent='↑ previous session restored';
+      msgs.insertBefore(note, msgs.firstChild);
+    } else {
+      // Fresh session — standard greeting
+      const logs=getLogs();
+      addChatMsg('ai',logs.length?`Hello! 👋 I see you have ${logs.length} consciousness entries. ${Math.random()>.5?'How are you feeling today?':'What\'s on your mind?'}`:"Welcome to Consciousness OS! 🧠 I'm your AI Digital Twin. Fill your first Daily Log and I'll start learning your patterns. What's your name?",'twin');
+    }
+  },600);
   loadDailyTip();
   initNewFeatures_v7();
   initNewFeatures();
@@ -14497,7 +14097,7 @@ document.addEventListener('DOMContentLoaded',()=>{setTimeout(()=>{if(document.ge
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./service-worker.js')
+        navigator.serviceWorker.register('./service-worker.js?v=8')
           .then(reg => {
             console.log('✅ SW registered:', reg.scope);
             reg.update(); // check for update immediately on load
