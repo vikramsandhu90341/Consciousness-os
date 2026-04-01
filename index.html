@@ -2734,6 +2734,150 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
     <div id="aiDoctorOutput"></div>
   </div>
 
+  <!-- ══════════════════════════════════════════
+       MEDICINE OS — Clinical Decision Engine
+  ══════════════════════════════════════════ -->
+  <div class="card" style="border:2px solid var(--primary);margin-top:14px" id="medicineOSCard">
+    <div class="card-title"><span class="emoji">💊</span> Medicine OS <span style="font-size:10px;background:var(--primary);color:#fff;border-radius:10px;padding:2px 8px;margin-left:6px;font-weight:700">CLINICAL ENGINE</span></div>
+    <div style="font-size:12px;color:var(--text3);margin-bottom:12px">Drug guide · Dosage calculator · Lab interpreter · Emergency protocols · Treatment engine</div>
+
+    <!-- Sub-tab row -->
+    <div style="display:flex;gap:0;border-radius:10px;overflow:hidden;border:1px solid var(--border);margin-bottom:14px">
+      <button class="med-os-tab active" onclick="switchMedOS('drugs',this)" style="flex:1;padding:8px 4px;font-size:11px;font-weight:700;border:none;background:var(--primary);color:#fff;cursor:pointer">💊 Drugs</button>
+      <button class="med-os-tab" onclick="switchMedOS('dosage',this)" style="flex:1;padding:8px 4px;font-size:11px;font-weight:700;border:none;background:var(--bg3);color:var(--text2);cursor:pointer">⚖️ Dosage</button>
+      <button class="med-os-tab" onclick="switchMedOS('labs',this)" style="flex:1;padding:8px 4px;font-size:11px;font-weight:700;border:none;background:var(--bg3);color:var(--text2);cursor:pointer">🧪 Labs</button>
+      <button class="med-os-tab" onclick="switchMedOS('emergency',this)" style="flex:1;padding:8px 4px;font-size:11px;font-weight:700;border:none;background:var(--bg3);color:var(--text2);cursor:pointer">🚨 SOS</button>
+    </div>
+
+    <!-- DRUGS PANEL -->
+    <div id="medOS-drugs">
+      <div style="font-size:12px;color:var(--text2);margin-bottom:10px">Search any drug/injection/syrup. Get: uses, dose, route, side effects, combinations, contraindications.</div>
+      <div style="display:flex;gap:8px;margin-bottom:8px">
+        <input type="text" class="form-input" id="drugSearchInput" placeholder="e.g. ceftriaxone, pantoprazole, dexamethasone..." style="flex:1" onkeydown="if(event.key==='Enter')searchDrug()">
+        <button class="btn btn-primary btn-sm" onclick="searchDrug()">🔍 Look up</button>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
+        <span class="chip" onclick="quickDrug('ceftriaxone')" style="cursor:pointer;font-size:10px">Ceftriaxone</span>
+        <span class="chip" onclick="quickDrug('pantoprazole')" style="cursor:pointer;font-size:10px">Pantoprazole</span>
+        <span class="chip" onclick="quickDrug('dexamethasone')" style="cursor:pointer;font-size:10px">Dexamethasone</span>
+        <span class="chip" onclick="quickDrug('metformin')" style="cursor:pointer;font-size:10px">Metformin</span>
+        <span class="chip" onclick="quickDrug('adrenaline injection')" style="cursor:pointer;font-size:10px">Adrenaline</span>
+        <span class="chip" onclick="quickDrug('ondansetron')" style="cursor:pointer;font-size:10px">Ondansetron</span>
+        <span class="chip" onclick="quickDrug('acetylcysteine')" style="cursor:pointer;font-size:10px">Acetylcysteine</span>
+        <span class="chip" onclick="quickDrug('piperacillin tazobactam')" style="cursor:pointer;font-size:10px">Pip-Taz</span>
+        <span class="chip" onclick="quickDrug('meropenem')" style="cursor:pointer;font-size:10px">Meropenem</span>
+        <span class="chip" onclick="quickDrug('atropine')" style="cursor:pointer;font-size:10px">Atropine</span>
+        <span class="chip" onclick="quickDrug('methylprednisolone sodium succinate')" style="cursor:pointer;font-size:10px">MethylPred</span>
+        <span class="chip" onclick="quickDrug('labetalol injection')" style="cursor:pointer;font-size:10px">Labetalol</span>
+        <span class="chip" onclick="quickDrug('iron sucrose injection')" style="cursor:pointer;font-size:10px">Iron Sucrose</span>
+        <span class="chip" onclick="quickDrug('ringer lactate')" style="cursor:pointer;font-size:10px">RL / DNS</span>
+      </div>
+      <div id="drugSearchResult"></div>
+    </div>
+
+    <!-- DOSAGE PANEL -->
+    <div id="medOS-dosage" style="display:none">
+      <div style="font-size:12px;color:var(--text2);margin-bottom:10px">Personalized dose by patient type, weight, age. Covers injections, tablets, syrups, nebulizers, eye drops, creams, IV fluids.</div>
+      <div class="form-row" style="margin-bottom:8px">
+        <div class="form-group">
+          <label class="form-label">Drug / Medicine</label>
+          <input type="text" class="form-input" id="doseDrug" placeholder="e.g. ceftriaxone, amoxicillin...">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Patient Type</label>
+          <select class="form-select" id="dosePatientType">
+            <option value="adult">Adult</option>
+            <option value="child">Child</option>
+            <option value="neonate">Neonate (0-28d)</option>
+            <option value="elderly">Elderly (65+)</option>
+            <option value="pregnant">Pregnant</option>
+            <option value="breastfeeding">Breastfeeding</option>
+            <option value="renal">Renal Failure</option>
+            <option value="hepatic">Hepatic Failure</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row" style="margin-bottom:8px">
+        <div class="form-group">
+          <label class="form-label">Weight (kg)</label>
+          <input type="number" class="form-input" id="doseWeight" placeholder="70">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Age</label>
+          <input type="number" class="form-input" id="doseAge" placeholder="25">
+        </div>
+      </div>
+      <div class="form-group" style="margin-bottom:10px">
+        <label class="form-label">Indication / Condition</label>
+        <input type="text" class="form-input" id="doseIndication" placeholder="e.g. severe pneumonia, UTI, anaphylaxis...">
+      </div>
+      <button class="btn btn-primary btn-block" onclick="calculateDosage()">⚖️ Calculate Dose + Full Protocol</button>
+      <div id="dosageResult" style="margin-top:12px"></div>
+    </div>
+
+    <!-- LABS PANEL -->
+    <div id="medOS-labs" style="display:none">
+      <div style="font-size:12px;color:var(--text2);margin-bottom:10px">Enter lab values — AI interprets, flags abnormals, explains cause, and gives treatment action.</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+        <div><label class="form-label" style="font-size:10px">Hb (g/dL)</label><input type="text" class="form-input" id="labHb" placeholder="13.5"></div>
+        <div><label class="form-label" style="font-size:10px">WBC (×10³/μL)</label><input type="text" class="form-input" id="labWBC" placeholder="7.5"></div>
+        <div><label class="form-label" style="font-size:10px">Platelets (×10³)</label><input type="text" class="form-input" id="labPlt" placeholder="250"></div>
+        <div><label class="form-label" style="font-size:10px">RBC (×10⁶)</label><input type="text" class="form-input" id="labRBC" placeholder="4.5"></div>
+        <div><label class="form-label" style="font-size:10px">ESR (mm/hr)</label><input type="text" class="form-input" id="labESR" placeholder="10"></div>
+        <div><label class="form-label" style="font-size:10px">CRP (mg/L)</label><input type="text" class="form-input" id="labCRP" placeholder="5"></div>
+        <div><label class="form-label" style="font-size:10px">Blood Sugar (mg/dL)</label><input type="text" class="form-input" id="labSugar" placeholder="90"></div>
+        <div><label class="form-label" style="font-size:10px">HbA1c (%)</label><input type="text" class="form-input" id="labHbA1c" placeholder="5.5"></div>
+        <div><label class="form-label" style="font-size:10px">Creatinine (mg/dL)</label><input type="text" class="form-input" id="labCreat" placeholder="0.9"></div>
+        <div><label class="form-label" style="font-size:10px">Urea (mg/dL)</label><input type="text" class="form-input" id="labUrea" placeholder="30"></div>
+        <div><label class="form-label" style="font-size:10px">SGOT/AST (U/L)</label><input type="text" class="form-input" id="labAST" placeholder="35"></div>
+        <div><label class="form-label" style="font-size:10px">SGPT/ALT (U/L)</label><input type="text" class="form-input" id="labALT" placeholder="35"></div>
+        <div><label class="form-label" style="font-size:10px">Total Cholesterol</label><input type="text" class="form-input" id="labChol" placeholder="180"></div>
+        <div><label class="form-label" style="font-size:10px">Uric Acid (mg/dL)</label><input type="text" class="form-input" id="labUric" placeholder="5.5"></div>
+        <div><label class="form-label" style="font-size:10px">TSH (mIU/L)</label><input type="text" class="form-input" id="labTSH" placeholder="2.5"></div>
+        <div><label class="form-label" style="font-size:10px">BP (mmHg)</label><input type="text" class="form-input" id="labBP" placeholder="120/80"></div>
+        <div><label class="form-label" style="font-size:10px">SpO2 (%)</label><input type="text" class="form-input" id="labSpO2" placeholder="98"></div>
+        <div><label class="form-label" style="font-size:10px">Pulse (bpm)</label><input type="text" class="form-input" id="labPulse" placeholder="72"></div>
+        <div><label class="form-label" style="font-size:10px">Temp (F)</label><input type="text" class="form-input" id="labTemp" placeholder="98.6"></div>
+        <div><label class="form-label" style="font-size:10px">RA Factor / Widal</label><input type="text" class="form-input" id="labRA" placeholder="neg / 1:80"></div>
+      </div>
+      <div class="form-group" style="margin-bottom:8px">
+        <label class="form-label">Other Values (BT, CT, LDL, LFT, KFT, Thyroid...)</label>
+        <textarea class="form-textarea" id="labOther" placeholder="LDL 110, HDL 45, TG 160, BT 2min, CT 5min, S Bilirubin 1.2..." style="min-height:50px"></textarea>
+      </div>
+      <div class="form-group" style="margin-bottom:10px">
+        <label class="form-label">Chief Complaint / Symptoms</label>
+        <input type="text" class="form-input" id="labSymptoms" placeholder="e.g. fever 3 days, body pain, vomiting, jaundice...">
+      </div>
+      <button class="btn btn-primary btn-block" onclick="interpretLabs()">🧪 Interpret + Diagnose + Treat</button>
+      <div id="labResult" style="margin-top:12px"></div>
+    </div>
+
+    <!-- EMERGENCY / SOS PANEL -->
+    <div id="medOS-emergency" style="display:none">
+      <div style="font-size:12px;color:var(--text2);margin-bottom:10px">Emergency protocols, antidotes, critical drug doses, blood transfusion guide.</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+        <button onclick="emergencyProtocol('cardiac arrest')" style="background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;border:none;border-radius:10px;padding:12px 8px;font-size:11px;font-weight:700;cursor:pointer;min-height:44px">❤️ Cardiac Arrest</button>
+        <button onclick="emergencyProtocol('anaphylaxis')" style="background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;border:none;border-radius:10px;padding:12px 8px;font-size:11px;font-weight:700;cursor:pointer;min-height:44px">💉 Anaphylaxis</button>
+        <button onclick="emergencyProtocol('status epilepticus seizure')" style="background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff;border:none;border-radius:10px;padding:12px 8px;font-size:11px;font-weight:700;cursor:pointer;min-height:44px">⚡ Status Epilepticus</button>
+        <button onclick="emergencyProtocol('septic shock sepsis')" style="background:linear-gradient(135deg,#ef4444,#7c3aed);color:#fff;border:none;border-radius:10px;padding:12px 8px;font-size:11px;font-weight:700;cursor:pointer;min-height:44px">🦠 Septic Shock</button>
+        <button onclick="emergencyProtocol('acute severe asthma attack')" style="background:linear-gradient(135deg,#06b6d4,#0891b2);color:#fff;border:none;border-radius:10px;padding:12px 8px;font-size:11px;font-weight:700;cursor:pointer;min-height:44px">😮 Asthma Attack</button>
+        <button onclick="emergencyProtocol('hypertensive crisis emergency')" style="background:linear-gradient(135deg,#dc2626,#b91c1c);color:#fff;border:none;border-radius:10px;padding:12px 8px;font-size:11px;font-weight:700;cursor:pointer;min-height:44px">🩸 Hypertensive Crisis</button>
+        <button onclick="emergencyProtocol('severe hypoglycemia unconscious')" style="background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;border-radius:10px;padding:12px 8px;font-size:11px;font-weight:700;cursor:pointer;min-height:44px">🍬 Hypoglycemia</button>
+        <button onclick="emergencyProtocol('organophosphate poisoning')" style="background:linear-gradient(135deg,#374151,#1f2937);color:#fff;border:none;border-radius:10px;padding:12px 8px;font-size:11px;font-weight:700;cursor:pointer;min-height:44px">☠️ OP Poisoning</button>
+        <button onclick="emergencyProtocol('paracetamol acetaminophen overdose')" style="background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;border:none;border-radius:10px;padding:12px 8px;font-size:11px;font-weight:700;cursor:pointer;min-height:44px">💊 PCM Overdose</button>
+        <button onclick="emergencyProtocol('blood transfusion packed RBC protocol')" style="background:linear-gradient(135deg,#dc2626,#991b1b);color:#fff;border:none;border-radius:10px;padding:12px 8px;font-size:11px;font-weight:700;cursor:pointer;min-height:44px">🩸 Blood Transfusion</button>
+        <button onclick="emergencyProtocol('snake bite envenomation')" style="background:linear-gradient(135deg,#065f46,#047857);color:#fff;border:none;border-radius:10px;padding:12px 8px;font-size:11px;font-weight:700;cursor:pointer;min-height:44px">🐍 Snake Bite</button>
+        <button onclick="emergencyProtocol('drowning near drowning resuscitation')" style="background:linear-gradient(135deg,#1e40af,#1d4ed8);color:#fff;border:none;border-radius:10px;padding:12px 8px;font-size:11px;font-weight:700;cursor:pointer;min-height:44px">🌊 Drowning</button>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:8px">
+        <input type="text" class="form-input" id="emergencyCustomInput" placeholder="e.g. scorpion sting, cyanide, opioid overdose, burn, electric shock..." style="flex:1" onkeydown="if(event.key==='Enter')emergencyProtocol(document.getElementById('emergencyCustomInput').value)">
+        <button class="btn btn-primary btn-sm" onclick="emergencyProtocol(document.getElementById('emergencyCustomInput').value)">🚨 Protocol</button>
+      </div>
+      <div id="emergencyResult" style="margin-top:10px"></div>
+    </div>
+
+  </div><!-- /medicineOSCard -->
+
   <!-- ── CALORIE COUNTER WITH AI ── -->
   <div class="card" style="border:2px solid var(--success);margin-top:14px" id="calorieCard">
     <div class="card-title"><span class="emoji">🔥</span> AI Calorie Tracker</div>
@@ -3049,6 +3193,153 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
       <div id="debriefResult" style="margin-top:8px"></div>
     </div>
   </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       PROPHETIC HALO — Neurotech Lucidity Engine
+       Software simulation of tFUS + EEG/fNIRS + AI timing
+  ══════════════════════════════════════════════════════ -->
+  <div class="card" style="border:2px solid #7c3aed;background:linear-gradient(135deg,rgba(12,0,30,.95),rgba(0,10,40,.95));margin-top:14px" id="propheticHaloCard">
+    <!-- Header -->
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+      <div style="font-size:28px;animation:oraclePulse 3s ease-in-out infinite">🔮</div>
+      <div>
+        <div style="font-family:Syne,sans-serif;font-size:16px;font-weight:900;background:linear-gradient(135deg,#a78bfa,#06b6d4,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">Prophetic Halo</div>
+        <div style="font-size:10px;color:#8b7aa8;letter-spacing:.5px;text-transform:uppercase">tFUS · EEG · fNIRS · AI — Software Prototype</div>
+      </div>
+      <div style="margin-left:auto;text-align:right">
+        <div style="font-size:9px;background:#10b981;color:#fff;border-radius:6px;padding:2px 7px;font-weight:700;animation:cilPulseAnim 2s infinite">● ONLINE</div>
+      </div>
+    </div>
+    <div style="font-size:11px;color:#8b7aa8;margin-bottom:14px;line-height:1.5">Software simulation of the Prophetic Halo headband — AI-timed consciousness engineering targeting your dlPFC during REM. No hardware needed. Same protocol, same timing logic.</div>
+
+    <!-- Sub-tabs -->
+    <div style="display:flex;gap:0;border-radius:10px;overflow:hidden;border:1px solid rgba(124,58,237,.3);margin-bottom:14px">
+      <button class="halo-tab active" onclick="switchHaloTab('state',this)" style="flex:1;padding:8px 3px;font-size:10px;font-weight:700;border:none;background:rgba(124,58,237,.5);color:#e9d5ff;cursor:pointer">🧠 Brain State</button>
+      <button class="halo-tab" onclick="switchHaloTab('rem',this)" style="flex:1;padding:8px 3px;font-size:10px;font-weight:700;border:none;background:transparent;color:#6b7280;cursor:pointer">💤 REM Map</button>
+      <button class="halo-tab" onclick="switchHaloTab('stimulate',this)" style="flex:1;padding:8px 3px;font-size:10px;font-weight:700;border:none;background:transparent;color:#6b7280;cursor:pointer">⚡ Stimulate</button>
+      <button class="halo-tab" onclick="switchHaloTab('engineer',this)" style="flex:1;padding:8px 3px;font-size:10px;font-weight:700;border:none;background:transparent;color:#6b7280;cursor:pointer">🤖 Engineer</button>
+    </div>
+
+    <!-- BRAIN STATE PANEL -->
+    <div id="halo-state">
+      <div style="font-size:11px;color:#a78bfa;margin-bottom:10px">Real-time brain state derived from your Consciousness OS data — EEG/fNIRS proxy from logged metrics.</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px" id="haloStateGrid">
+        <div style="background:rgba(124,58,237,.15);border:1px solid rgba(124,58,237,.3);border-radius:10px;padding:10px;text-align:center">
+          <div style="font-size:9px;color:#a78bfa;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">dlPFC Activity</div>
+          <div style="font-family:Syne,sans-serif;font-size:22px;font-weight:900;color:#c4b5fd" id="haloDlPFC">—</div>
+          <div style="font-size:9px;color:#6b7280">self-awareness index</div>
+        </div>
+        <div style="background:rgba(6,182,212,.12);border:1px solid rgba(6,182,212,.3);border-radius:10px;padding:10px;text-align:center">
+          <div style="font-size:9px;color:#06b6d4;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">REM Readiness</div>
+          <div style="font-family:Syne,sans-serif;font-size:22px;font-weight:900;color:#67e8f9" id="haloREMReady">—</div>
+          <div style="font-size:9px;color:#6b7280">% tonight</div>
+        </div>
+        <div style="background:rgba(244,114,182,.1);border:1px solid rgba(244,114,182,.3);border-radius:10px;padding:10px;text-align:center">
+          <div style="font-size:9px;color:#f472b6;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Theta Power</div>
+          <div style="font-family:Syne,sans-serif;font-size:22px;font-weight:900;color:#f9a8d4" id="haloTheta">—</div>
+          <div style="font-size:9px;color:#6b7280">4–8Hz proxy</div>
+        </div>
+        <div style="background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);border-radius:10px;padding:10px;text-align:center">
+          <div style="font-size:9px;color:#10b981;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Gamma Index</div>
+          <div style="font-family:Syne,sans-serif;font-size:22px;font-weight:900;color:#6ee7b7" id="haloGamma">—</div>
+          <div style="font-size:9px;color:#6b7280">30–100Hz proxy</div>
+        </div>
+      </div>
+      <div style="background:rgba(124,58,237,.1);border:1px solid rgba(124,58,237,.2);border-radius:10px;padding:10px;margin-bottom:10px" id="haloStateInsight">
+        <div style="font-size:11px;color:#c4b5fd;line-height:1.6">Tap Scan to compute your current neural state...</div>
+      </div>
+      <button onclick="scanBrainState()" style="width:100%;background:linear-gradient(135deg,#7c3aed,#06b6d4);color:#fff;border:none;border-radius:10px;padding:12px;font-size:13px;font-weight:700;cursor:pointer;min-height:44px">🧠 Scan Brain State</button>
+    </div>
+
+    <!-- REM MAP PANEL -->
+    <div id="halo-rem" style="display:none">
+      <div style="font-size:11px;color:#a78bfa;margin-bottom:10px">Set your sleep time — Halo maps your 90-min REM cycles and marks optimal lucidity intervention windows.</div>
+      <div class="form-row" style="margin-bottom:10px">
+        <div class="form-group">
+          <label class="form-label" style="color:#a78bfa">Sleep Time</label>
+          <input type="time" class="form-input" id="haloSleepTime" value="23:00" style="background:rgba(124,58,237,.15);border-color:rgba(124,58,237,.4);color:#e9d5ff">
+        </div>
+        <div class="form-group">
+          <label class="form-label" style="color:#a78bfa">Wake Time</label>
+          <input type="time" class="form-input" id="haloWakeTime" value="07:00" style="background:rgba(124,58,237,.15);border-color:rgba(124,58,237,.4);color:#e9d5ff">
+        </div>
+      </div>
+      <button onclick="computeREMMap()" style="width:100%;background:linear-gradient(135deg,#06b6d4,#7c3aed);color:#fff;border:none;border-radius:10px;padding:11px;font-size:12px;font-weight:700;cursor:pointer;margin-bottom:12px;min-height:44px">💤 Map My REM Cycles</button>
+      <div id="haloREMDisplay"></div>
+    </div>
+
+    <!-- STIMULATE PANEL -->
+    <div id="halo-stimulate" style="display:none">
+      <div style="font-size:11px;color:#a78bfa;margin-bottom:12px">Software tFUS simulation — 40Hz gamma entrainment targeting dlPFC activation. Use during WBTB window for maximum lucidity induction.</div>
+
+      <!-- Protocol selector -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+        <div id="haloProto-mild" onclick="selectHaloProtocol('mild')" style="background:rgba(124,58,237,.2);border:2px solid #7c3aed;border-radius:10px;padding:10px;text-align:center;cursor:pointer">
+          <div style="font-size:18px;margin-bottom:4px">🌙</div>
+          <div style="font-size:11px;font-weight:700;color:#c4b5fd">MILD Boost</div>
+          <div style="font-size:9px;color:#6b7280">5 min · gentle</div>
+        </div>
+        <div id="haloProto-wild" onclick="selectHaloProtocol('wild')" style="background:rgba(6,182,212,.1);border:1px solid rgba(6,182,212,.3);border-radius:10px;padding:10px;text-align:center;cursor:pointer">
+          <div style="font-size:18px;margin-bottom:4px">⚡</div>
+          <div style="font-size:11px;font-weight:700;color:#67e8f9">WILD Entry</div>
+          <div style="font-size:9px;color:#6b7280">10 min · intense</div>
+        </div>
+        <div id="haloProto-rem" onclick="selectHaloProtocol('rem')" style="background:rgba(244,114,182,.1);border:1px solid rgba(244,114,182,.3);border-radius:10px;padding:10px;text-align:center;cursor:pointer">
+          <div style="font-size:18px;margin-bottom:4px">🌊</div>
+          <div style="font-size:11px;font-weight:700;color:#f9a8d4">REM Ride</div>
+          <div style="font-size:9px;color:#6b7280">20 min · full cycle</div>
+        </div>
+        <div id="haloProto-deep" onclick="selectHaloProtocol('deep')" style="background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);border-radius:10px;padding:10px;text-align:center;cursor:pointer">
+          <div style="font-size:18px;margin-bottom:4px">🧬</div>
+          <div style="font-size:11px;font-weight:700;color:#6ee7b7">Deep State</div>
+          <div style="font-size:9px;color:#6b7280">30 min · advanced</div>
+        </div>
+      </div>
+
+      <!-- Session display -->
+      <div style="background:rgba(0,0,0,.4);border:1px solid rgba(124,58,237,.4);border-radius:12px;padding:16px;text-align:center;margin-bottom:12px">
+        <div style="font-size:9px;color:#6b7280;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">SESSION STATUS</div>
+        <div style="font-family:Syne,sans-serif;font-size:40px;font-weight:900;color:#a78bfa;font-variant-numeric:tabular-nums" id="haloTimer">05:00</div>
+        <div style="font-size:11px;color:#8b7aa8;margin-top:4px" id="haloPhaseLabel">MILD Boost — 40Hz Gamma Entrainment</div>
+        <div style="height:4px;background:rgba(124,58,237,.2);border-radius:2px;margin:10px 0;overflow:hidden">
+          <div id="haloProgressBar" style="height:100%;width:0%;background:linear-gradient(90deg,#7c3aed,#06b6d4);border-radius:2px;transition:width .5s linear"></div>
+        </div>
+        <div style="font-size:10px;color:#6b7280" id="haloPhaseDesc">tFUS target: dlPFC (Brodmann area 9/46) · Frequency: 40Hz · Power: simulated</div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button id="haloStartBtn" onclick="startHaloSession()" style="flex:1;background:linear-gradient(135deg,#7c3aed,#06b6d4);color:#fff;border:none;border-radius:10px;padding:12px;font-size:13px;font-weight:700;cursor:pointer;min-height:44px">▶ Start Protocol</button>
+        <button onclick="stopHaloSession()" style="background:rgba(239,68,68,.2);border:1px solid rgba(239,68,68,.4);color:#fca5a5;border-radius:10px;padding:12px 16px;font-size:13px;font-weight:700;cursor:pointer;min-height:44px">■ Stop</button>
+      </div>
+      <div id="haloSessionLog" style="margin-top:10px;font-size:11px;color:#6b7280"></div>
+    </div>
+
+    <!-- ENGINEER PANEL -->
+    <div id="halo-engineer" style="display:none">
+      <div style="font-size:11px;color:#a78bfa;margin-bottom:10px">AI generates your complete personalized tonight protocol — based on your hive data, dream history, stress levels, and sleep patterns.</div>
+      <div class="form-group" style="margin-bottom:10px">
+        <label class="form-label" style="color:#a78bfa;font-size:11px">Tonight's Goal</label>
+        <select class="form-select" id="haloGoal" style="background:rgba(124,58,237,.15);border-color:rgba(124,58,237,.4);color:#e9d5ff;font-size:12px">
+          <option value="first_lucid">Achieve first lucid dream</option>
+          <option value="control">Increase dream control</option>
+          <option value="vivid">Maximize vividness</option>
+          <option value="recall">Improve dream recall</option>
+          <option value="intention">Execute specific intention</option>
+          <option value="deep_exploration">Deep consciousness exploration</option>
+        </select>
+      </div>
+      <button onclick="engineerDream()" style="width:100%;background:linear-gradient(135deg,#7c3aed,#f472b6);color:#fff;border:none;border-radius:10px;padding:12px;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:12px;min-height:44px">🤖 Generate Tonight's Protocol</button>
+      <div id="haloEngineerResult"></div>
+
+      <!-- Dream Pattern Intelligence -->
+      <div style="border-top:1px solid rgba(124,58,237,.2);padding-top:12px;margin-top:12px">
+        <div style="font-size:12px;font-weight:700;color:#c4b5fd;margin-bottom:8px">🔍 Dream Pattern Intelligence</div>
+        <div style="font-size:11px;color:#8b7aa8;margin-bottom:8px">AI scans your dream journal for recurring signs, symbols, and patterns — your personal dream language.</div>
+        <button onclick="analyzeDreamPatterns()" style="width:100%;background:rgba(124,58,237,.2);border:1px solid rgba(124,58,237,.4);color:#c4b5fd;border-radius:10px;padding:10px;font-size:12px;font-weight:700;cursor:pointer;min-height:44px">🌌 Analyze My Dream Patterns</button>
+        <div id="haloPatternsResult" style="margin-top:10px"></div>
+      </div>
+    </div>
+
+  </div><!-- /propheticHaloCard -->
 </div>
 
 <!-- ════════════════════════════════════════════
@@ -7047,6 +7338,321 @@ Create a DETAILED 30-day treatment protocol covering every system:
   }
 }
 
+
+// ════════════════════════════════════════════════════════════════
+//  MEDICINE OS — Clinical Decision Engine
+//  Drug lookup · Dosage calculator · Lab interpreter · Emergency
+// ════════════════════════════════════════════════════════════════
+
+function switchMedOS(panel, btn) {
+  ['drugs','dosage','labs','emergency'].forEach(p => {
+    const el = document.getElementById('medOS-' + p);
+    if (el) el.style.display = p === panel ? '' : 'none';
+  });
+  document.querySelectorAll('.med-os-tab').forEach(b => {
+    b.style.background = 'var(--bg3)';
+    b.style.color = 'var(--text2)';
+  });
+  if (btn) { btn.style.background = 'var(--primary)'; btn.style.color = '#fff'; }
+}
+
+// ── DRUG LOOKUP ──────────────────────────────────────────────────
+function quickDrug(name) {
+  document.getElementById('drugSearchInput').value = name;
+  searchDrug();
+}
+
+async function searchDrug() {
+  const drug = document.getElementById('drugSearchInput').value.trim();
+  if (!drug) return;
+  const el = document.getElementById('drugSearchResult');
+  el.innerHTML = '<div style="display:flex;align-items:center;gap:8px;padding:12px;color:var(--text3)"><div class="ai-loading"><span></span><span></span><span></span></div><span>Looking up ' + drug + '...</span></div>';
+
+  const healthCtx = typeof getHiveContextFor === 'function' ? getHiveContextFor('health') : '';
+  const prompt = `You are a clinical pharmacist with complete drug knowledge. Give a comprehensive reference for: "${drug}"
+
+${healthCtx ? 'PATIENT CONTEXT (tailor warnings to this patient):\n' + healthCtx : ''}
+
+Use EXACT markdown format:
+
+## 💊 ${drug.toUpperCase()}
+
+**Class**: [drug class] | **Schedule**: [H/H1/OTC/narcotic]
+
+### 📋 Indications
+- [indication 1 with typical dose]
+- [indication 2 with dose]
+
+### ⚖️ Standard Doses
+| Patient Type | Dose | Route | Frequency | Duration |
+|---|---|---|---|---|
+| Adult | [dose] | [IV/IM/PO] | [BD/TDS/OD] | [days] |
+| Child (mg/kg) | [dose] | [route] | [freq] | [days] |
+| Elderly | [adjusted dose] | [route] | [freq] | [note] |
+| Renal failure | [adjusted] | [route] | [freq] | [note] |
+
+### 🚫 Contraindications
+- [absolute CI 1]
+- [absolute CI 2]
+
+### ⚠️ Side Effects
+- **Common**: [list]
+- **Serious**: [list — with % if known]
+- **Desi warning**: [practical real-world warning in Indian context]
+
+### 💊 Combinations
+- **Often given with**: [drug + why]
+- **Never combine**: [dangerous combos]
+
+### 🏥 Available Formulations (India)
+- [Tablet/Injection/Syrup]: [brand examples, typical strengths, price range]
+
+### 💡 Clinical Pearl
+[1 non-obvious insight that separates good clinicians from average ones]
+
+⚕️ Educational. Verify with current prescribing guidelines.`;
+
+  try {
+    const text = await callGroqFast(prompt, 'You are a senior clinical pharmacist. Use EXACT markdown format. Include real Indian brand names and doses used in hospitals. Be specific.', 1100);
+    el.innerHTML = '<div style="background:linear-gradient(135deg,rgba(124,58,237,.06),rgba(6,182,212,.04));border:1px solid rgba(124,58,237,.2);border-radius:12px;padding:14px">' +
+      formatAIMarkdown(text) +
+      '<div style="display:flex;gap:8px;margin-top:10px">' +
+      '<button onclick="copyMsgText(this,'' + encodeURIComponent(text) + '')" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:5px 12px;font-size:11px;cursor:pointer;color:var(--text2)">📋 Copy</button>' +
+      '<button onclick="document.getElementById('doseDrug').value='' + drug.replace(/'/g,"\'") + '';switchMedOS('dosage',document.querySelectorAll('.med-os-tab')[1])" style="background:var(--primary);color:#fff;border:none;border-radius:8px;padding:5px 12px;font-size:11px;cursor:pointer;font-weight:700">⚖️ Calculate Dose</button>' +
+      '</div></div>';
+  } catch(e) {
+    el.innerHTML = '<div style="color:var(--danger);font-size:12px;padding:8px">❌ Drug lookup failed: ' + e.message + '</div>';
+  }
+}
+
+// ── DOSAGE CALCULATOR ─────────────────────────────────────────────
+async function calculateDosage() {
+  const drug = document.getElementById('doseDrug').value.trim();
+  const patientType = document.getElementById('dosePatientType').value;
+  const weight = document.getElementById('doseWeight').value;
+  const age = document.getElementById('doseAge').value;
+  const indication = document.getElementById('doseIndication').value.trim();
+  if (!drug) { showToast('Enter drug name first'); return; }
+
+  const el = document.getElementById('dosageResult');
+  el.innerHTML = '<div style="display:flex;align-items:center;gap:8px;padding:12px;color:var(--text3)"><div class="ai-loading"><span></span><span></span><span></span></div><span>Calculating dose...</span></div>';
+
+  const prompt = `You are a senior hospital pharmacist. Calculate the EXACT dose and full protocol for:
+
+DRUG: ${drug}
+PATIENT: ${patientType}, Age: ${age || 'not specified'}, Weight: ${weight || 'not specified'} kg
+INDICATION: ${indication || 'general use'}
+
+Respond in EXACT markdown format:
+
+## ⚖️ Dose Calculation — ${drug}
+
+**Patient**: ${patientType} ${weight ? '| ' + weight + ' kg' : ''} ${age ? '| Age ' + age : ''}
+
+### 💉 Calculated Dose
+- **Dose**: [EXACT calculated dose with working shown: e.g. 50mg/kg × 70kg = 3500mg → round to 3.5g]
+- **Route**: [IV/IM/PO/Nebulization/Topical]
+- **Frequency**: [OD/BD/TDS/QID/SOS — with clock times]
+- **Duration**: [X days — with reasoning]
+- **Max dose**: [maximum safe dose]
+
+### 🧪 Preparation & Administration
+- **Dilution**: [how to dilute — e.g. dissolve in 100ml NS, give over 30 min]
+- **Rate**: [infusion rate if IV]
+- **Compatibility**: [compatible IV fluids]
+
+### 📅 Full Course Protocol
+- Day 1: [exact protocol]
+- Days 2-X: [maintenance]
+- End point: [when to stop / reassess]
+
+### ⚠️ Special Warnings for ${patientType}
+- [warning 1 specific to this patient type]
+- [warning 2]
+${patientType === 'pregnant' ? '- **FDA Pregnancy Category**: [A/B/C/D/X]' : ''}
+${patientType === 'child' || patientType === 'neonate' ? '- **Pediatric safety**: [specific note]' : ''}
+${patientType === 'renal' || patientType === 'hepatic' ? '- **Dose adjustment**: [specific reduction or avoidance]' : ''}
+
+### 💊 Available Strengths in India
+- [strength 1 — brand — route]
+- [strength 2 — brand — route]
+
+⚕️ Verify with current BNF/pharmacopeia. Clinical judgment essential.`;
+
+  try {
+    const text = await callGroqFast(prompt, 'You are a senior hospital pharmacist. Show exact dose calculations. Use real Indian hospital protocols. EXACT markdown format.', 1000);
+    el.innerHTML = '<div style="background:linear-gradient(135deg,rgba(16,185,129,.08),rgba(124,58,237,.06));border:1px solid rgba(16,185,129,.3);border-radius:12px;padding:14px">' +
+      formatAIMarkdown(text) +
+      '<button onclick="copyMsgText(this,'' + encodeURIComponent(text) + '')" style="margin-top:10px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:5px 12px;font-size:11px;cursor:pointer;color:var(--text2)">📋 Copy Protocol</button>' +
+      '</div>';
+  } catch(e) {
+    el.innerHTML = '<div style="color:var(--danger);font-size:12px;padding:8px">❌ ' + e.message + '</div>';
+  }
+}
+
+// ── LAB INTERPRETER ───────────────────────────────────────────────
+async function interpretLabs() {
+  const el = document.getElementById('labResult');
+  el.innerHTML = '<div style="display:flex;align-items:center;gap:8px;padding:12px;color:var(--text3)"><div class="ai-loading"><span></span><span></span><span></span></div><span>Interpreting labs...</span></div>';
+
+  const vals = {
+    Hb: document.getElementById('labHb').value,
+    WBC: document.getElementById('labWBC').value,
+    Platelets: document.getElementById('labPlt').value,
+    RBC: document.getElementById('labRBC').value,
+    ESR: document.getElementById('labESR').value,
+    CRP: document.getElementById('labCRP').value,
+    'Blood Sugar': document.getElementById('labSugar').value,
+    HbA1c: document.getElementById('labHbA1c').value,
+    Creatinine: document.getElementById('labCreat').value,
+    Urea: document.getElementById('labUrea').value,
+    'SGOT/AST': document.getElementById('labAST').value,
+    'SGPT/ALT': document.getElementById('labALT').value,
+    Cholesterol: document.getElementById('labChol').value,
+    'Uric Acid': document.getElementById('labUric').value,
+    TSH: document.getElementById('labTSH').value,
+    BP: document.getElementById('labBP').value,
+    SpO2: document.getElementById('labSpO2').value,
+    Pulse: document.getElementById('labPulse').value,
+    Temp: document.getElementById('labTemp').value,
+    'RA/Widal': document.getElementById('labRA').value,
+  };
+
+  const filledVals = Object.entries(vals).filter(([,v]) => v && v.trim()).map(([k,v]) => k + ': ' + v).join(' | ');
+  const other = document.getElementById('labOther').value.trim();
+  const symptoms = document.getElementById('labSymptoms').value.trim();
+  const healthCtx = typeof getHiveContextFor === 'function' ? getHiveContextFor('health') : '';
+
+  if (!filledVals && !other) { showToast('Enter at least some lab values'); return; }
+
+  const prompt = `You are a senior MD physician in a hospital. Interpret these lab results and give clinical management.
+
+PATIENT LAB REPORT:
+${filledVals}${other ? '\nAdditional: ' + other : ''}
+${symptoms ? 'SYMPTOMS: ' + symptoms : ''}
+${healthCtx ? 'PATIENT PROFILE: ' + healthCtx : ''}
+
+Respond in EXACT markdown format:
+
+## 🧪 Lab Report Interpretation
+
+### 🚦 Abnormal Values (Flag All)
+| Parameter | Value | Normal Range | Status | Clinical Significance |
+|---|---|---|---|---|
+| [param] | [value] | [range] | 🔴 HIGH/🟡 LOW/🟢 NORMAL | [1-line meaning] |
+
+### 🔍 Probable Diagnosis
+1. **Most Likely**: [diagnosis] — [confidence %] — [supporting labs]
+2. **Differential 1**: [diagnosis] — [labs supporting]
+3. **Differential 2**: [if applicable]
+
+### 💊 Suggested Treatment Protocol
+**Immediate (today)**:
+- [Drug/action 1 with dose, route, frequency]
+- [Drug/action 2]
+
+**Short-term (7-14 days)**:
+- [Medication 1: dose + duration]
+- [Supportive treatment]
+
+**Monitoring**:
+- Repeat [specific test] in [X days]
+- Watch for: [red flag signs]
+
+### 🩸 Blood/IV Therapy (if indicated)
+- [Blood product or IV fluid with rate — only if lab values indicate it]
+
+### 🚫 Avoid in This Patient
+- [Drug/food/activity 1 — reason]
+- [Drug/food/activity 2 — reason]
+
+### 🌿 Supportive Care (Desi Context)
+- [Practical advice: rest, nimbu pani, diet, what to avoid like daru, bidi, heavy food]
+
+### ⚠️ Red Flags — Go to Emergency If:
+- [sign/symptom 1]
+- [sign/symptom 2]
+
+⚕️ Educational interpretation. Confirm with treating physician.`;
+
+  try {
+    const text = await callGroqFast(prompt, 'You are a senior MD physician. Interpret labs precisely. Use exact normal ranges. Give specific drug names and doses. Be the doctor in a Haryana government hospital — practical, specific, desi-context aware.', 1300);
+    el.innerHTML = '<div style="background:linear-gradient(135deg,rgba(6,182,212,.08),rgba(124,58,237,.06));border:1px solid rgba(6,182,212,.3);border-radius:12px;padding:14px">' +
+      formatAIMarkdown(text) +
+      '<button onclick="copyMsgText(this,'' + encodeURIComponent(text) + '')" style="margin-top:10px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:5px 12px;font-size:11px;cursor:pointer;color:var(--text2)">📋 Copy Report</button>' +
+      '</div>';
+  } catch(e) {
+    el.innerHTML = '<div style="color:var(--danger);font-size:12px;padding:8px">❌ ' + e.message + '</div>';
+  }
+}
+
+// ── EMERGENCY PROTOCOLS ───────────────────────────────────────────
+async function emergencyProtocol(situation) {
+  if (!situation || !situation.trim()) { showToast('Enter emergency situation'); return; }
+  const el = document.getElementById('emergencyResult');
+  el.innerHTML = '<div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.3);border-radius:10px;padding:12px;display:flex;align-items:center;gap:8px"><div class="ai-loading"><span></span><span></span><span></span></div><span style="font-size:12px;color:var(--danger);font-weight:700">🚨 Loading emergency protocol for: ' + situation + '...</span></div>';
+  el.scrollIntoView({ behavior: 'smooth' });
+
+  const prompt = `You are an emergency medicine physician (MBBS + MD Emergency Medicine). Give the COMPLETE emergency protocol for:
+
+EMERGENCY: ${situation}
+
+Use EXACT markdown format:
+
+## 🚨 EMERGENCY PROTOCOL: ${situation.toUpperCase()}
+
+### ⚡ IMMEDIATE ACTIONS (First 2 minutes)
+1. [Action 1 — SPECIFIC, no vague instructions]
+2. [Action 2]
+3. [Action 3]
+
+### 💉 DRUG PROTOCOL (With EXACT doses)
+| Drug | Dose | Route | Timing | Notes |
+|---|---|---|---|---|
+| [drug name] | [EXACT dose — e.g. 0.5mg/kg IV] | [IV/IM/SC] | [immediately/q5min/etc] | [critical note] |
+
+### 🧪 Investigations to Order STAT
+- [Test 1 — why it changes management]
+- [Test 2]
+
+### 📡 Monitoring Parameters
+- Every 5 min: [vitals to watch]
+- Target: [specific BP/SpO2/HR targets]
+
+### 🩸 IV Access & Fluids
+- [IV access type + fluid + rate]
+
+### 🔄 If No Response After [X minutes]
+- [Escalation protocol]
+
+### ☠️ Antidote (if poisoning)
+- **Antidote**: [specific antidote + EXACT dose]
+- **Mechanism**: [why this reverses it]
+
+### 🚑 Transfer Criteria
+- [When to escalate to ICU/higher center]
+
+### ⚠️ Common Mistakes to AVOID
+- [Mistake 1 that kills patients]
+- [Mistake 2]
+
+⚕️ Emergency protocol for educational purposes. Follow local hospital protocols.`;
+
+  try {
+    const text = await callGroqFast(prompt, 'You are a senior emergency medicine physician. Give SPECIFIC doses, EXACT drug names, PRECISE timings. No vague advice. Lives depend on precision. Use Indian hospital context — include readily available drugs.', 1200);
+    el.innerHTML = '<div style="background:linear-gradient(135deg,rgba(239,68,68,.1),rgba(124,58,237,.06));border:2px solid rgba(239,68,68,.4);border-radius:12px;padding:14px">' +
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">' +
+      '<span style="font-size:20px">🚨</span>' +
+      '<div style="font-weight:900;font-size:14px;color:var(--danger)">EMERGENCY PROTOCOL: ' + situation.toUpperCase() + '</div>' +
+      '</div>' +
+      formatAIMarkdown(text) +
+      '<button onclick="copyMsgText(this,'' + encodeURIComponent(text) + '')" style="margin-top:10px;background:var(--danger);color:#fff;border:none;border-radius:8px;padding:6px 14px;font-size:12px;cursor:pointer;font-weight:700">📋 Copy Protocol</button>' +
+      '</div>';
+  } catch(e) {
+    el.innerHTML = '<div style="color:var(--danger);font-size:12px;padding:8px">❌ ' + e.message + '</div>';
+  }
+}
+
 // ─── BRAIN GAMES ─────────────────────────────────────────────
 const GAMES_LIST=[
   // 🧠 IQ & Fluid Intelligence
@@ -7455,6 +8061,7 @@ function calcWBTB(){
 }
 function getDreams(){return JSON.parse(localStorage.getItem('cos_dreams')||'[]');}
 function saveDream(){
+  // Hive sync after dream save happens at end of original function via existing Firestore hook
   const entry={id:Date.now(),date:document.getElementById('dreamDate')?.value||new Date().toISOString().split('T')[0],title:document.getElementById('dreamTitle')?.value||'Untitled',type:selDreamType,desc:document.getElementById('dreamDesc')?.value,vividness:parseInt(document.getElementById('dreamVividness')?.value||5),lucidity:parseInt(document.getElementById('dreamLucidity')?.value||0),signs:document.getElementById('dreamSigns')?.value,emotions:document.getElementById('dreamEmotions')?.value};
   const dreams=getDreams();dreams.unshift(entry);localStorage.setItem('cos_dreams',JSON.stringify(dreams));
   // 🔥 Sync dream to Firestore if signed in
@@ -8114,8 +8721,10 @@ Respond with a CAUSAL CHAIN analysis in this EXACT format (JSON array):
   {"arrow":"💡","node":"Strategic Insight","detail":"Non-obvious angle, who benefits, what to watch, what to do"}
 ]
 Return ONLY the JSON array. No markdown. No explanation outside the array.`;
+  const hiveCtxGeo = typeof getHiveContextFor === 'function' ? getHiveContextFor('geo') : '';
+  const geoSys = 'Return ONLY a valid JSON array for causal chain analysis.' + (hiveCtxGeo ? '\n\nUSER CONTEXT:\n' + hiveCtxGeo : '');
   try{
-    const raw=await callGroqJSON(prompt,'Return ONLY a valid JSON array for causal chain analysis.',700);
+    const raw=await callGroqJSON(prompt, geoSys, 700);
     const chains=JSON.parse(raw);
     el.innerHTML=`<div class="causal-chain"><div style="font-weight:700;font-size:14px;margin-bottom:12px">🔍 Causal Analysis: "${q}"</div>${chains.map(c=>`<div class="causal-step"><div class="causal-arrow">${c.arrow}</div><div class="causal-text"><strong>${c.node}</strong><br>${c.detail}</div></div>`).join('')}</div>`;
   }catch(err){
@@ -8536,8 +9145,10 @@ FORMAT YOUR RESPONSE EXACTLY LIKE THIS (use markdown):
 [1 powerful sentence]
 
 Be specific, cite real researchers and experiments. Max 250 words. No filler.`;
+  const hiveCtxSci = typeof getHiveContextFor === 'function' ? getHiveContextFor('science') : '';
+  const sciSysPrompt = 'You are a brilliant scientist. Respond ONLY in the markdown format specified. Use real researchers, real experiments, real data.' + (hiveCtxSci ? '\n\nUSER PROFILE FOR RELEVANCE:\n' + hiveCtxSci : '');
   try{
-    const text=await callGroqFast(prompt,'You are a brilliant scientist. Respond ONLY in the markdown format specified. Use real researchers, real experiments, real data.',700);
+    const text=await callGroqFast(prompt, sciSysPrompt, 700);
     el.innerHTML=`<div class="ai-insight-box">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
         <span style="font-size:18px">⚡</span>
@@ -9455,6 +10066,391 @@ function computeLucidProbability(){
     tips.innerHTML=tipArr.map(t=>`<div style="margin-bottom:4px">${t}</div>`).join('');
   }
   return prob;
+}
+
+
+// ════════════════════════════════════════════════════════════════
+//  PROPHETIC HALO — Neurotech Lucidity Engine
+//  tFUS + EEG/fNIRS + AI — Software Prototype
+// ════════════════════════════════════════════════════════════════
+
+// ── TAB SWITCHER ─────────────────────────────────────────────────
+function switchHaloTab(tab, btn) {
+  ['state','rem','stimulate','engineer'].forEach(t => {
+    const el = document.getElementById('halo-' + t);
+    if (el) el.style.display = t === tab ? '' : 'none';
+  });
+  document.querySelectorAll('.halo-tab').forEach(b => {
+    b.style.background = 'transparent';
+    b.style.color = '#6b7280';
+  });
+  if (btn) { btn.style.background = 'rgba(124,58,237,.5)'; btn.style.color = '#e9d5ff'; }
+}
+
+// ── BRAIN STATE SCAN ──────────────────────────────────────────────
+function scanBrainState() {
+  // Derive EEG/fNIRS proxies from COS_BRAIN hive data
+  const b = window.COS_BRAIN || {};
+  const c = b.consciousness || {};
+  const dreams = window.getDreams ? getDreams() : [];
+  const logs = window.getLogs ? getLogs() : [];
+
+  // dlPFC activity proxy: focus + clarity - stress (executive function bandwidth)
+  const focus = parseFloat(c.focus7d) || 5;
+  const stress = parseFloat(c.stress7d) || 5;
+  const clarity = parseFloat(logs[0]?.clarity) || 5;
+  const dlPFC = Math.round(((focus + clarity) / 2 - stress * 0.3) * 10);
+  const dlPFCPct = Math.min(95, Math.max(10, dlPFC));
+
+  // REM readiness: sleep quality + recent vividness + low stress
+  const sleep = parseFloat(c.sleep7d) || 5;
+  const avgViv = dreams.slice(0,5).reduce((s,d) => s + (d.vividness||5), 0) / Math.max(dreams.slice(0,5).length, 1);
+  const remReady = Math.round(((sleep * 1.5 + avgViv) / 2 - stress * 0.4 + 20) * 2);
+  const remPct = Math.min(95, Math.max(15, remReady));
+
+  // Theta proxy: dream recall × recent journaling consistency (4-8Hz during creativity + memory)
+  const rcCount = parseInt(localStorage.getItem('cos_rc_count') || 0);
+  const theta = Math.round((dreams.length * 2 + rcCount * 1.5 + (logs.length > 7 ? 15 : 0)) / 1.2);
+  const thetaPct = Math.min(90, Math.max(10, theta));
+
+  // Gamma proxy: focus peak × creativity (30-100Hz = binding consciousness)
+  const creativity = parseFloat(c.creativity7d) || 5;
+  const gamma = Math.round((focus * 0.6 + creativity * 0.4) * 9);
+  const gammaPct = Math.min(95, Math.max(10, gamma));
+
+  // Update UI
+  const dlPFCEl = document.getElementById('haloDlPFC');
+  const remEl = document.getElementById('haloREMReady');
+  const thetaEl = document.getElementById('haloTheta');
+  const gammaEl = document.getElementById('haloGamma');
+  if (dlPFCEl) dlPFCEl.textContent = dlPFCPct + '%';
+  if (remEl) remEl.textContent = remPct + '%';
+  if (thetaEl) thetaEl.textContent = thetaPct + '%';
+  if (gammaEl) gammaEl.textContent = gammaPct + '%';
+
+  // Insight
+  const insight = document.getElementById('haloStateInsight');
+  if (insight) {
+    let msg = '';
+    if (dlPFCPct >= 60) msg += '✅ dlPFC highly active — self-awareness system primed for lucidity. ';
+    else msg += '⚠️ dlPFC underactive — reduce stress and improve focus today to prime tonight's session. ';
+    if (remPct >= 60) msg += '✅ Strong REM readiness — sleep architecture favorable. ';
+    else msg += '💤 REM readiness below optimal — prioritize 7+ hours tonight. ';
+    if (gammaPct >= 60) msg += '⚡ High gamma binding — consciousness highly coherent. ';
+    else msg += '🎯 Build gamma: meditation + focused deep work today increases tonight's gamma during REM. ';
+    const overall = Math.round((dlPFCPct + remPct + gammaPct) / 3);
+    msg += '<br><br><strong style="color:#a78bfa">Overall Lucidity Index: ' + overall + '% — ' +
+      (overall >= 70 ? '🔥 Excellent. Engage full WILD protocol tonight.' :
+       overall >= 50 ? '⚡ Good. Use MILD + WBTB for best results.' :
+       '🌱 Building. Focus on sleep quality + daily reality checks.') + '</strong>';
+    insight.innerHTML = '<div style="font-size:11px;color:#c4b5fd;line-height:1.7">' + msg + '</div>';
+  }
+
+  // Store for hive
+  if (window.HIVE_MIND) window.HIVE_MIND.sync('halobrain', { dlPFC: dlPFCPct, rem: remPct, theta: thetaPct, gamma: gammaPct });
+  if (typeof showToast === 'function') showToast('🧠 Brain state scanned');
+}
+
+// ── REM CYCLE MAPPER ──────────────────────────────────────────────
+function computeREMMap() {
+  const sleepT = document.getElementById('haloSleepTime')?.value || '23:00';
+  const wakeT = document.getElementById('haloWakeTime')?.value || '07:00';
+  const el = document.getElementById('haloREMDisplay');
+  if (!el) return;
+
+  // Parse times
+  const [sh, sm] = sleepT.split(':').map(Number);
+  const [wh, wm] = wakeT.split(':').map(Number);
+  const sleepMins = sh * 60 + sm;
+  const wakeMins = (wh < sh ? wh + 24 : wh) * 60 + wm;
+  const totalMins = wakeMins - sleepMins;
+
+  if (totalMins < 180) { el.innerHTML = '<div style="color:#ef4444;font-size:12px;padding:8px">Need at least 3 hours of sleep for REM mapping.</div>'; return; }
+
+  // 90-min NREM/REM cycles — REM gets longer each cycle
+  const cycles = [];
+  const remDurations = [10, 20, 35, 50, 65]; // minutes of REM per cycle
+  let cursor = 0;
+  let cycleNum = 0;
+  while (cursor + 90 <= totalMins && cycleNum < 5) {
+    const nremDur = 90 - (remDurations[cycleNum] || 65);
+    const remDur = remDurations[cycleNum] || 65;
+    const cycleStart = sleepMins + cursor;
+    const remStart = cycleStart + nremDur;
+    const cycleEnd = cycleStart + 90;
+    cycles.push({ num: cycleNum + 1, nremDur, remDur, remStart, cycleEnd, totalStart: cursor });
+    cursor += 90;
+    cycleNum++;
+  }
+
+  const toTime = (mins) => {
+    const h = Math.floor(mins / 60) % 24;
+    const m = mins % 60;
+    return (h < 10 ? '0' : '') + h + ':' + (m < 10 ? '0' : '') + m;
+  };
+
+  // Best WBTB window: after cycle 3 REM (5h in)
+  const wbtbCycle = cycles[2] || cycles[cycles.length - 1];
+  const wbtbTime = wbtbCycle ? toTime(sleepMins + wbtbCycle.totalStart + 90) : null;
+
+  // Best lucidity windows: during cycle 4 and 5 REM
+  const lucidWindows = cycles.slice(3).map(c => toTime(c.remStart));
+
+  el.innerHTML = '<div style="margin-bottom:12px">' +
+    cycles.map(c => {
+      const remStartTime = toTime(c.remStart);
+      const remEndTime = toTime(c.cycleEnd);
+      const isLucidWindow = c.num >= 4;
+      const wbtbAfter = c.num === 3;
+      return '<div style="background:rgba(124,58,237,.08);border:1px solid ' + (isLucidWindow ? 'rgba(244,114,182,.5)' : 'rgba(124,58,237,.2)') + ';border-radius:10px;padding:10px;margin-bottom:8px">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">' +
+          '<span style="font-size:11px;font-weight:700;color:' + (isLucidWindow ? '#f472b6' : '#a78bfa') + '">Cycle ' + c.num + (isLucidWindow ? ' 🎯 LUCIDITY WINDOW' : '') + '</span>' +
+          '<span style="font-size:9px;color:#6b7280">' + toTime(sleepMins + c.totalStart) + ' → ' + toTime(c.cycleEnd) + '</span>' +
+        '</div>' +
+        '<div style="display:flex;height:12px;border-radius:6px;overflow:hidden;margin-bottom:6px">' +
+          '<div style="background:rgba(6,182,212,.4);flex:' + c.nremDur + ';display:flex;align-items:center;justify-content:center"><span style="font-size:8px;color:#e0f2fe">NREM ' + c.nremDur + 'm</span></div>' +
+          '<div style="background:' + (isLucidWindow ? 'rgba(244,114,182,.8)' : 'rgba(124,58,237,.6)') + ';flex:' + c.remDur + ';display:flex;align-items:center;justify-content:center"><span style="font-size:8px;color:#fff">REM ' + c.remDur + 'm</span></div>' +
+        '</div>' +
+        '<div style="font-size:10px;color:#8b7aa8">REM window: <strong style="color:#c4b5fd">' + remStartTime + ' → ' + remEndTime + '</strong>' +
+          (isLucidWindow ? ' ← AI stimulation target' : '') + '</div>' +
+        (wbtbAfter ? '<div style="margin-top:4px;font-size:10px;background:rgba(16,185,129,.15);border-radius:6px;padding:4px 8px;color:#6ee7b7">⏰ Set WBTB alarm: <strong>' + wbtbTime + '</strong> (after this cycle)</div>' : '') +
+      '</div>';
+    }).join('') +
+  '</div>' +
+  '<div style="background:rgba(244,114,182,.1);border:1px solid rgba(244,114,182,.3);border-radius:10px;padding:10px;font-size:11px;color:#f9a8d4;line-height:1.6">' +
+    '<strong>🎯 Optimal Protocol:</strong><br>' +
+    (wbtbTime ? '1. Set WBTB alarm for <strong>' + wbtbTime + '</strong><br>' : '') +
+    '2. At WBTB: Stay awake 20–30 min. Read about lucid dreaming.<br>' +
+    '3. During cycles ' + (lucidWindows.length > 0 ? '4-5 (REM at ' + lucidWindows.join(', ') + ')' : '4-5') + ': AI stimulation targets your dlPFC.<br>' +
+    '4. Your dlPFC powers up → you realize you're dreaming → lucidity.' +
+  '</div>';
+}
+
+// ── SESSION TIMER ─────────────────────────────────────────────────
+let _haloSession = null;
+let _haloProtocol = 'mild';
+const _haloProtocols = {
+  mild:     { label: 'MILD Boost — 40Hz Gamma Entrainment', duration: 300, phases: ['Relaxation (40Hz tone — eyes closed)', 'Theta induction (6Hz binaural)', 'Gamma burst (40Hz → dlPFC focus)', 'Intention lock (repeat anchor phrase)', 'Sleep transition — stay still'] },
+  wild:     { label: 'WILD Entry — Wake-to-Dream Bridge', duration: 600, phases: ['Body scan + relaxation', 'Hypnagogic observation mode', 'Theta deepening (6Hz)', 'Dual awareness maintenance', 'Dream scene emergence', 'Stabilization protocol'] },
+  rem:      { label: 'REM Ride — Full Cycle Protocol', duration: 1200, phases: ['NREM deepening', 'First REM detection', '40Hz gamma pulse × 3', 'dlPFC stimulation window', 'Lucidity induction burst', 'Dream stabilization hold'] },
+  deep:     { label: 'Deep State — Advanced Consciousness', duration: 1800, phases: ['Progressive relaxation', 'Theta bridge', 'Hypnagogic zone', 'Body asleep / mind awake', 'REM engagement', 'Dual awareness lock', 'dlPFC max activation', 'Sustained lucidity'] },
+};
+
+function selectHaloProtocol(proto) {
+  _haloProtocol = proto;
+  ['mild','wild','rem','deep'].forEach(p => {
+    const el = document.getElementById('haloProto-' + p);
+    if (!el) return;
+    if (p === proto) {
+      el.style.border = '2px solid #7c3aed';
+      el.style.background = 'rgba(124,58,237,.25)';
+    } else {
+      el.style.border = '1px solid rgba(124,58,237,.2)';
+      el.style.background = 'rgba(124,58,237,.05)';
+    }
+  });
+  const p = _haloProtocols[proto];
+  if (p) {
+    const mins = Math.floor(p.duration / 60);
+    const secs = p.duration % 60;
+    const timerEl = document.getElementById('haloTimer');
+    if (timerEl) timerEl.textContent = (mins < 10 ? '0' : '') + mins + ':' + (secs < 10 ? '0' : '') + secs;
+    const phaseEl = document.getElementById('haloPhaseLabel');
+    if (phaseEl) phaseEl.textContent = p.label;
+    const progEl = document.getElementById('haloProgressBar');
+    if (progEl) progEl.style.width = '0%';
+  }
+}
+
+function startHaloSession() {
+  if (_haloSession) return;
+  const p = _haloProtocols[_haloProtocol];
+  if (!p) return;
+  let elapsed = 0;
+  const total = p.duration;
+  const btn = document.getElementById('haloStartBtn');
+  if (btn) { btn.textContent = '⏳ Running...'; btn.disabled = true; }
+  const logEl = document.getElementById('haloSessionLog');
+  if (logEl) logEl.innerHTML = '<div style="color:#10b981">▶ Session started: ' + p.label + '</div>';
+
+  _haloSession = setInterval(() => {
+    elapsed++;
+    const remaining = total - elapsed;
+    const mins = Math.floor(remaining / 60);
+    const secs = remaining % 60;
+    const timerEl = document.getElementById('haloTimer');
+    if (timerEl) timerEl.textContent = (mins < 10 ? '0' : '') + mins + ':' + (secs < 10 ? '0' : '') + secs;
+    const progEl = document.getElementById('haloProgressBar');
+    if (progEl) progEl.style.width = Math.round((elapsed / total) * 100) + '%';
+
+    // Phase announcements
+    const phaseIdx = Math.floor((elapsed / total) * p.phases.length);
+    const phaseEl = document.getElementById('haloPhaseLabel');
+    if (phaseEl && p.phases[phaseIdx]) phaseEl.textContent = 'Phase ' + (phaseIdx + 1) + ': ' + p.phases[phaseIdx];
+
+    // Key milestones
+    if (elapsed === 60 && logEl) logEl.innerHTML += '<div style="color:#a78bfa">⚡ 40Hz gamma entrainment active — dlPFC engagement rising</div>';
+    if (elapsed === Math.floor(total * 0.5) && logEl) logEl.innerHTML += '<div style="color:#06b6d4">🌊 Midpoint — theta bridge established. Remain still.</div>';
+    if (elapsed === Math.floor(total * 0.8) && logEl) logEl.innerHTML += '<div style="color:#f472b6">🎯 Entering optimal window — prime lucidity induction zone</div>';
+
+    if (elapsed >= total) {
+      stopHaloSession();
+      if (logEl) logEl.innerHTML += '<div style="color:#10b981;font-weight:700">✅ Session complete — ' + p.label + '</div>';
+      // Save session to hive
+      const sessionData = { type: _haloProtocol, duration: total, ts: Date.now() };
+      try { localStorage.setItem('cos_last_bw_session', JSON.stringify(sessionData)); } catch(e) {}
+      if (typeof cosBrainSync === 'function') setTimeout(cosBrainSync, 200);
+      if (typeof showToast === 'function') showToast('✅ Halo session complete! Sleep now.');
+    }
+  }, 1000);
+}
+
+function stopHaloSession() {
+  if (_haloSession) { clearInterval(_haloSession); _haloSession = null; }
+  const btn = document.getElementById('haloStartBtn');
+  if (btn) { btn.textContent = '▶ Start Protocol'; btn.disabled = false; }
+}
+
+// ── DREAM ENGINEER ────────────────────────────────────────────────
+async function engineerDream() {
+  const goal = document.getElementById('haloGoal')?.value || 'first_lucid';
+  const el = document.getElementById('haloEngineerResult');
+  if (!el) return;
+  el.innerHTML = '<div style="display:flex;align-items:center;gap:8px;padding:12px;color:#a78bfa"><div class="ai-loading"><span></span><span></span><span></span></div><span style="font-size:12px">AI engineering tonight's protocol from your full consciousness data...</span></div>';
+
+  const hiveCtx = typeof getHiveContextFor === 'function' ? getHiveContextFor('dreams') : '';
+  const dreams = typeof getDreams === 'function' ? getDreams() : [];
+  const lucidCount = dreams.filter(d => d.type === 'lucid').length;
+  const avgLucidity = dreams.length ? (dreams.reduce((s,d) => s + (d.lucidity||0), 0) / dreams.length).toFixed(1) : 0;
+  const recentSigns = dreams.slice(0,5).map(d => d.signs).filter(Boolean).join(', ');
+  const prob = typeof computeLucidProbability === 'function' ? computeLucidProbability() : 50;
+
+  const goalLabels = { first_lucid: 'achieve first lucid dream', control: 'increase dream control and duration', vivid: 'maximize dream vividness and sensory depth', recall: 'dramatically improve dream recall on waking', intention: 'execute a specific lucid dream intention', deep_exploration: 'achieve deep consciousness exploration and transcendence' };
+
+  const prompt = `You are the Prophetic Halo AI — an expert in lucid dream induction combining neuroscience, tFUS research, and practical oneironautics.
+
+GOAL: ${goalLabels[goal] || goal}
+CURRENT LUCID PROBABILITY: ${prob}%
+DREAM HISTORY: ${dreams.length} dreams logged, ${lucidCount} lucid, avg lucidity ${avgLucidity}/10
+RECURRING DREAM SIGNS: ${recentSigns || 'none logged yet'}
+${hiveCtx}
+
+Generate a COMPLETE personalized tonight protocol in exact markdown:
+
+## 🔮 Tonight's Prophetic Halo Protocol
+
+**Goal**: ${goalLabels[goal]}
+**Estimated Success Probability**: [X]% (adjusted from baseline ${prob}%)
+
+### ☀️ Daytime Preparation (Do NOW)
+- [Specific action 1 with exact timing]
+- [Specific action 2]
+- [Reality check schedule: X times, at these moments]
+
+### 🌅 Pre-Sleep Window (2 hours before bed)
+- **[Time]**: [action — specific]
+- **[Time]**: [action]
+- **Screen protocol**: [exact what to do]
+- **Environment**: [temperature, light, sound — specific numbers]
+
+### 🧘 The Halo Session (During WBTB)
+- **WBTB alarm**: [X hours after sleep]
+- **On waking**: [exact sequence — do NOT skip any step]
+- **Halo protocol to run**: [MILD/WILD/REM/Deep — with reason]
+- **Duration**: [minutes]
+
+### 🎯 Lucidity Trigger (Personalized)
+Based on your recurring signs (${recentSigns || 'none yet'}):
+- **Your personal trigger**: [specific to their dream history]
+- **Anchor phrase**: [personalized — not generic]
+- **Visualization**: [exact scene to hold — vivid, specific]
+
+### 🌊 If You Become Lucid
+1. [Immediate stabilization step]
+2. [Sensory grounding technique]
+3. [How to execute your goal: ${goalLabels[goal]}]
+
+### 🌅 Morning Protocol (Do IMMEDIATELY on waking)
+- [Do NOT do this first]
+- [Write these specific things FIRST]
+- [Voice memo technique]
+
+### ⚡ Halo Optimization Tips
+- [1 counterintuitive insight about tonight specifically]
+- [What your data says to do differently]
+
+⚕️ Educational protocol. Results vary. Consistency over weeks is key.`;
+
+  try {
+    const text = await callGroqFast(prompt, 'You are the Prophetic Halo AI — expert in lucid dream induction. Be SPECIFIC and PERSONALIZED to their data. No generic advice. Use exact times, numbers, techniques.', 1200);
+    el.innerHTML = '<div style="background:linear-gradient(135deg,rgba(124,58,237,.12),rgba(244,114,182,.08));border:1px solid rgba(124,58,237,.3);border-radius:12px;padding:14px">' +
+      formatAIMarkdown(text) +
+      '<button onclick="copyMsgText(this,'' + encodeURIComponent(text) + '')" style="margin-top:10px;background:rgba(124,58,237,.3);border:1px solid rgba(124,58,237,.5);color:#e9d5ff;border-radius:8px;padding:6px 14px;font-size:11px;cursor:pointer;font-weight:700">📋 Copy Protocol</button>' +
+      '</div>';
+  } catch(e) {
+    el.innerHTML = '<div style="color:#ef4444;font-size:12px;padding:8px">❌ ' + e.message + '</div>';
+  }
+}
+
+// ── DREAM PATTERN INTELLIGENCE ────────────────────────────────────
+async function analyzeDreamPatterns() {
+  const el = document.getElementById('haloPatternsResult');
+  if (!el) return;
+  const dreams = typeof getDreams === 'function' ? getDreams() : [];
+  if (dreams.length < 3) { el.innerHTML = '<div style="color:#6b7280;font-size:12px;padding:8px">Log at least 3 dreams to unlock pattern analysis.</div>'; return; }
+
+  el.innerHTML = '<div style="display:flex;align-items:center;gap:8px;padding:12px;color:#a78bfa"><div class="ai-loading"><span></span><span></span><span></span></div><span style="font-size:12px">Scanning ' + dreams.length + ' dreams for patterns...</span></div>';
+
+  const dreamSummary = dreams.slice(0, 20).map((d, i) =>
+    'Dream ' + (i+1) + ': "' + (d.title||'Untitled') + '" — Type: ' + (d.type||'regular') + ', Lucidity: ' + (d.lucidity||0) + '/10, Signs: ' + (d.signs||'none') + ', Emotions: ' + (d.emotions||'none') + ', Desc: ' + (d.desc||'').slice(0, 100)
+  ).join('
+');
+
+  const prompt = `You are a dream analyst and oneironaut expert. Analyze this dream journal for patterns.
+
+DREAM JOURNAL (${dreams.length} dreams total):
+${dreamSummary}
+
+Analyze in exact markdown:
+
+## 🌌 Dream Pattern Intelligence Report
+
+### 🔮 Recurring Dream Signs (Your Lucidity Triggers)
+[List the elements/places/people/situations that appear repeatedly — these are your personal reality check triggers]
+
+### 🎭 Dominant Themes
+- **Theme 1**: [name] — appeared in X dreams — [what it means for lucidity]
+- **Theme 2**: [name]
+- **Theme 3**: [name]
+
+### 🧠 Consciousness Signature
+Your dreams show a [adjective] consciousness style: [2-sentence description of their unique dream psychology]
+
+### 💡 Personal Dream Signs to Reality-Check
+These specific elements appeared in your dreams and are YOURS to watch for:
+1. [Specific sign from their data — not generic]
+2. [Specific sign]
+3. [Specific sign]
+
+### ⚡ Lucidity Leverage Points
+Based on your patterns, you are most likely to become lucid when:
+- [Specific trigger pattern from their data]
+- [Second trigger]
+
+### 🎯 Tonight's Specific Intention
+Given your dream history, the highest-probability lucid dream scenario tonight:
+"[Complete specific scene description based on their recurring themes]"
+
+### 📈 Progression Analysis
+[1-2 sentences on how their lucid dreaming is developing and what the next breakthrough will be]`;
+
+  try {
+    const text = await callGroqFast(prompt, 'You are an expert dream analyst. ONLY reference patterns actually present in the provided dream journal. Be specific to their data. No generic dream interpretation.', 1000);
+    el.innerHTML = '<div style="background:rgba(124,58,237,.1);border:1px solid rgba(124,58,237,.3);border-radius:12px;padding:14px;margin-top:4px">' +
+      formatAIMarkdown(text) + '</div>';
+  } catch(e) {
+    el.innerHTML = '<div style="color:#ef4444;font-size:12px;padding:8px">❌ ' + e.message + '</div>';
+  }
 }
 
 // ─── WAVE 6 — EXPERIENCE DIVERSITY ENGINE ─────────────────
@@ -10627,6 +11623,8 @@ async function logCalorieAI(){
       _calEntries.push({name:item.name, portion:item.portion, kcal:item.kcal, protein:item.protein||0, carbs:item.carbs||0, fat:item.fat||0});
     });
     localStorage.setItem('cos_calories_today', JSON.stringify(_calEntries));
+    // Sync calorie data to Hive Mind
+    if (typeof cosBrainSync === 'function') setTimeout(cosBrainSync, 100);
     outEl.innerHTML = '\u2705 <strong>+' + parsed.totalKcal + ' kcal</strong> \u00b7 Protein: ' + parsed.totalProtein + 'g \u00b7 Carbs: ' + parsed.totalCarbs + 'g \u00b7 Fat: ' + parsed.totalFat + 'g<br><span style="color:var(--text3)">' + (parsed.note||'') + '</span>';
     document.getElementById('calFoodInput').value='';
     updateCalUI();
@@ -12193,6 +13191,55 @@ function cosBrainSync() {
     if (u) COS_BRAIN.user = { name: u.name, email: u.email };
   } catch(e) {}
   
+  // ── CALORIE DATA ──
+  try {
+    const calToday = JSON.parse(localStorage.getItem('cos_calories_today') || '[]');
+    const calGoalRaw = localStorage.getItem('cos_cal_goal');
+    const calGoal = calGoalRaw ? parseFloat(calGoalRaw) : 2000;
+    if (calToday.length) {
+      const todayKcal = calToday.reduce((s, e) => s + (parseFloat(e.kcal) || 0), 0);
+      COS_BRAIN.calorie = { todayKcal: Math.round(todayKcal), goal: Math.round(calGoal), entries: calToday.length, remaining: Math.round(calGoal - todayKcal) };
+      HIVE_MIND.sync('calorie', COS_BRAIN.calorie);
+    }
+  } catch(e) {}
+
+  // ── GAMES / BRAIN TRAINING ──
+  try {
+    const gameHistory = JSON.parse(localStorage.getItem('cos_game_history') || '[]');
+    if (gameHistory.length) {
+      const last = gameHistory[gameHistory.length - 1];
+      COS_BRAIN.games = { recentScore: last.score, gameName: last.game || last.name || 'Game', totalSessions: gameHistory.length };
+      HIVE_MIND.sync('games', COS_BRAIN.games);
+    }
+  } catch(e) {}
+
+  // ── LUCID DREAM INTENTION ──
+  try {
+    const _intentionRaw = localStorage.getItem('cos_lucid_intention');
+    const _intentionObj = _intentionRaw ? JSON.parse(_intentionRaw) : null;
+    const intention = _intentionObj?.text || _intentionRaw || '';
+    const wbtbTime = localStorage.getItem('cos_wbtb_alarm');
+    if (intention || wbtbTime) {
+      COS_BRAIN.lucid = { intention: intention, wbtbSet: !!wbtbTime };
+      HIVE_MIND.sync('lucid', COS_BRAIN.lucid);
+    }
+  } catch(e) {}
+
+  // ── BRAINWAVE SESSION ──
+  try {
+    const bwSession = JSON.parse(localStorage.getItem('cos_last_bw_session') || 'null');
+    if (bwSession) {
+      COS_BRAIN.brainwave = { lastType: bwSession.type, lastDuration: bwSession.duration, ts: bwSession.ts };
+      HIVE_MIND.sync('brainwave', COS_BRAIN.brainwave);
+    }
+  } catch(e) {}
+
+  // ── ORACLE STATE (last computed) ──
+  try {
+    const oState = JSON.parse(localStorage.getItem('cos_oracle_state') || 'null');
+    if (oState) { COS_BRAIN.oracle = oState; }
+  } catch(e) {}
+
   COS_BRAIN.lastSync = Date.now();
   
   // ── GENERATE CROSS-TAB ALERTS ──
@@ -12277,17 +13324,48 @@ if (_origCallAI) {
   };
 }
 
-// Also patch callGroqFast to include brain context in system prompts when relevant
-const _origCallGroqFast = callGroqFast;
-callGroqFast = async function(prompt, system, maxTokens) {
-  // Only add brain context for long prompts (actual analysis, not quick calls)
-  if (prompt && prompt.length > 100 && system && system.length > 30) {
-    const brainCtx = buildCOSBrainContext();
-    const enhancedSystem = (system || '') + '\n\nYou have access to the user\'s complete Consciousness OS data:\n' + brainCtx;
-    return _origCallGroqFast(prompt, enhancedSystem, maxTokens);
+// ── HIVE MIND: SMART CONTEXT BUILDER ───────────────────────────────────────
+// Returns compact, feature-relevant context — no token bloat on utility calls
+function getHiveContextFor(feature) {
+  cosBrainSync();
+  const b = COS_BRAIN;
+  const c = b.consciousness;
+  const lines = [];
+  if (b.user?.name) lines.push('USER: ' + b.user.name);
+  if (c.totalLogs) lines.push('CONSCIOUSNESS: mood ' + c.mood7d + ' focus ' + c.focus7d + ' energy ' + c.energy7d + ' stress ' + c.stress7d + ' sleep ' + c.sleep7d + ' (7d avg, ' + c.totalLogs + ' logs) trend:' + (parseFloat(c.weekTrend)>0?'rising':parseFloat(c.weekTrend)<0?'declining':'stable'));
+  if (feature === 'oracle' || feature === 'analysis') {
+    if (c.latestLog) lines.push('LATEST LOG: ' + c.latestLog.date + ' emotion:' + (c.latestLog.emotion||'?') + ' goal:"' + (c.latestLog.goal||'').slice(0,60) + '"');
+    if (b.dreams?.total) lines.push('DREAMS: ' + b.dreams.total + ' logged avg lucidity ' + b.dreams.avgLucidity + '/10');
+    if (b.health?.sleep) lines.push('HEALTH: sleep ' + b.health.sleep + 'h exercise:' + b.health.exercise + ' stress:' + b.health.stress + '/10');
+    if (b.calorie?.todayKcal) lines.push('NUTRITION: ' + b.calorie.todayKcal + 'kcal today (goal:' + b.calorie.goal + ')');
+    if (b.games?.recentScore) lines.push('BRAIN TRAINING: last game ' + b.games.gameName + ' score ' + b.games.recentScore);
+    if (b.lucid?.intention) lines.push('LUCID INTENTION: "' + b.lucid.intention + '"');
   }
-  return _origCallGroqFast(prompt, system, maxTokens);
-};
+  if (feature === 'world' || feature === 'geo') {
+    if (b.world?.topStories?.length) lines.push('WORLD NEWS: ' + b.world.topStories.slice(0,2).join(' | '));
+    if (b.wealth?.cashflow !== undefined) lines.push('FINANCES: cashflow Rs ' + b.wealth.cashflow + '/mo networth Rs ' + b.wealth.netWorth);
+    if (c.stress7d) lines.push('USER STRESS: ' + c.stress7d + '/10');
+  }
+  if (feature === 'science') {
+    if (b.career?.field) lines.push('STUDY FIELD: ' + b.career.field + ' target:' + (b.career.target||'?'));
+    if (b.science?.topStories?.length) lines.push('RECENT SCIENCE: ' + b.science.topStories.slice(0,2).join(' | '));
+    if (c.focus7d) lines.push('COGNITIVE: focus ' + c.focus7d + ' creativity ' + c.creativity7d + '/10');
+  }
+  if (feature === 'health') {
+    if (b.health?.sleep) lines.push('HEALTH PROFILE: sleep ' + b.health.sleep + 'h diet:' + b.health.diet + ' exercise:' + b.health.exercise);
+    if (b.calorie?.todayKcal) lines.push('TODAY NUTRITION: ' + b.calorie.todayKcal + '/' + b.calorie.goal + 'kcal');
+    if (c.stress7d) lines.push('STRESS TREND: ' + c.stress7d + '/10');
+  }
+  if (feature === 'dreams') {
+    if (b.dreams?.total) lines.push('DREAM HISTORY: ' + b.dreams.total + ' dreams avg lucidity ' + b.dreams.avgLucidity + '/10');
+    if (b.lucid?.intention) lines.push('LUCID INTENTION: "' + b.lucid.intention + '"');
+    if (c.sleep7d) lines.push('SLEEP QUALITY: ' + c.sleep7d + '/10');
+    if (c.stress7d) lines.push('STRESS: ' + c.stress7d + '/10');
+  }
+  if (feature === 'chat' || feature === 'ai') { return buildCOSBrainContext(); }
+  if (b.alerts?.length) lines.push('ALERTS: ' + b.alerts.map(function(a){return a.msg;}).join(' | '));
+  return lines.length ? ('\n\n-- HIVE MIND (' + feature + ') --\n' + lines.join('\n') + '\n--------------------------------') : '';
+}
 
 // ── CIL PULSE UI ──────────────────────────────────────────────────────
 function updateCILPulse() {
@@ -12315,8 +13393,55 @@ function updateCILPulse() {
     </div>`;
 }
 
+// ── HIVE STATUS BAR — shown on every tab ────────────────────────────────────
+function renderHiveStatusBar(tabId) {
+  // Remove old bar if present
+  const old = document.getElementById('hiveStatusBar');
+  if (old) old.remove();
+
+  const panel = document.getElementById('tab-' + tabId);
+  if (!panel) return;
+
+  const b = COS_BRAIN;
+  const hm = window.HIVE_MIND;
+  const status = hm ? hm.getStatus() : { activeCount: 0, features: [], hasNews: false, hasInsights: false };
+
+  // Build chips for what's live
+  const chips = [];
+  if (b.consciousness?.totalLogs) chips.push({ icon: '🧠', label: b.consciousness.totalLogs + ' logs', color: '#7c3aed' });
+  if (b.dreams?.total) chips.push({ icon: '💤', label: b.dreams.total + ' dreams', color: '#06b6d4' });
+  if (b.health?.sleep) chips.push({ icon: '❤️', label: 'health', color: '#ef4444' });
+  if (b.calorie?.todayKcal) chips.push({ icon: '🔥', label: b.calorie.todayKcal + 'kcal', color: '#f59e0b' });
+  if (b.wealth?.cashflow !== undefined) chips.push({ icon: '💰', label: '₹' + b.wealth.cashflow + '/mo', color: '#10b981' });
+  if (b.lucid?.intention) chips.push({ icon: '🌙', label: 'lucid intent', color: '#8b5cf6' });
+  if (b.games?.recentScore) chips.push({ icon: '🎮', label: b.games.gameName, color: '#ec4899' });
+  if (status.hasNews) chips.push({ icon: '🌍', label: 'live news', color: '#6366f1' });
+  if (status.hasInsights) chips.push({ icon: '⚡', label: 'AI insights', color: '#f97316' });
+
+  if (!chips.length) return; // nothing to show yet
+
+  const bar = document.createElement('div');
+  bar.id = 'hiveStatusBar';
+  bar.style.cssText = 'display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:7px 10px;background:linear-gradient(135deg,rgba(124,58,237,.06),rgba(6,182,212,.04));border:1px solid rgba(124,58,237,.15);border-radius:10px;margin-bottom:10px';
+  bar.innerHTML =
+    '<div style="display:flex;align-items:center;gap:4px;flex-shrink:0">' +
+      '<div style="width:6px;height:6px;border-radius:50%;background:#10b981;animation:cilPulseAnim 1.5s ease-in-out infinite"></div>' +
+      '<span style="font-size:9px;font-weight:800;color:#10b981;letter-spacing:.5px;text-transform:uppercase">Hive</span>' +
+    '</div>' +
+    chips.slice(0, 7).map(ch =>
+      '<span style="font-size:9px;background:' + ch.color + '18;color:' + ch.color + ';padding:2px 6px;border-radius:6px;font-weight:700;white-space:nowrap">' + ch.icon + ' ' + ch.label + '</span>'
+    ).join('');
+
+  // Insert after section-header or as first child
+  const header = panel.querySelector('.section-header');
+  if (header && header.nextSibling) {
+    panel.insertBefore(bar, header.nextSibling);
+  } else {
+    panel.insertBefore(bar, panel.firstChild);
+  }
+}
+
 // ── CROSS-TAB LIVE UPDATES ─────────────────────────────────────────────
-// When tab switches, trigger live data fetch if data is stale
 const _origSwitchTab = typeof switchTab === 'function' ? switchTab : null;
 if (_origSwitchTab) {
   switchTab = function(id) {
@@ -12332,8 +13457,11 @@ if (_origSwitchTab) {
       if (!cached) setTimeout(() => { if(typeof buildScienceDisplay==='function') buildScienceDisplay(false); }, 200);
       setTimeout(() => { if(typeof fetchScienceNews==='function') fetchScienceNews(window._sciRefreshTier||0); }, 400);
     }
-    // Update CIL pulse on every tab switch
-    setTimeout(() => { if(typeof updateCILPulse==='function') updateCILPulse(); }, 300);
+    // Render hive status bar + update CIL pulse on every tab switch
+    setTimeout(() => {
+      renderHiveStatusBar(id);
+      if(typeof updateCILPulse==='function') updateCILPulse();
+    }, 350);
   };
 }
 
@@ -12531,26 +13659,38 @@ function renderNeuralInsights(insights) {
 
 // ── HIVE MIND — Shared Knowledge Across All Features ─────────
 const HIVE_MIND = {
-  // All features read from and write to this shared intelligence layer
   insights: [],
   newsContext: { science: '', geo: '' },
   userProfile: {},
   lastActivity: {},
-  
-  // Sync knowledge from any feature to all others
+  activeFeatures: new Set(),
+
   sync(featureName, data) {
     this[featureName] = data;
     this.lastActivity[featureName] = Date.now();
-    // Broadcast to COS_BRAIN
-    if (typeof cosBrainSync === 'function') cosBrainSync();
+    this.activeFeatures.add(featureName);
+    // Don't call cosBrainSync here — it calls sync, causing infinite loop
+    // COS_BRAIN is synced on tab switch and saveLog instead
   },
-  
-  // Get unified context for any AI call (used by every feature)
+
+  getStatus() {
+    const now = Date.now();
+    const recent = Object.entries(this.lastActivity)
+      .filter(([,ts]) => now - ts < 300000) // active in last 5min
+      .map(([k]) => k);
+    return {
+      activeCount: recent.length,
+      features: recent,
+      hasNews: !!(this.newsContext.science || this.newsContext.geo),
+      hasInsights: this.insights.length > 0,
+    };
+  },
+
   getUnifiedContext() {
     const brain = typeof buildCOSBrainContext === 'function' ? buildCOSBrainContext() : '';
     const insightSummary = this.insights.slice(0,2).map(i=>i.insight).join(' | ');
-    const newsCtx = [this.newsContext.science, this.newsContext.geo].filter(Boolean).slice(0,200).join(' | ');
-    return `${brain}\n\nAI Insights: ${insightSummary}\nNews Context: ${newsCtx}`;
+    const newsCtx = [this.newsContext.science, this.newsContext.geo].filter(Boolean).join(' | ').slice(0,400);
+    return brain + (insightSummary ? '\n\nAI INSIGHTS: ' + insightSummary : '') + (newsCtx ? '\n\nLIVE NEWS: ' + newsCtx : '');
   }
 };
 window.HIVE_MIND = HIVE_MIND;
@@ -14102,6 +15242,7 @@ function saveLucidIntention() {
   localStorage.setItem('cos_lucid_intention', JSON.stringify({ text: inp.value.trim(), date: new Date().toISOString() }));
   if (statusEl) statusEl.textContent = `✅ Intention set: "${inp.value.trim()}" — repeat it 20 times before sleep.`;
   showToast('✨ Intention saved!');
+  if (typeof cosBrainSync === 'function') setTimeout(cosBrainSync, 100);
 }
 
 function incrementAnchorCount() {
@@ -15085,6 +16226,9 @@ function computeOracleState() {
 
   // Draw dial
   drawOracleDial(logs);
+  // Persist oracle state for Hive Mind
+  try { localStorage.setItem('cos_oracle_state', JSON.stringify({ entropy, momentum, coherence, collapse, ts: Date.now() })); } catch(e) {}
+  if (typeof cosBrainSync === 'function') setTimeout(cosBrainSync, 100);
   showToast('⚛️ Quantum state computed from ' + logs.length + ' entries');
 }
 
@@ -15174,8 +16318,9 @@ async function runDeepPrediction() {
   const horizonMap = {next_4h:'next 4 hours',tomorrow:'tomorrow',next_week:'next 7 days',next_month:'next 30 days'};
   const domainMap = {behavior:'decisions and behaviors',mood:'mood and emotional states',focus:'focus and productivity',patterns:'behavioral pattern breaks',freewill:'free will vs determinism'};
 
+  const hiveCtxOracle = typeof getHiveContextFor === 'function' ? getHiveContextFor('oracle') : '';
   const prompt = `You are the Consciousness Oracle — a quantum-probabilistic AI that predicts human behavior from consciousness data.
-
+${hiveCtxOracle}
 USER DATA (${logs.length} entries):
 - Focus avg: ${avg('focus')}/10 | Mood avg: ${avg('mood')}/10 | Creativity: ${avg('creativity')}/10
 - Stress avg: ${avg('stress')}/10 | Flow avg: ${avg('flow')}/10 | Sleep: ${avg('sleep')}/10
@@ -15263,8 +16408,9 @@ async function computeTrajectory() {
   };
 
   try {
+    const hiveCtxTraj = typeof getHiveContextFor === 'function' ? getHiveContextFor('oracle') : '';
     const prompt = `You are a consciousness trajectory analyst. Based on this person's data trends, predict their next 7 days.
-
+${hiveCtxTraj}
 TREND DATA:
 - Focus: ${avg('focus')}/10 (trend: ${trend('focus')>0?'+':''}${trend('focus').toFixed(1)})
 - Mood: ${avg('mood')}/10 (trend: ${trend('mood')>0?'+':''}${trend('mood').toFixed(1)})
