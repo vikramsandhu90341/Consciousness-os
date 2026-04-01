@@ -188,7 +188,7 @@ function initAuthState() {
     if (overlay)   overlay.style.display = 'flex';
     if (restoreUI) restoreUI.style.display = 'none';
     if (formUI)    formUI.style.display = '';
-    auth.onAuthStateChanged(_handleAuthUser);
+    auth.onAuthStateChanged(function(u){ _handleAuthUser(u); });
   }
 }
 document.addEventListener('DOMContentLoaded', initAuthState);
@@ -15521,9 +15521,8 @@ document.addEventListener('DOMContentLoaded', () => {
       PRO.grant('creator_lifetime', 99 * 12);
       console.log('[COS] Creator lifetime Pro activated');
     }
-    window._cosCreatorGrantDone = true;
-    // First-visit onboarding trigger
-    if (fbUser && window._cosFirstVisitPending) {
+    // First-visit onboarding trigger — use 'user' not 'fbUser' (correct scope)
+    if (user && window._cosFirstVisitPending) {
       window._cosFirstVisitPending = false;
       localStorage.setItem('cos_visited', '1');
       setTimeout(() => { if (typeof showOnboarding === 'function') showOnboarding(); }, 1500);
