@@ -440,6 +440,7 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
 
 /* ── HEALTH ── */
 .health-jump-bar{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:14px}
+.drug-sys-chip.active-chip{background:var(--primary)!important;color:#fff!important;border-color:var(--primary)!important}
 .section-jump{padding:4px 9px;border-radius:20px;border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-size:11px;cursor:pointer;transition:all .2s}
 .section-jump.active{background:var(--primary);color:#fff;border-color:var(--primary)}
 .health-progress{height:6px;background:var(--bg3);border-radius:3px;margin-bottom:14px;overflow:hidden}
@@ -2744,7 +2745,7 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
 
   <div class="card">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-      <div style="font-size:13px;font-weight:700;color:var(--text2)">Section <span id="hsCurrent">1</span> of 20</div>
+      <div style="font-size:13px;font-weight:700;color:var(--text2)">Section <span id="hsCurrent">1</span> of 22</div>
       <div style="font-size:12px;color:var(--text3)" id="hsSectionName">Demographics</div>
     </div>
     <div class="health-progress"><div class="health-progress-bar" id="hsProgressBar" style="width:5.5%"></div></div>
@@ -2783,11 +2784,27 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
 
     <!-- DRUGS PANEL -->
     <div id="medOS-drugs">
-      <div style="font-size:12px;color:var(--text2);margin-bottom:10px">Search any drug/injection/syrup. Get: uses, dose, route, side effects, combinations, contraindications.</div>
-      <div style="display:flex;gap:8px;margin-bottom:8px">
-        <input type="text" class="form-input" id="drugSearchInput" placeholder="e.g. ceftriaxone, pantoprazole, dexamethasone..." style="flex:1" onkeydown="if(event.key==='Enter')searchDrug()">
-        <button class="btn btn-primary btn-sm" onclick="searchDrug()">🔍 Look up</button>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:8px">Search <b>any</b> medicine by brand name, salt, herb, or product — Allopathy · Ayurveda · Homeopathy · Unani · Siddha · Veterinary · Herbs/Supplements · TCM.</div>
+      <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px">
+        <span style="font-size:10px;color:var(--text3);align-self:center">System:</span>
+        <span class="chip drug-sys-chip active-chip" onclick="setDrugSystem('any',this)" style="cursor:pointer;font-size:10px;padding:3px 8px">🌐 Any</span>
+        <span class="chip drug-sys-chip" onclick="setDrugSystem('allopathy',this)" style="cursor:pointer;font-size:10px;padding:3px 8px">💊 Allopathy</span>
+        <span class="chip drug-sys-chip" onclick="setDrugSystem('ayurveda',this)" style="cursor:pointer;font-size:10px;padding:3px 8px">🌿 Ayurveda</span>
+        <span class="chip drug-sys-chip" onclick="setDrugSystem('homeopathy',this)" style="cursor:pointer;font-size:10px;padding:3px 8px">💧 Homeopathy</span>
+        <span class="chip drug-sys-chip" onclick="setDrugSystem('unani',this)" style="cursor:pointer;font-size:10px;padding:3px 8px">☪️ Unani</span>
+        <span class="chip drug-sys-chip" onclick="setDrugSystem('siddha',this)" style="cursor:pointer;font-size:10px;padding:3px 8px">🕉️ Siddha</span>
+        <span class="chip drug-sys-chip" onclick="setDrugSystem('veterinary',this)" style="cursor:pointer;font-size:10px;padding:3px 8px">🐾 Veterinary</span>
+        <span class="chip drug-sys-chip" onclick="setDrugSystem('herbal supplement',this)" style="cursor:pointer;font-size:10px;padding:3px 8px">🍃 Herbs/Suppl</span>
+        <span class="chip drug-sys-chip" onclick="setDrugSystem('TCM traditional chinese medicine',this)" style="cursor:pointer;font-size:10px;padding:3px 8px">🏮 TCM</span>
       </div>
+      <div style="display:flex;gap:8px;margin-bottom:4px;position:relative">
+        <div style="flex:1;position:relative">
+          <input type="text" class="form-input" id="drugSearchInput" placeholder="Brand, salt, herb, product… e.g. Dolo, paracetamol, Ashwagandha, Arnica 30C, Hamdard Safi…" style="width:100%" oninput="drugAutocomplete(this.value)" onkeydown="handleDrugKey(event)" autocomplete="off" autocorrect="off" spellcheck="false">
+          <div id="drugSuggestions" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--bg2);border:1px solid var(--border);border-radius:8px;z-index:999;max-height:180px;overflow-y:auto;box-shadow:0 4px 16px rgba(0,0,0,.15)"></div>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="searchDrug()" style="min-width:44px">🔍</button>
+      </div>
+      <div id="drugSpellHint" style="font-size:10px;color:var(--accent);margin-bottom:6px;min-height:14px"></div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
         <span class="chip" onclick="quickDrug('ceftriaxone')" style="cursor:pointer;font-size:10px">Ceftriaxone</span>
         <span class="chip" onclick="quickDrug('pantoprazole')" style="cursor:pointer;font-size:10px">Pantoprazole</span>
@@ -2826,6 +2843,14 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
             <option value="breastfeeding">Breastfeeding</option>
             <option value="renal">Renal Failure</option>
             <option value="hepatic">Hepatic Failure</option>
+            <option value="dog" data-vet="1">🐶 Dog (Canine)</option>
+            <option value="cat" data-vet="1">🐱 Cat (Feline)</option>
+            <option value="cattle" data-vet="1">🐄 Cattle / Buffalo</option>
+            <option value="horse" data-vet="1">🐎 Horse (Equine)</option>
+            <option value="goat sheep" data-vet="1">🐐 Goat / Sheep</option>
+            <option value="pig" data-vet="1">🐷 Pig (Porcine)</option>
+            <option value="poultry chicken" data-vet="1">🐔 Poultry</option>
+            <option value="rabbit" data-vet="1">🐰 Rabbit</option>
           </select>
         </div>
       </div>
@@ -2871,6 +2896,24 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
         <div><label class="form-label" style="font-size:10px">Pulse (bpm)</label><input type="text" class="form-input" id="labPulse" placeholder="72"></div>
         <div><label class="form-label" style="font-size:10px">Temp (F)</label><input type="text" class="form-input" id="labTemp" placeholder="98.6"></div>
         <div><label class="form-label" style="font-size:10px">RA Factor / Widal</label><input type="text" class="form-input" id="labRA" placeholder="neg / 1:80"></div>
+      </div>
+      <div class="form-row" style="margin-bottom:8px">
+        <div class="form-group">
+          <label class="form-label" style="font-size:10px">Patient Mode</label>
+          <select class="form-select" id="labMode" style="font-size:11px">
+            <option value="human">Human</option>
+            <option value="dog">🐶 Dog</option>
+            <option value="cat">🐱 Cat</option>
+            <option value="cattle">🐄 Cattle/Buffalo</option>
+            <option value="horse">🐎 Horse</option>
+            <option value="goat">🐐 Goat/Sheep</option>
+            <option value="poultry">🐔 Poultry</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" style="font-size:10px">Patient Weight (kg)</label>
+          <input type="number" class="form-input" id="labPatientWeight" placeholder="e.g. 70" style="font-size:11px">
+        </div>
       </div>
       <div class="form-group" style="margin-bottom:8px">
         <label class="form-label">Other Values (BT, CT, LDL, LFT, KFT, Thyroid...)</label>
@@ -7106,6 +7149,15 @@ const HEALTH_SECTIONS=[
   {name:'Ayurvedic Profile',icon:'🕉️',fields:[{type:'radio',id:'hAyurPrakriti',label:'Body Type (Prakriti)',options:['Vata (thin, dry, creative, anxious)','Pitta (medium, intense, driven, inflammatory)','Kapha (heavy, stable, calm, slow)','Vata-Pitta','Pitta-Kapha','Vata-Kapha','Tridosha (balanced)','Unknown']},{type:'select',id:'hAyurDigFire',label:'Digestive Fire (Agni)',options:['Sharp (digests fast, gets hungry often)','Regular (consistent digestion)','Variable (unpredictable)','Slow (heavy, sluggish)']},{type:'checkbox',id:'hAyurSymp',label:'Current Imbalance Signs',options:['Dry skin/hair','Excess heat/inflammation','Weight gain/fluid retention','Joint cracking/stiffness','Acid reflux/ulcers','Congestion/mucus','Restlessness/insomnia','Fatigue/lethargy','Mood swings','None']},{type:'select',id:'hAyurSeason',label:'Symptoms Worse In',options:['Winter/Cold','Summer/Heat','Monsoon/Humid','All seasons equal']}]},
   {name:'Symptom Tracker',icon:'🩹',fields:[{type:'checkbox',id:'hSymptoms',label:'Current Symptoms',options:['Fatigue','Headaches','Brain Fog','Low Mood','Anxiety','Insomnia','Weight Gain','Weight Loss','Hair Loss','Skin Issues','Joint Pain','Muscle Pain','Digestive Issues','Low Libido','Frequent Illness','Cold Hands/Feet','Excessive Thirst','Frequent Urination','Vision Issues','Hearing Issues','None']},{type:'select',id:'hSymptomDur',label:'How long?',options:['<1 week','1-4 weeks','1-3 months','3-6 months','6-12 months','>1 year']},{type:'select',id:'hSymptomSev',label:'Severity',options:['Mild — manageable','Moderate — affects daily life','Severe — debilitating']},{type:'textarea',id:'hSymptomTriggers',label:'What makes it worse?'},{type:'textarea',id:'hSymptomRelief',label:'What helps?'}]},
   {name:'Health Goals',icon:'🎯',fields:[{type:'checkbox',id:'hGoals',label:'My Health Priorities',options:['Longevity','Peak Performance','Mental Health','Weight Management','Disease Prevention','Energy & Vitality','Better Sleep','Strength & Fitness','Stress Reduction']},{type:'textarea',id:'hMainConcern',label:'Main Health Concern'},{type:'textarea',id:'hHealthNotes',label:'Anything else?'}]},
+  {name:'Veterinary Medicine',icon:'🐾',fields:[
+    {type:'radio',id:'hVetMode',label:'Mode',options:['Human Patient','Veterinary Patient']},
+    {type:'select',id:'hVetSpecies',label:'Animal Species',options:['Dog (Canine)','Cat (Feline)','Cattle (Bovine)','Buffalo','Goat (Caprine)','Sheep (Ovine)','Horse (Equine)','Pig (Porcine)','Poultry / Chicken','Rabbit','Parrot / Bird','Fish / Aquatic','Camel','Donkey','Other']},
+    {type:'text',id:'hVetBreed',label:'Breed (if known)'},
+    {type:'text',id:'hVetAge',label:'Animal Age / Weight'},
+    {type:'checkbox',id:'hVetSymptoms',label:'Animal Symptoms',options:['Not eating / Anorexia','Vomiting','Diarrhea','Lethargy','Coughing / Sneezing','Limping / Lameness','Skin lesions / Mange','Discharge (eyes/nose)','Bloating / Distension','Seizures','Fever','Weight loss','Parasites visible','Difficulty breathing','Reproductive issues','Sudden death in herd']},
+    {type:'textarea',id:'hVetHistory',label:'Animal Medical History / Vaccination Status'},
+    {type:'textarea',id:'hVetMeds',label:'Current Animal Medications / Dewormers'}
+  ]},
   {name:'Diagnostic Workup',icon:'🔬',fields:[
     {type:'checkbox',id:'hDxBlood',label:'Blood Tests Done / Recommended',options:['CBC / Complete Blood Count','ESR','CRP (C-Reactive Protein)','Blood Sugar (FBS/RBS/PPBS)','HbA1c','LFT (Liver Function Tests)','KFT / RFT (Kidney Function)','Lipid Profile','TSH / T3 / T4','Thyroid Antibodies','Vitamin D3','Vitamin B12','Serum Iron / Ferritin / TIBC','Uric Acid','HbsAg (Hepatitis B)','Anti-HCV','HIV (ELISA)','VDRL','Widal Test','Dengue NS1 / IgM','Malaria Smear','Troponin I / T','D-Dimer','BNP / NT-proBNP','PT/INR / aPTT','Serum Electrolytes (Na/K/Cl)','Cortisol','Testosterone / FSH / LH','Prolactin','ANA / anti-dsDNA (Lupus)','RA Factor / anti-CCP','Procalcitonin','Blood Culture & Sensitivity','ABG (Arterial Blood Gas)','Ammonia','Serum Lactate','PSA (Prostate)','CA-125 (Ovarian)','CEA (Colon/Lung)','AFP (Liver)','LDH','Serum Protein Electrophoresis','ANCA','Complement C3/C4']},
     {type:'checkbox',id:'hDxUrine',label:'Urine Tests Done / Recommended',options:['Urine Routine & Microscopy (R/M)','Urine Culture & Sensitivity (C&S)','Urine Albumin / ACR','24-hr Urine Protein','24-hr Urine Creatinine','Urine Bilirubin / Urobilinogen','Urine Pregnancy Test (β-HCG)','Urine VMA (Pheochromocytoma)','Urine Reducing Substances','Microalbuminuria']},
@@ -7115,7 +7167,8 @@ const HEALTH_SECTIONS=[
     {type:'checkbox',id:'hDxNeuro',label:'Neurological / Neuro Tests Done / Recommended',options:['EEG (Electroencephalogram)','EMG / NCV (Nerve Conduction)','Visual Evoked Potentials (VEP)','Lumbar Puncture (CSF Analysis)','CSF Culture & Sensitivity','Fundoscopy / Ophthalmoscopy','Perimetry (Visual Fields)','ICP Monitoring','Carotid Doppler']},
     {type:'checkbox',id:'hDxGI',label:'GI / Endoscopy / Biopsy Done / Recommended',options:['Upper GI Endoscopy (OGD)','Colonoscopy','Flexible Sigmoidoscopy','ERCP','Capsule Endoscopy','FNAC (Fine Needle Aspiration)','Core Biopsy','Liver Biopsy','Skin Biopsy','Bone Marrow Aspiration & Biopsy','Lymph Node Biopsy','Bronchial / Lung Biopsy','Renal Biopsy','Colposcopy + Biopsy','Pap Smear']},
     {type:'checkbox',id:'hDxSpecial',label:'Special / Advanced Tests Done / Recommended',options:['Cystoscopy','Hysteroscopy','Laparoscopy (Diagnostic)','Flow Cytometry','Cytogenetics / Karyotype','Immunophenotyping','BRCA1/BRCA2 Gene Test','Whole Genome Sequencing','Pharmacogenomics Panel','TORCH Panel','Allergy Panel (RAST/Skin Prick)','Sweat Chloride Test (CF)','Nerve Biopsy','Muscle Biopsy','Ophthalmology Slit Lamp','Tonometry (IOP — Glaucoma)','Audiometry (Hearing Test)','Vestibular Function Test','Urodynamic Study','Semen Analysis','Hysterosalpingography (HSG)','Cystourethrogram (VCUG)','Pulmonary Angiography','V/Q Scan (Lung Perfusion)']},
-    {type:'textarea',id:'hDxNotes',label:'Test Results / Pending Investigations (free text)'}
+    {type:'textarea',id:'hDxNotes',label:'Test Results / Pending Investigations (free text)'},
+    {type:'html',id:'workupHistoryWidget',html:'<div class="form-group"><label class="form-label" style="display:flex;align-items:center;justify-content:space-between">📋 Workup History <button onclick="clearWorkupHistory()" style="font-size:10px;background:none;border:1px solid var(--border);border-radius:6px;padding:2px 8px;color:var(--text3);cursor:pointer">🗑 Clear All</button></label><div id="workupHistoryContainer" style="margin-top:4px"><div style="font-size:12px;color:var(--text3);padding:8px;text-align:center">No workup history yet.</div></div></div>'}
   ]},
 ];
 let hsCurrent=0;
@@ -7131,6 +7184,7 @@ function buildHFields(fields){
     if(f.type==='weight')return `<div class="form-group"><label class="form-label">${f.label}</label><div style="display:flex;gap:6px;align-items:center"><input type="number" class="form-input" id="${f.id}_kg" placeholder="kg" style="flex:1" oninput="syncW('kg')"><span style="font-size:12px;color:var(--text3)">kg</span><input type="number" class="form-input" id="${f.id}_lb" placeholder="lbs" style="flex:1" oninput="syncW('lb')"><span style="font-size:12px;color:var(--text3)">lbs</span></div></div>`;
     if(f.type==='radio')return `<div class="form-group"><label class="form-label">${f.label}</label><div style="display:flex;gap:8px;flex-wrap:wrap">${f.options.map(o=>`<label style="display:flex;align-items:center;gap:4px;font-size:13px;cursor:pointer"><input type="radio" name="${f.id}" value="${o}"> ${o}</label>`).join('')}</div></div>`;
     if(f.type==='checkbox')return `<div class="form-group"><label class="form-label">${f.label}</label><div style="display:flex;gap:6px;flex-wrap:wrap">${f.options.map(o=>`<label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer;background:var(--bg);border:1px solid var(--border);padding:4px 8px;border-radius:8px"><input type="checkbox" name="${f.id}" value="${o}"> ${o}</label>`).join('')}</div></div>`;
+    if(f.type==='html')return f.html||'';
     if(f.type==='textarea')return `<div class="form-group"><label class="form-label">${f.label}</label><textarea class="form-textarea" id="${f.id}" style="min-height:60px"></textarea></div>`;
     if(f.type==='select')return `<div class="form-group"><label class="form-label">${f.label}</label><select class="form-select" id="${f.id}">${f.options.map(o=>`<option>${o}</option>`).join('')}</select></div>`;
     return `<div class="form-group"><label class="form-label">${f.label}</label><input type="${f.type||'text'}" class="form-input" id="${f.id}"></div>`;
@@ -7152,12 +7206,12 @@ function jumpToSection(i){
   hsCurrent=i;
   document.getElementById('hsCurrent').textContent=i+1;
   document.getElementById('hsSectionName').textContent=HEALTH_SECTIONS[i].name;
-  document.getElementById('hsProgressBar').style.width=((i+1)/21*100)+'%';
+  document.getElementById('hsProgressBar').style.width=((i+1)/22*100)+'%';
   document.getElementById('hsPrevBtn').style.display=i>0?'':'none';
-  document.getElementById('hsNextBtn').textContent=i===20?'✨ Get AI Analysis':'Next →';
+  document.getElementById('hsNextBtn').textContent=i===21?'✨ Get AI Analysis':'Next →';
 }
 function hsPrev(){if(hsCurrent>0)jumpToSection(hsCurrent-1);}
-function hsNext(){if(hsCurrent<19)jumpToSection(hsCurrent+1);else generateHealthAnalysis();}
+function hsNext(){if(hsCurrent<21)jumpToSection(hsCurrent+1);else generateHealthAnalysis();}
 // ── HEALTH PROFILE DATA COLLECTOR ────────────────────────────
 function collectHealthProfile(){
   const g=(id)=>{const el=document.getElementById(id);return el?el.value||'':'';}; 
@@ -7187,7 +7241,9 @@ function collectHealthProfile(){
     goals:gc('hGoals'),mainConcern:g('hMainConcern'),notes:g('hHealthNotes'),
     dxBlood:gc('hDxBlood'),dxUrine:gc('hDxUrine'),dxImaging:gc('hDxImaging'),
     dxCardiac:gc('hDxCardiac'),dxPulm:gc('hDxPulm'),dxNeuro:gc('hDxNeuro'),
-    dxGI:gc('hDxGI'),dxSpecial:gc('hDxSpecial'),dxNotes:g('hDxNotes')
+    dxGI:gc('hDxGI'),dxSpecial:gc('hDxSpecial'),dxNotes:g('hDxNotes'),
+    vetMode:gr('hVetMode'),vetSpecies:g('hVetSpecies'),vetBreed:g('hVetBreed'),
+    vetAge:g('hVetAge'),vetSymptoms:gc('hVetSymptoms'),vetHistory:g('hVetHistory'),vetMeds:g('hVetMeds')
   };
 }
 
@@ -7226,9 +7282,13 @@ TESTS DONE — PULMONARY: ${h.dxPulm||'Not specified'}
 TESTS DONE — NEUROLOGY: ${h.dxNeuro||'Not specified'}
 TESTS DONE — GI/BIOPSY: ${h.dxGI||'Not specified'}
 TESTS DONE — SPECIAL: ${h.dxSpecial||'Not specified'}
-TEST RESULTS/NOTES: ${h.dxNotes||'None provided'}`;
+TEST RESULTS/NOTES: ${h.dxNotes||'None provided'}
+${h.vetMode==='Veterinary Patient'?`VETERINARY PATIENT — SPECIES: ${h.vetSpecies} | BREED: ${h.vetBreed} | AGE/WEIGHT: ${h.vetAge}
+ANIMAL SYMPTOMS: ${h.vetSymptoms}
+ANIMAL HISTORY: ${h.vetHistory}
+ANIMAL MEDICATIONS: ${h.vetMeds}`:''}`;
 
-  const prompt = `You are an elite integrative medicine doctor combining Western, Ayurvedic, Homeopathic, and Naturopathic knowledge. Based on this patient profile, provide a COMPREHENSIVE 360-degree health report.
+  const prompt = `You are an elite integrative medicine doctor combining Western, Ayurvedic, Homeopathic, and Naturopathic knowledge${h.vetMode==='Veterinary Patient'?' AND a licensed veterinarian — this is an ANIMAL patient. Switch ALL recommendations to veterinary medicine. Use species-specific doses, vet drug names, and animal physiology. Do NOT give human medicine for a veterinary patient.':''}. Based on this patient profile, provide a COMPREHENSIVE 360-degree health report.
 
 PATIENT PROFILE:
 ${profileText}
@@ -7331,6 +7391,7 @@ Based on their symptoms, conditions, and what tests they've already done, identi
       <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
         <button onclick="copyMsgText(this,'${encodeURIComponent(aiText)}')" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:6px 14px;font-size:12px;cursor:pointer;color:var(--text2)">📋 Copy Full Report</button>
         <button onclick="generateTreatmentPlan()" style="background:linear-gradient(135deg,var(--success),var(--accent));color:#fff;border:none;border-radius:8px;padding:6px 14px;font-size:12px;cursor:pointer;font-weight:700">💊 Detailed Treatment Plan</button>
+        <button onclick="generateTestSuggestions()" style="background:linear-gradient(135deg,#0891b2,#10b981);color:#fff;border:none;border-radius:8px;padding:6px 14px;font-size:12px;cursor:pointer;font-weight:700">🧪 Recommended Tests</button>
         <button onclick="openWorkupFromHealth('${encodeURIComponent((h.mainConcern||h.conditions||'').slice(0,120))}','${encodeURIComponent((h.symptoms||h.heartSymp||'').slice(0,120))}')" style="background:linear-gradient(135deg,#0891b2,#7c3aed);color:#fff;border:none;border-radius:8px;padding:6px 14px;font-size:12px;cursor:pointer;font-weight:700">🔬 Quick Workup</button>
       </div>`;
   }catch(e){
@@ -7477,7 +7538,22 @@ async function searchDrug() {
   el.innerHTML = '<div style="display:flex;align-items:center;gap:8px;padding:12px;color:var(--text3)"><div class="ai-loading"><span></span><span></span><span></span></div><span>Looking up ' + drug + '...</span></div>';
 
   const healthCtx = typeof getHiveContextFor === 'function' ? getHiveContextFor('health') : '';
-  const prompt = `You are a clinical pharmacist with complete drug knowledge. Give a comprehensive reference for: "${drug}"
+  const sysCtx = (typeof _drugSystem !== 'undefined' && _drugSystem !== 'any') ? `SYSTEM FILTER: Focus on ${_drugSystem} medicine.\n` : '';
+  const prompt = `You are a universal medicine expert covering ALL systems: Allopathy, Ayurveda, Homeopathy, Unani, Siddha, TCM, Veterinary, Herbal Supplements.
+
+Search query: "${drug}"
+
+RULES:
+- Brand name? Identify the salt/active ingredient(s) + list major Indian brands
+- Salt/INN? List major Indian brands + generic
+- Ayurvedic herb/formula? Give Sanskrit name, classical reference, rasa-virya-vipaka, dosha action, modern evidence
+- Homeopathic remedy? Give potency guidance, keynote symptoms, materia medica summary
+- Unani/Siddha? Give Arabic/Tamil name, mizaj/gunam, classical indication
+- Veterinary drug? Specify species, mg/kg dose, withdrawal period for food animals
+- Supplement/Nutraceutical? Evidence grade (A/B/C), effective dose, quality form, drug interactions
+- Typo/misspelling? Identify most likely drug and proceed
+- NEVER refuse — if it exists in any medical system anywhere, provide information
+${sysCtx}
 
 ${healthCtx ? 'PATIENT CONTEXT (tailor warnings to this patient):\n' + healthCtx : ''}
 
@@ -7545,11 +7621,13 @@ async function calculateDosage() {
   const el = document.getElementById('dosageResult');
   el.innerHTML = '<div style="display:flex;align-items:center;gap:8px;padding:12px;color:var(--text3)"><div class="ai-loading"><span></span><span></span><span></span></div><span>Calculating dose...</span></div>';
 
-  const prompt = `You are a senior hospital pharmacist. Calculate the EXACT dose and full protocol for:
+  const isVet = ['dog','cat','cattle','horse','goat sheep','pig','poultry chicken','rabbit'].includes(patientType);
+  const prompt = `You are a ${isVet ? 'licensed veterinary pharmacist and clinician' : 'senior hospital pharmacist'}. Calculate the EXACT dose and full protocol for:
 
 DRUG: ${drug}
-PATIENT: ${patientType}, Age: ${age || 'not specified'}, Weight: ${weight || 'not specified'} kg
+${isVet ? 'ANIMAL SPECIES: ' + patientType : 'PATIENT: ' + patientType}, Age: ${age || 'not specified'}, Weight: ${weight || 'not specified'} kg
 INDICATION: ${indication || 'general use'}
+${isVet ? 'NOTE: Give species-specific veterinary doses. Include withdrawal period for food animals. State if the human formulation can be used or a vet-specific product is needed.' : ''}
 
 Respond in EXACT markdown format:
 
@@ -7601,7 +7679,10 @@ ${patientType === 'renal' || patientType === 'hepatic' ? '- **Dose adjustment**:
 // ── LAB INTERPRETER ───────────────────────────────────────────────
 async function interpretLabs() {
   const el = document.getElementById('labResult');
-  el.innerHTML = '<div style="display:flex;align-items:center;gap:8px;padding:12px;color:var(--text3)"><div class="ai-loading"><span></span><span></span><span></span></div><span>Interpreting labs...</span></div>';
+  const labMode = document.getElementById('labMode')?.value || 'human';
+  const labWeight = document.getElementById('labPatientWeight')?.value || '';
+  const isVetLab = labMode !== 'human';
+  el.innerHTML = '<div style="display:flex;align-items:center;gap:8px;padding:12px;color:var(--text3)"><div class="ai-loading"><span></span><span></span><span></span></div><span>Interpreting labs' + (isVetLab ? ' (' + labMode + ')' : '') + '...</span></div>';
 
   const vals = {
     Hb: document.getElementById('labHb').value,
@@ -7630,14 +7711,16 @@ async function interpretLabs() {
   const other = document.getElementById('labOther').value.trim();
   const symptoms = document.getElementById('labSymptoms').value.trim();
   const healthCtx = typeof getHiveContextFor === 'function' ? getHiveContextFor('health') : '';
+  const vetContext = isVetLab ? `PATIENT TYPE: ${labMode.toUpperCase()} (ANIMAL)${labWeight?' | WEIGHT: '+labWeight+'kg':''}\nIMPORTANT: Use VETERINARY reference ranges for ${labMode}. Human ranges do NOT apply.` : '';
 
   if (!filledVals && !other) { showToast('Enter at least some lab values'); return; }
 
-  const prompt = `You are a senior MD physician in a hospital. Interpret these lab results and give clinical management.
+  const prompt = `You are a ${isVetLab ? 'licensed veterinary clinician and pathologist' : 'senior MD physician in a hospital'}. Interpret these lab results and give clinical management.
 
 PATIENT LAB REPORT:
 ${filledVals}${other ? '\nAdditional: ' + other : ''}
 ${symptoms ? 'SYMPTOMS: ' + symptoms : ''}
+${vetContext}
 ${healthCtx ? 'PATIENT PROFILE: ' + healthCtx : ''}
 
 Respond in EXACT markdown format:
@@ -7926,6 +8009,7 @@ function _autoSaveWorkupToProfile(text, symptoms, disease) {
     stored.dxNotes = (prev ? prev + '\n' : '') + summary;
     stored._workupLastSaved = new Date().toISOString();
     localStorage.setItem('cos_health_profile', JSON.stringify(stored));
+    _pushWorkupHistory({ symptoms, disease, summary, fullText: text, ts: new Date().toISOString() });
   } catch(err) {
     console.warn('[COS] Auto-save workup failed:', err);
   }
@@ -7970,6 +8054,246 @@ function saveWorkupToProfile(encodedText, encodedSymptoms, encodedDisease) {
     showToast('⚠️ Save failed: ' + err.message);
   }
 }
+
+// ─── WORKUP HISTORY ─────────────────────────────────
+function _pushWorkupHistory(entry) {
+  try {
+    var history = JSON.parse(localStorage.getItem('cos_workup_history') || '[]');
+    var statMatch = (entry.summary || '').match(/Immediate[^:]*:\s*([^\n]+)/i);
+    entry.statTests = statMatch ? statMatch[1].trim().slice(0, 120) : '';
+    history.unshift(entry);
+    if (history.length > 20) history.length = 20;
+    localStorage.setItem('cos_workup_history', JSON.stringify(history));
+    renderWorkupHistory();
+  } catch(e) { console.warn('[COS] History push failed:', e); }
+}
+
+function renderWorkupHistory() {
+  var container = document.getElementById('workupHistoryContainer');
+  if (!container) return;
+  var history = [];
+  try { history = JSON.parse(localStorage.getItem('cos_workup_history') || '[]'); } catch(e) {}
+  if (!history.length) {
+    container.innerHTML = '<div style="font-size:12px;color:var(--text3);padding:8px;text-align:center">No workup history yet. Run a workup in Medicine OS → Workup tab.</div>';
+    return;
+  }
+  container.innerHTML = history.map(function(entry, i) {
+    var date = entry.ts ? new Date(entry.ts).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}) : '—';
+    var time = entry.ts ? new Date(entry.ts).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}) : '';
+    var label = (entry.symptoms || entry.disease || 'Workup').slice(0,50);
+    var stat = entry.statTests || '';
+    var preview = (entry.summary || '').replace(/\[.*?\]/g,'').trim().slice(0,180);
+    var uid = 'wh_' + i;
+    return '<div style="border:1px solid var(--border);border-radius:10px;margin-bottom:8px;overflow:hidden">'
+      + '<div onclick="toggleWorkupEntry(\'' + uid + '\')" style="display:flex;align-items:center;gap:8px;padding:10px 12px;cursor:pointer;background:var(--bg2)">'
+      + '<span style="font-size:16px">🔬</span>'
+      + '<div style="flex:1;min-width:0">'
+      + '<div style="font-size:12px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + label + '</div>'
+      + '<div style="font-size:10px;color:var(--text3)">' + date + ' · ' + time + '</div>'
+      + (stat ? '<div style="font-size:10px;color:var(--danger)">🔴 STAT: ' + stat + '</div>' : '')
+      + '</div><span id="' + uid + '_ch" style="font-size:12px;color:var(--text3)">▼</span></div>'
+      + '<div id="' + uid + '_body" style="display:none;padding:10px 12px;font-size:12px;color:var(--text2);border-top:1px solid var(--border)">'
+      + '<div style="white-space:pre-wrap;line-height:1.6;margin-bottom:8px">' + preview + (preview.length>=180?'…':'') + '</div>'
+      + '<div style="display:flex;gap:6px">'
+      + '<button onclick="reloadWorkupEntry(' + i + ')" style="font-size:11px;background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff;border:none;border-radius:6px;padding:4px 10px;cursor:pointer;font-weight:700">🔄 Re-run</button>'
+      + '<button onclick="deleteWorkupEntry(' + i + ')" style="font-size:11px;background:none;border:1px solid var(--border);border-radius:6px;padding:4px 10px;cursor:pointer;color:var(--text3)">🗑 Delete</button>'
+      + '</div></div></div>';
+  }).join('');
+}
+
+function toggleWorkupEntry(uid) {
+  var body = document.getElementById(uid + '_body');
+  var ch   = document.getElementById(uid + '_ch');
+  if (!body) return;
+  var open = body.style.display === 'block';
+  body.style.display = open ? 'none' : 'block';
+  if (ch) ch.style.transform = open ? '' : 'rotate(180deg)';
+}
+
+function reloadWorkupEntry(i) {
+  try {
+    var history = JSON.parse(localStorage.getItem('cos_workup_history') || '[]');
+    var entry = history[i]; if (!entry) return;
+    var workupBtn = document.querySelector('.med-os-tab[onclick*="workup"]');
+    if (workupBtn) switchMedOS('workup', workupBtn);
+    var sympEl = document.getElementById('workupSymptoms');
+    var diseaseEl = document.getElementById('workupDisease');
+    if (sympEl) sympEl.value = entry.symptoms || '';
+    if (diseaseEl) diseaseEl.value = entry.disease || '';
+    var medCard = document.getElementById('medicineOSCard');
+    if (medCard) medCard.scrollIntoView({behavior:'smooth',block:'start'});
+    showToast('🔄 Workup reloaded — tap Generate to re-run');
+  } catch(e) { showToast('⚠️ ' + e.message); }
+}
+
+function deleteWorkupEntry(i) {
+  try {
+    var history = JSON.parse(localStorage.getItem('cos_workup_history') || '[]');
+    history.splice(i, 1);
+    localStorage.setItem('cos_workup_history', JSON.stringify(history));
+    renderWorkupHistory();
+    showToast('🗑 Entry deleted');
+  } catch(e) { showToast('⚠️ ' + e.message); }
+}
+
+function clearWorkupHistory() {
+  if (!confirm('Clear all workup history? Cannot be undone.')) return;
+  localStorage.removeItem('cos_workup_history');
+  renderWorkupHistory();
+  showToast('🗑 History cleared');
+}
+
+function initHealthTab() {
+  buildHealthSections();
+  setTimeout(renderWorkupHistory, 50);
+}
+
+// ─── DRUG AUTOCOMPLETE ───────────────────────────────
+var _drugSystem = 'any';
+
+var DRUG_HINTS = [
+  'paracetamol','ibuprofen','aspirin','amoxicillin','metformin','amlodipine','atorvastatin',
+  'ceftriaxone','ciprofloxacin','azithromycin','doxycycline','metronidazole','pantoprazole',
+  'omeprazole','ranitidine','ondansetron','domperidone','loperamide','cetirizine','loratadine',
+  'montelukast','salbutamol','prednisolone','dexamethasone','methylprednisolone','hydrocortisone',
+  'insulin','glipizide','glimepiride','lisinopril','enalapril','losartan','telmisartan',
+  'metoprolol','atenolol','propranolol','furosemide','spironolactone','digoxin','warfarin',
+  'heparin','clopidogrel','rosuvastatin','phenytoin','valproate','carbamazepine','levetiracetam',
+  'amitriptyline','sertraline','fluoxetine','escitalopram','clonazepam','diazepam','alprazolam',
+  'haloperidol','risperidone','quetiapine','morphine','tramadol','codeine','fentanyl',
+  'oxytocin','misoprostol','clomiphene','progesterone','testosterone','levothyroxine',
+  'methimazole','carbimazole','allopurinol','colchicine','hydroxychloroquine','methotrexate',
+  'sulfasalazine','tacrolimus','cyclosporine','rifampicin','isoniazid','pyrazinamide',
+  'ethambutol','streptomycin','dapsone','albendazole','mebendazole','ivermectin','chloroquine',
+  'artemether','piperacillin','meropenem','imipenem','vancomycin','linezolid','colistin',
+  'amphotericin','fluconazole','ketoconazole','acyclovir','oseltamivir','tenofovir',
+  'crocin','dolo','combiflam','brufen','augmentin','mox','zithromax','azee','cifran',
+  'flagyl','pan','pantop','rantac','vomistop','lariago','electral','ors','gelusil',
+  'digene','polycrol','avomine','stemetil','allegra','zyrtec','montair','seretide',
+  'foracort','asthalin','budecort','deriphyllin','corex','benadryl','phenergan','calpol',
+  'metacin','voveran','flexon','iodex','burnol','soframycin','neosporin','betadine',
+  'candid','clotrimazole','hamdard safi','rooh afza','joshina','khamira marwareed',
+  'ashwagandha','withania somnifera','shatavari','brahmi','bacopa monnieri','triphala',
+  'amalaki','haritaki','bibhitaki','giloy','guduchi','tinospora cordifolia','neem',
+  'tulsi','turmeric','curcuma longa','ginger','zingiber','punarnava','shankhapushpi',
+  'guggulu','arjuna','terminalia arjuna','dashamoola','chyawanprash','sitopaladi',
+  'vasarishta','chandraprabha','arogyavardhini','brahmi vati','kamdudha','sutshekhar',
+  'arnica montana','arnica 30c','arnica 200c','belladonna','aconite','apis mellifica',
+  'arsenicum album','bryonia','calc carb','calcarea carbonica','carbo veg','china',
+  'gelsemium','hepar sulph','ignatia','kali bich','lachesis','lycopodium','merc sol',
+  'natrum mur','nux vomica','phosphorus','pulsatilla','rhus tox','sepia','silica',
+  'sulphur','thuja','veratrum album','hypericum','calendula','cantharis','chamomilla',
+  'coffea','colocynthis','drosera','euphrasia','ledum','magnesia phos','ruta','symphytum',
+  'shilajit','itrifal','majun','arq','sharbat','roghan','kushta','qurs','hab','jawarish',
+  'nilavembu','nilavembu kudineer','keezhanelli','seenthil kodi','kudineer','kashayam',
+  'ivermectin vet','albendazole vet','amoxicillin vet','oxytetracycline','enrofloxacin',
+  'tylosin','gentamicin vet','oxytocin vet','calcium borogluconate','dewormer','piperazine',
+  'fenbendazole','praziquantel','fipronil','permethrin','imidacloprid','meloxicam vet',
+  'vitamin c','vitamin d3','vitamin b12','vitamin b complex','omega 3','fish oil',
+  'zinc','magnesium','calcium','iron','folate','folic acid','biotin','collagen',
+  'coenzyme q10','coq10','melatonin','probiotics','lactobacillus','spirulina',
+  'whey protein','creatine','glutamine','bcaa','rhodiola','ginseng','panax ginseng',
+  'ginkgo biloba','st johns wort','valerian','chamomile','elderberry','echinacea',
+  'curcumin','resveratrol','quercetin','nac','n-acetyl cysteine','alpha lipoic acid',
+  '5-htp','l-theanine','lions mane','reishi','chaga','cordyceps','turkey tail',
+  'berberine','milk thistle','silymarin',
+];
+
+function levenshtein(a, b) {
+  var m = a.length, n = b.length, dp = [], i, j;
+  for (i=0;i<=m;i++) { dp[i]=[i]; }
+  for (j=0;j<=n;j++) { dp[0][j]=j; }
+  for (i=1;i<=m;i++) for (j=1;j<=n;j++)
+    dp[i][j] = a[i-1]===b[j-1] ? dp[i-1][j-1] : 1+Math.min(dp[i-1][j],dp[i][j-1],dp[i-1][j-1]);
+  return dp[m][n];
+}
+
+function drugAutocomplete(val) {
+  var box = document.getElementById('drugSuggestions');
+  var hint = document.getElementById('drugSpellHint');
+  if (!box) return;
+  var v = (val || '').trim().toLowerCase();
+  if (v.length < 2) { box.style.display='none'; if(hint) hint.textContent=''; return; }
+  var prefix = DRUG_HINTS.filter(function(d){ return d.startsWith(v); }).slice(0,5);
+  var contains = DRUG_HINTS.filter(function(d){ return !d.startsWith(v) && d.includes(v); }).slice(0,3);
+  var fuzzy = prefix.length < 3
+    ? DRUG_HINTS.filter(function(d){ return prefix.indexOf(d)===-1 && contains.indexOf(d)===-1 && levenshtein(v,d.slice(0,v.length))<=2; }).slice(0,3)
+    : [];
+  var all = [], seen = {};
+  prefix.concat(contains).concat(fuzzy).forEach(function(d){ if(!seen[d]){seen[d]=1;all.push(d);} });
+  all = all.slice(0,8);
+  if (!all.length) { box.style.display='none'; if(hint) hint.textContent=''; return; }
+  if (hint) hint.textContent = (!prefix.length && all.length) ? 'Did you mean: ' + all[0] + '?' : '';
+  box.style.display = 'block';
+  box.innerHTML = all.map(function(d) {
+    return '<div onclick="pickDrugSuggestion(\'' + d.replace(/'/g,"\\'") + '\')" style="padding:8px 12px;font-size:12px;cursor:pointer;border-bottom:1px solid var(--border);color:var(--text)" onmouseover="this.style.background=\'var(--bg3)\'" onmouseout="this.style.background=\'\'"><b style="color:var(--primary)">' + d.slice(0,v.length) + '</b>' + d.slice(v.length) + '</div>';
+  }).join('');
+}
+
+function pickDrugSuggestion(val) {
+  var inp = document.getElementById('drugSearchInput');
+  var box = document.getElementById('drugSuggestions');
+  var hint = document.getElementById('drugSpellHint');
+  if (inp) inp.value = val;
+  if (box) box.style.display = 'none';
+  if (hint) hint.textContent = '';
+  searchDrug();
+}
+
+function handleDrugKey(e) {
+  if (e.key === 'Enter')  { document.getElementById('drugSuggestions').style.display='none'; searchDrug(); }
+  if (e.key === 'Escape') document.getElementById('drugSuggestions').style.display='none';
+}
+
+function setDrugSystem(system, el) {
+  _drugSystem = system;
+  document.querySelectorAll('.drug-sys-chip').forEach(function(c){ c.classList.remove('active-chip'); });
+  if (el) el.classList.add('active-chip');
+}
+
+document.addEventListener('click', function(e) {
+  var box = document.getElementById('drugSuggestions');
+  if (box && !box.contains(e.target) && e.target.id !== 'drugSearchInput') box.style.display = 'none';
+});
+
+// ─── RECOMMENDED TESTS ──────────────────────────────
+async function generateTestSuggestions() {
+  var h = collectHealthProfile();
+  var card = document.getElementById('aiDoctorCard');
+  var el   = document.getElementById('aiDoctorOutput');
+  if (!el) return;
+  if (card) { card.style.display='block'; card.scrollIntoView({behavior:'smooth'}); }
+  el.innerHTML = '<div style="padding:12px;text-align:center"><div class="ai-loading"><span></span><span></span><span></span></div><div style="font-size:12px;color:var(--text3);margin-top:8px">🔬 Generating test recommendations...</div></div>';
+
+  var prompt = 'You are a senior physician. Based on this patient, give a PRIORITIZED diagnostic test list.\n\n'
+    + 'AGE: ' + h.age + ' | SEX: ' + h.sex + ' | BMI: ' + h.bmi + '\n'
+    + 'CONDITIONS: ' + h.conditions + '\nMAIN CONCERN: ' + h.mainConcern + '\n'
+    + 'TESTS DONE — BLOOD: ' + (h.dxBlood||'None') + '\nIMAGING: ' + (h.dxImaging||'None') + ' | CARDIAC: ' + (h.dxCardiac||'None') + '\n'
+    + 'VET MODE: ' + (h.vetMode||'Human') + '\n\n'
+    + 'Format EXACTLY:\n\n'
+    + '## 🔬 Recommended Tests\n\n'
+    + '### 🔴 Order Now\n- **[Test]** — [why]\n\n'
+    + '### 🟡 Order Within 1 Month\n- **[Test]** — [why]\n\n'
+    + '### 🟢 Annual Screening\n- **[Test]** — [why]\n\n'
+    + '### 🩻 Imaging / Procedures\n- **[Test]** — [why]\n\n'
+    + '### ✅ Already Done — Insight\n[What their completed tests reveal]\n\n'
+    + 'Max 15 tests. Specific to their data. ⚕️ Educational only.';
+
+  try {
+    var text = await callGroqFast(prompt, 'Senior physician. Specific recommendations based on patient data. No generic lists.', 800);
+    el.innerHTML = '<div style="background:linear-gradient(135deg,rgba(6,182,212,.08),rgba(16,185,129,.06));border:2px solid rgba(6,182,212,.3);border-radius:12px;padding:14px">'
+      + '<div style="font-weight:800;font-size:13px;color:var(--accent);margin-bottom:10px">🧪 Personalized Test Recommendations</div>'
+      + formatAIMarkdown(text)
+      + '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">'
+      + '<button onclick="copyMsgText(this,\'' + encodeURIComponent(text) + '\')" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:5px 12px;font-size:11px;cursor:pointer">📋 Copy</button>'
+      + '<button onclick="openWorkupFromHealth(\'' + encodeURIComponent((h.mainConcern||h.conditions||'').slice(0,100)) + '\',\'' + encodeURIComponent((h.heartSymp||h.inflam||'').slice(0,100)) + '\')" style="background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff;border:none;border-radius:8px;padding:5px 12px;font-size:11px;cursor:pointer;font-weight:700">🔬 Full Workup</button>'
+      + '</div></div>';
+  } catch(e) {
+    el.innerHTML = '<div style="color:var(--danger);font-size:12px;padding:8px">❌ ' + e.message + '</div>';
+  }
+}
+
+
 
 // ─── BRAIN GAMES ─────────────────────────────────────────────
 const GAMES_LIST=[
