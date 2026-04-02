@@ -2778,6 +2778,7 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
       <button class="med-os-tab" onclick="switchMedOS('dosage',this)" style="flex:1;padding:8px 4px;font-size:11px;font-weight:700;border:none;background:var(--bg3);color:var(--text2);cursor:pointer">⚖️ Dosage</button>
       <button class="med-os-tab" onclick="switchMedOS('labs',this)" style="flex:1;padding:8px 4px;font-size:11px;font-weight:700;border:none;background:var(--bg3);color:var(--text2);cursor:pointer">🧪 Labs</button>
       <button class="med-os-tab" onclick="switchMedOS('emergency',this)" style="flex:1;padding:8px 4px;font-size:11px;font-weight:700;border:none;background:var(--bg3);color:var(--text2);cursor:pointer">🚨 SOS</button>
+      <button class="med-os-tab" onclick="switchMedOS('workup',this)" style="flex:1;padding:8px 4px;font-size:11px;font-weight:700;border:none;background:var(--bg3);color:var(--text2);cursor:pointer">🔬 Workup</button>
     </div>
 
     <!-- DRUGS PANEL -->
@@ -2905,6 +2906,63 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
         <button class="btn btn-primary btn-sm" onclick="emergencyProtocol(document.getElementById('emergencyCustomInput').value)">🚨 Protocol</button>
       </div>
       <div id="emergencyResult" style="margin-top:10px"></div>
+    </div>
+
+    <!-- DIAGNOSTIC WORKUP PANEL -->
+    <div id="medOS-workup" style="display:none">
+      <div style="font-size:12px;color:var(--text2);margin-bottom:10px">Enter symptoms or a suspected disease — AI returns the complete diagnostic workup: blood tests, imaging, ECG, PFT, biopsy, cultures, and more. Ranked by priority.</div>
+
+      <div class="form-group" style="margin-bottom:8px">
+        <label class="form-label">Chief Complaint / Symptoms</label>
+        <input type="text" class="form-input" id="workupSymptoms" placeholder="e.g. chest pain + shortness of breath, jaundice + fever, sudden vision loss..." onkeydown="if(event.key==='Enter')runDiagnosticWorkup()">
+      </div>
+
+      <div class="form-group" style="margin-bottom:8px">
+        <label class="form-label">Suspected Disease / Differential (optional)</label>
+        <input type="text" class="form-input" id="workupDisease" placeholder="e.g. pulmonary embolism, hepatitis B, SLE, TB, dengue...">
+      </div>
+
+      <div class="form-row" style="margin-bottom:8px">
+        <div class="form-group">
+          <label class="form-label">Patient Age</label>
+          <input type="number" class="form-input" id="workupAge" placeholder="25">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Sex</label>
+          <select class="form-select" id="workupSex">
+            <option>Male</option><option>Female</option><option>Other</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-bottom:10px">
+        <label class="form-label">Setting / Urgency</label>
+        <select class="form-select" id="workupUrgency">
+          <option value="routine">Routine OPD</option>
+          <option value="urgent">Urgent (same day)</option>
+          <option value="emergency">Emergency / ICU</option>
+        </select>
+      </div>
+
+      <!-- Quick symptom chips -->
+      <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px">
+        <span style="font-size:10px;color:var(--text3);align-self:center">Quick:</span>
+        <span class="chip" onclick="document.getElementById('workupSymptoms').value='chest pain radiating to left arm + sweating + shortness of breath'" style="cursor:pointer;font-size:10px">Chest Pain (ACS?)</span>
+        <span class="chip" onclick="document.getElementById('workupSymptoms').value='jaundice + dark urine + pale stools + fever'" style="cursor:pointer;font-size:10px">Jaundice</span>
+        <span class="chip" onclick="document.getElementById('workupSymptoms').value='high fever + headache + neck stiffness + photophobia'" style="cursor:pointer;font-size:10px">Meningitis?</span>
+        <span class="chip" onclick="document.getElementById('workupSymptoms').value='polyuria + polydipsia + weight loss + fatigue'" style="cursor:pointer;font-size:10px">Diabetes WU</span>
+        <span class="chip" onclick="document.getElementById('workupSymptoms').value='cough >3 weeks + haemoptysis + night sweats + weight loss'" style="cursor:pointer;font-size:10px">TB Workup</span>
+        <span class="chip" onclick="document.getElementById('workupSymptoms').value='acute abdomen + rebound tenderness + guarding'" style="cursor:pointer;font-size:10px">Acute Abdomen</span>
+        <span class="chip" onclick="document.getElementById('workupSymptoms').value='sudden onset hemiplegia + facial deviation + slurred speech'" style="cursor:pointer;font-size:10px">Stroke WU</span>
+        <span class="chip" onclick="document.getElementById('workupSymptoms').value='palpitations + tremor + weight loss + exophthalmos'" style="cursor:pointer;font-size:10px">Hyperthyroid</span>
+        <span class="chip" onclick="document.getElementById('workupSymptoms').value='pedal edema + ascites + shortness of breath on exertion'" style="cursor:pointer;font-size:10px">Heart Failure</span>
+        <span class="chip" onclick="document.getElementById('workupSymptoms').value='oliguria + raised creatinine + edema + hypertension'" style="cursor:pointer;font-size:10px">Renal Failure</span>
+        <span class="chip" onclick="document.getElementById('workupSymptoms').value='amenorrhea + breast tenderness + nausea + fatigue'" style="cursor:pointer;font-size:10px">Pregnancy WU</span>
+        <span class="chip" onclick="document.getElementById('workupSymptoms').value='joint pain + butterfly rash + fatigue + fever'" style="cursor:pointer;font-size:10px">SLE Workup</span>
+      </div>
+
+      <button class="btn btn-primary btn-block" onclick="runDiagnosticWorkup()">🔬 Generate Full Diagnostic Workup</button>
+      <div id="workupResult" style="margin-top:12px"></div>
     </div>
 
   </div><!-- /medicineOSCard -->
@@ -7048,6 +7106,17 @@ const HEALTH_SECTIONS=[
   {name:'Ayurvedic Profile',icon:'🕉️',fields:[{type:'radio',id:'hAyurPrakriti',label:'Body Type (Prakriti)',options:['Vata (thin, dry, creative, anxious)','Pitta (medium, intense, driven, inflammatory)','Kapha (heavy, stable, calm, slow)','Vata-Pitta','Pitta-Kapha','Vata-Kapha','Tridosha (balanced)','Unknown']},{type:'select',id:'hAyurDigFire',label:'Digestive Fire (Agni)',options:['Sharp (digests fast, gets hungry often)','Regular (consistent digestion)','Variable (unpredictable)','Slow (heavy, sluggish)']},{type:'checkbox',id:'hAyurSymp',label:'Current Imbalance Signs',options:['Dry skin/hair','Excess heat/inflammation','Weight gain/fluid retention','Joint cracking/stiffness','Acid reflux/ulcers','Congestion/mucus','Restlessness/insomnia','Fatigue/lethargy','Mood swings','None']},{type:'select',id:'hAyurSeason',label:'Symptoms Worse In',options:['Winter/Cold','Summer/Heat','Monsoon/Humid','All seasons equal']}]},
   {name:'Symptom Tracker',icon:'🩹',fields:[{type:'checkbox',id:'hSymptoms',label:'Current Symptoms',options:['Fatigue','Headaches','Brain Fog','Low Mood','Anxiety','Insomnia','Weight Gain','Weight Loss','Hair Loss','Skin Issues','Joint Pain','Muscle Pain','Digestive Issues','Low Libido','Frequent Illness','Cold Hands/Feet','Excessive Thirst','Frequent Urination','Vision Issues','Hearing Issues','None']},{type:'select',id:'hSymptomDur',label:'How long?',options:['<1 week','1-4 weeks','1-3 months','3-6 months','6-12 months','>1 year']},{type:'select',id:'hSymptomSev',label:'Severity',options:['Mild — manageable','Moderate — affects daily life','Severe — debilitating']},{type:'textarea',id:'hSymptomTriggers',label:'What makes it worse?'},{type:'textarea',id:'hSymptomRelief',label:'What helps?'}]},
   {name:'Health Goals',icon:'🎯',fields:[{type:'checkbox',id:'hGoals',label:'My Health Priorities',options:['Longevity','Peak Performance','Mental Health','Weight Management','Disease Prevention','Energy & Vitality','Better Sleep','Strength & Fitness','Stress Reduction']},{type:'textarea',id:'hMainConcern',label:'Main Health Concern'},{type:'textarea',id:'hHealthNotes',label:'Anything else?'}]},
+  {name:'Diagnostic Workup',icon:'🔬',fields:[
+    {type:'checkbox',id:'hDxBlood',label:'Blood Tests Done / Recommended',options:['CBC / Complete Blood Count','ESR','CRP (C-Reactive Protein)','Blood Sugar (FBS/RBS/PPBS)','HbA1c','LFT (Liver Function Tests)','KFT / RFT (Kidney Function)','Lipid Profile','TSH / T3 / T4','Thyroid Antibodies','Vitamin D3','Vitamin B12','Serum Iron / Ferritin / TIBC','Uric Acid','HbsAg (Hepatitis B)','Anti-HCV','HIV (ELISA)','VDRL','Widal Test','Dengue NS1 / IgM','Malaria Smear','Troponin I / T','D-Dimer','BNP / NT-proBNP','PT/INR / aPTT','Serum Electrolytes (Na/K/Cl)','Cortisol','Testosterone / FSH / LH','Prolactin','ANA / anti-dsDNA (Lupus)','RA Factor / anti-CCP','Procalcitonin','Blood Culture & Sensitivity','ABG (Arterial Blood Gas)','Ammonia','Serum Lactate','PSA (Prostate)','CA-125 (Ovarian)','CEA (Colon/Lung)','AFP (Liver)','LDH','Serum Protein Electrophoresis','ANCA','Complement C3/C4']},
+    {type:'checkbox',id:'hDxUrine',label:'Urine Tests Done / Recommended',options:['Urine Routine & Microscopy (R/M)','Urine Culture & Sensitivity (C&S)','Urine Albumin / ACR','24-hr Urine Protein','24-hr Urine Creatinine','Urine Bilirubin / Urobilinogen','Urine Pregnancy Test (β-HCG)','Urine VMA (Pheochromocytoma)','Urine Reducing Substances','Microalbuminuria']},
+    {type:'checkbox',id:'hDxImaging',label:'Imaging Studies Done / Recommended',options:['X-Ray Chest (PA view)','X-Ray Abdomen (Erect)','X-Ray Spine (Cervical/Lumbar)','X-Ray Pelvis / Hip','X-Ray Wrist / Hand / Knee / Foot','USG Abdomen & Pelvis','USG Abdomen (Upper)','USG Pelvis (Transvaginal)','USG FAST (Trauma)','USG Thyroid & Parathyroid','USG Testis / Scrotal','USG Breast','Doppler — Carotid','Doppler — Lower Limb (DVT)','Doppler — Renal','ECHO (2D Echocardiography)','Stress ECHO','TEE (Transesophageal ECHO)','CT Head (Plain)','CT Head (Contrast)','CT Chest (HRCT)','CT Chest (Contrast/PE Protocol)','CT Abdomen & Pelvis (Contrast)','CT KUB (Urinary)','CT Brain Angiography','CT Coronary Angiography (CTCA)','MRI Brain (Plain)','MRI Brain (Contrast)','MRI Spine (Cervical/Lumbar)','MRI Knee / Shoulder / Hip','MRI Abdomen / Pelvis','MRI Cardiac','MRA (MR Angiography)','MRS (MR Spectroscopy)','PET-CT Scan','Bone Scan (Scintigraphy)','DEXA Scan (Bone Density)','Mammography','HSG (Hysterosalpingography)','IVP (Intravenous Pyelogram)']},
+    {type:'checkbox',id:'hDxCardiac',label:'Cardiac Investigations Done / Recommended',options:['12-lead ECG (Resting)','Holter Monitor (24-hr ECG)','Holter Monitor (48-hr)','Exercise Stress Test (Treadmill/TMT)','Cardiac Enzymes (Troponin/CK-MB)','Coronary Angiography (Cath)','Electrophysiology Study (EPS)','Tilt Table Test','Ambulatory BP Monitor (ABPM)']},
+    {type:'checkbox',id:'hDxPulm',label:'Pulmonary / Respiratory Tests Done / Recommended',options:['Spirometry (PFT)','Peak Expiratory Flow Rate (PEFR)','DLCO (Diffusion Capacity)','6-Minute Walk Test','Bronchoscopy + BAL','Sputum Routine & Culture','Sputum AFB (3 samples)','Sputum Cytology','Pulse Oximetry (SpO2)','ABG (Arterial Blood Gas)','Sleep Study (Polysomnography)','FeNO (Exhaled Nitric Oxide)']},
+    {type:'checkbox',id:'hDxNeuro',label:'Neurological / Neuro Tests Done / Recommended',options:['EEG (Electroencephalogram)','EMG / NCV (Nerve Conduction)','Visual Evoked Potentials (VEP)','Lumbar Puncture (CSF Analysis)','CSF Culture & Sensitivity','Fundoscopy / Ophthalmoscopy','Perimetry (Visual Fields)','ICP Monitoring','Carotid Doppler']},
+    {type:'checkbox',id:'hDxGI',label:'GI / Endoscopy / Biopsy Done / Recommended',options:['Upper GI Endoscopy (OGD)','Colonoscopy','Flexible Sigmoidoscopy','ERCP','Capsule Endoscopy','FNAC (Fine Needle Aspiration)','Core Biopsy','Liver Biopsy','Skin Biopsy','Bone Marrow Aspiration & Biopsy','Lymph Node Biopsy','Bronchial / Lung Biopsy','Renal Biopsy','Colposcopy + Biopsy','Pap Smear']},
+    {type:'checkbox',id:'hDxSpecial',label:'Special / Advanced Tests Done / Recommended',options:['Cystoscopy','Hysteroscopy','Laparoscopy (Diagnostic)','Flow Cytometry','Cytogenetics / Karyotype','Immunophenotyping','BRCA1/BRCA2 Gene Test','Whole Genome Sequencing','Pharmacogenomics Panel','TORCH Panel','Allergy Panel (RAST/Skin Prick)','Sweat Chloride Test (CF)','Nerve Biopsy','Muscle Biopsy','Ophthalmology Slit Lamp','Tonometry (IOP — Glaucoma)','Audiometry (Hearing Test)','Vestibular Function Test','Urodynamic Study','Semen Analysis','Hysterosalpingography (HSG)','Cystourethrogram (VCUG)','Pulmonary Angiography','V/Q Scan (Lung Perfusion)']},
+    {type:'textarea',id:'hDxNotes',label:'Test Results / Pending Investigations (free text)'}
+  ]},
 ];
 let hsCurrent=0;
 function buildHealthSections(){
@@ -7083,9 +7152,9 @@ function jumpToSection(i){
   hsCurrent=i;
   document.getElementById('hsCurrent').textContent=i+1;
   document.getElementById('hsSectionName').textContent=HEALTH_SECTIONS[i].name;
-  document.getElementById('hsProgressBar').style.width=((i+1)/20*100)+'%';
+  document.getElementById('hsProgressBar').style.width=((i+1)/21*100)+'%';
   document.getElementById('hsPrevBtn').style.display=i>0?'':'none';
-  document.getElementById('hsNextBtn').textContent=i===19?'✨ Get AI Analysis':'Next →';
+  document.getElementById('hsNextBtn').textContent=i===20?'✨ Get AI Analysis':'Next →';
 }
 function hsPrev(){if(hsCurrent>0)jumpToSection(hsCurrent-1);}
 function hsNext(){if(hsCurrent<19)jumpToSection(hsCurrent+1);else generateHealthAnalysis();}
@@ -7312,7 +7381,7 @@ Create a DETAILED 30-day treatment protocol covering every system:
 // ════════════════════════════════════════════════════════════════
 
 function switchMedOS(panel, btn) {
-  ['drugs','dosage','labs','emergency'].forEach(p => {
+  ['drugs','dosage','labs','emergency','workup'].forEach(p => {
     const el = document.getElementById('medOS-' + p);
     if (el) el.style.display = p === panel ? '' : 'none';
   });
@@ -7615,6 +7684,134 @@ Use EXACT markdown format:
       formatAIMarkdown(text) +
       '<button onclick="copyMsgText(this,\'' + encodeURIComponent(text) + '\')" style="margin-top:10px;background:var(--danger);color:#fff;border:none;border-radius:8px;padding:6px 14px;font-size:12px;cursor:pointer;font-weight:700">📋 Copy Protocol</button>' +
       '</div>';
+  } catch(e) {
+    el.innerHTML = '<div style="color:var(--danger);font-size:12px;padding:8px">❌ ' + e.message + '</div>';
+  }
+}
+
+async function runDiagnosticWorkup() {
+  const symptoms = (document.getElementById('workupSymptoms')?.value || '').trim();
+  const disease  = (document.getElementById('workupDisease')?.value  || '').trim();
+  const age      = document.getElementById('workupAge')?.value  || '?';
+  const sex      = document.getElementById('workupSex')?.value  || '?';
+  const urgency  = document.getElementById('workupUrgency')?.value || 'routine';
+  if (!symptoms && !disease) { showToast('Enter symptoms or suspected disease'); return; }
+
+  const el = document.getElementById('workupResult');
+  el.innerHTML = '<div style="background:rgba(6,182,212,.08);border:1px solid rgba(6,182,212,.3);border-radius:10px;padding:12px;display:flex;align-items:center;gap:8px"><div class="ai-loading"><span></span><span></span><span></span></div><span style="font-size:12px;color:var(--accent);font-weight:700">🔬 Generating diagnostic workup...</span></div>';
+  el.scrollIntoView({ behavior: 'smooth' });
+
+  const context = [
+    symptoms && `SYMPTOMS: ${symptoms}`,
+    disease && `SUSPECTED DIAGNOSIS / DIFFERENTIALS: ${disease}`,
+    `PATIENT: ${age}yr ${sex} | SETTING: ${urgency}`
+  ].filter(Boolean).join('\n');
+
+  const prompt = `You are a senior physician (MBBS + MD) in a clinical diagnostic role. Generate the COMPLETE, PRIORITIZED diagnostic workup for:
+
+${context}
+
+Use EXACT markdown format:
+
+## 🔬 Diagnostic Workup
+
+### 🩸 Blood / Serum Tests
+| Test | Why Ordered | Expected Findings if Positive | Priority |
+|---|---|---|---|
+| [test name] | [clinical reason] | [what abnormal value means] | 🔴 STAT / 🟡 Urgent / 🟢 Routine |
+
+Include ALL relevant from: CBC with differential, ESR, CRP, LFT, KFT, blood sugar, HbA1c, lipid profile, LDH, ferritin, serum iron, TIBC, vitamin B12, D3, electrolytes (Na/K/Cl), ABG, PT/INR/aPTT, BT/CT, troponin I, D-dimer, BNP/NT-proBNP, procalcitonin, cortisol, TSH/T3/T4, prolactin, FSH/LH, testosterone, HCG, PSA, CA-125, CEA, AFP, ANA, anti-dsDNA, ANCA, RF, anti-CCP, complement C3/C4, serum protein electrophoresis, ammonia, lactate, uric acid, thyroid antibodies, TORCH panel, Widal test, blood culture & sensitivity, dengue NS1/IgM/IgG, malaria smear/RDT, HIV/HBsAg/HCV/VDRL, hepatitis panel, typhoid culture, leptospira IgM, scrub typhus IgM.
+
+### 🧪 Urine Tests
+| Test | Why Ordered | Priority |
+|---|---|---|
+| [test] | [reason] | [priority] |
+
+Include: urine R/M (routine/microscopy), urine C&S, urine ACR (albumin:creatinine), 24hr urine protein/creatinine, urine bilirubin/urobilinogen, pregnancy test (if female of reproductive age), urine VMA (if pheochromocytoma).
+
+### 📡 Imaging Studies
+| Modality | View / Region | What to Look For | Priority |
+|---|---|---|---|
+| X-Ray | [PA chest / abdomen erect / etc] | [specific finding] | [priority] |
+| Ultrasound | [abdomen / pelvis / FAST / etc] | [specific finding] | [priority] |
+| CT | [head plain / chest HRCT / abdomen contrast etc] | [specific finding] | [priority] |
+| MRI | [brain / spine / MSK etc] | [specific finding] | [priority] |
+| ECHO | [2D echo / stress echo / TEE] | [specific finding] | [priority] |
+| Doppler | [carotid / lower limb / renal] | [finding] | [priority] |
+| PET-CT | [if malignancy suspected] | [finding] | [priority] |
+| Bone scan | [if metastasis suspected] | [finding] | [priority] |
+
+Only include imaging that is genuinely indicated — do not pad unnecessarily.
+
+### ⚡ Cardiac Investigations
+| Test | Indication | What to Look For |
+|---|---|---|
+| 12-lead ECG | [reason] | [findings: ST changes, blocks, arrhythmia, intervals] |
+| Holter monitoring | [reason] | [24hr / 48hr, what rhythm] |
+| Exercise stress test | [reason] | [target HR, interpretation] |
+| Coronary angiography | [indication] | [threshold criteria] |
+
+### 🫁 Pulmonary Function
+| Test | Indication | What to Detect |
+|---|---|---|
+| Spirometry / PFT | [reason] | [obstructive vs restrictive, FEV1/FVC] |
+| Peak flow meter | [reason] | [monitoring parameter] |
+| DLCO | [reason] | [diffusion capacity interpretation] |
+| 6-min walk test | [reason] | [functional capacity] |
+| Bronchoscopy | [if indicated] | [BAL/biopsy finding] |
+
+Only include if pulmonary involvement is plausible.
+
+### 🔭 Endoscopy / Invasive Procedures
+| Procedure | Indication | Finding Expected |
+|---|---|---|
+| Upper GI endoscopy | [reason] | [finding] |
+| Colonoscopy | [reason] | [finding] |
+| ERCP | [reason] | [finding] |
+| Cystoscopy | [reason] | [finding] |
+| Bone marrow biopsy | [reason] | [finding] |
+| Liver biopsy | [reason] | [finding] |
+| Lumbar puncture (CSF) | [reason] | [CSF analysis parameters] |
+| Skin/node/mass biopsy | [reason] | [histopathology expected] |
+| FNAC | [reason] | [target lesion] |
+
+Only include procedures that are clinically warranted.
+
+### 🧬 Special / Advanced Tests
+| Test | When to Order | What It Diagnoses |
+|---|---|---|
+| [e.g. flow cytometry, cytogenetics, immunophenotyping] | [clinical trigger] | [diagnosis] |
+
+### 📋 Workup Priority Summary
+**Immediate (STAT — within 1 hour):** [list]
+**Urgent (within 24 hours):** [list]
+**Routine (within 1 week):** [list]
+**Conditional (only if above positive):** [list]
+
+### 🩺 Most Likely Diagnoses (Differential)
+1. [Most likely] — [supporting features]
+2. [Second most likely] — [supporting features]
+3. [Must not miss] — [supporting features — even if less likely]
+
+### 🚩 Red Flag Signs — Admit / Escalate Immediately If:
+- [Red flag 1]
+- [Red flag 2]
+
+---
+⚕️ Clinical decision support only. Ordering decisions rest with the treating physician.`;
+
+  try {
+    const text = await callGroqFast(prompt, 'You are a senior clinician generating a diagnostic workup. Be complete and specific. Include EVERY relevant investigation for the given presentation. Prioritize by urgency. Use real Indian hospital test nomenclature (LFT, KFT, CBP, etc.) alongside international names. Format must be strict markdown with tables.', 1600);
+    el.innerHTML = '<div style="background:linear-gradient(135deg,rgba(6,182,212,.08),rgba(124,58,237,.06));border:2px solid rgba(6,182,212,.35);border-radius:12px;padding:14px">' +
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">' +
+      '<span style="font-size:18px">🔬</span>' +
+      '<div style="font-weight:900;font-size:13px;color:var(--accent)">Diagnostic Workup — ' + (symptoms || disease) + '</div>' +
+      '</div>' +
+      formatAIMarkdown(text) +
+      '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">' +
+      '<button onclick="copyMsgText(this,\'' + encodeURIComponent(text) + '\')" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:6px 14px;font-size:12px;cursor:pointer;color:var(--text2)">📋 Copy Workup</button>' +
+      '<button onclick="switchMedOS(\'labs\',document.querySelectorAll(\'.med-os-tab\')[2])" style="background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff;border:none;border-radius:8px;padding:6px 14px;font-size:12px;cursor:pointer;font-weight:700">🧪 Enter Results → Interpret</button>' +
+      '</div></div>';
   } catch(e) {
     el.innerHTML = '<div style="color:var(--danger);font-size:12px;padding:8px">❌ ' + e.message + '</div>';
   }
