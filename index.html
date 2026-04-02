@@ -7384,8 +7384,8 @@ Use EXACT markdown format:
     el.innerHTML = '<div style="background:linear-gradient(135deg,rgba(124,58,237,.06),rgba(6,182,212,.04));border:1px solid rgba(124,58,237,.2);border-radius:12px;padding:14px">' +
       formatAIMarkdown(text) +
       '<div style="display:flex;gap:8px;margin-top:10px">' +
-      '<button onclick="copyMsgText(this,'' + encodeURIComponent(text) + '')" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:5px 12px;font-size:11px;cursor:pointer;color:var(--text2)">📋 Copy</button>' +
-      '<button onclick="document.getElementById('doseDrug').value='' + drug.replace(/'/g,"\'") + '';switchMedOS('dosage',document.querySelectorAll('.med-os-tab')[1])" style="background:var(--primary);color:#fff;border:none;border-radius:8px;padding:5px 12px;font-size:11px;cursor:pointer;font-weight:700">⚖️ Calculate Dose</button>' +
+      '<button onclick="copyMsgText(this,\'' + encodeURIComponent(text) + '\')" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:5px 12px;font-size:11px;cursor:pointer;color:var(--text2)">📋 Copy</button>' +
+      '<button onclick="document.getElementById(\'doseDrug\').value=\'' + drug.replace(/'/g,"\\'") + '\';switchMedOS(\'dosage\',document.querySelectorAll(\'.med-os-tab\')[1])" style="background:var(--primary);color:#fff;border:none;border-radius:8px;padding:5px 12px;font-size:11px;cursor:pointer;font-weight:700">⚖️ Calculate Dose</button>' +
       '</div></div>';
   } catch(e) {
     el.innerHTML = '<div style="color:var(--danger);font-size:12px;padding:8px">❌ Drug lookup failed: ' + e.message + '</div>';
@@ -7450,7 +7450,7 @@ ${patientType === 'renal' || patientType === 'hepatic' ? '- **Dose adjustment**:
     const text = await callGroqFast(prompt, 'You are a senior hospital pharmacist. Show exact dose calculations. Use real Indian hospital protocols. EXACT markdown format.', 1000);
     el.innerHTML = '<div style="background:linear-gradient(135deg,rgba(16,185,129,.08),rgba(124,58,237,.06));border:1px solid rgba(16,185,129,.3);border-radius:12px;padding:14px">' +
       formatAIMarkdown(text) +
-      '<button onclick="copyMsgText(this,'' + encodeURIComponent(text) + '')" style="margin-top:10px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:5px 12px;font-size:11px;cursor:pointer;color:var(--text2)">📋 Copy Protocol</button>' +
+      '<button onclick="copyMsgText(this,\'' + encodeURIComponent(text) + '\')" style="margin-top:10px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:5px 12px;font-size:11px;cursor:pointer;color:var(--text2)">📋 Copy Protocol</button>' +
       '</div>';
   } catch(e) {
     el.innerHTML = '<div style="color:var(--danger);font-size:12px;padding:8px">❌ ' + e.message + '</div>';
@@ -7546,7 +7546,7 @@ Respond in EXACT markdown format:
     const text = await callGroqFast(prompt, 'You are a senior MD physician. Interpret labs precisely. Use exact normal ranges. Give specific drug names and doses. Be the doctor in a Haryana government hospital — practical, specific, desi-context aware.', 1300);
     el.innerHTML = '<div style="background:linear-gradient(135deg,rgba(6,182,212,.08),rgba(124,58,237,.06));border:1px solid rgba(6,182,212,.3);border-radius:12px;padding:14px">' +
       formatAIMarkdown(text) +
-      '<button onclick="copyMsgText(this,'' + encodeURIComponent(text) + '')" style="margin-top:10px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:5px 12px;font-size:11px;cursor:pointer;color:var(--text2)">📋 Copy Report</button>' +
+      '<button onclick="copyMsgText(this,\'' + encodeURIComponent(text) + '\')" style="margin-top:10px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:5px 12px;font-size:11px;cursor:pointer;color:var(--text2)">📋 Copy Report</button>' +
       '</div>';
   } catch(e) {
     el.innerHTML = '<div style="color:var(--danger);font-size:12px;padding:8px">❌ ' + e.message + '</div>';
@@ -7613,7 +7613,7 @@ Use EXACT markdown format:
       '<div style="font-weight:900;font-size:14px;color:var(--danger)">EMERGENCY PROTOCOL: ' + situation.toUpperCase() + '</div>' +
       '</div>' +
       formatAIMarkdown(text) +
-      '<button onclick="copyMsgText(this,'' + encodeURIComponent(text) + '')" style="margin-top:10px;background:var(--danger);color:#fff;border:none;border-radius:8px;padding:6px 14px;font-size:12px;cursor:pointer;font-weight:700">📋 Copy Protocol</button>' +
+      '<button onclick="copyMsgText(this,\'' + encodeURIComponent(text) + '\')" style="margin-top:10px;background:var(--danger);color:#fff;border:none;border-radius:8px;padding:6px 14px;font-size:12px;cursor:pointer;font-weight:700">📋 Copy Protocol</button>' +
       '</div>';
   } catch(e) {
     el.innerHTML = '<div style="color:var(--danger);font-size:12px;padding:8px">❌ ' + e.message + '</div>';
@@ -13849,7 +13849,7 @@ async function analyzeSciWithAI(){
   if(btn){ btn.textContent = '⏳ Analyzing...'; btn.disabled=true; }
   try {
     const prompt = `You are a top-tier science analyst with the mindset of Feynman + Da Vinci. Analyze these science headlines and give the CRITICAL IMPLICATIONS of each — what does this mean for humanity, consciousness, AI, and the future in 2-3 sharp lines each:\n\n${headlines}\n\nFormat each as: [FIELD] HEADLINE\n→ Implication: ...\n→ Timeline: ...`;
-    const analysis = await callGroqFast(prompt, 'You are the world's sharpest science synthesizer. Connect dots across fields. Be specific, not generic.', 900);
+    const analysis = await callGroqFast(prompt, "You are the world's sharpest science synthesizer. Connect dots across fields. Be specific, not generic.", 900);
     const formatted = analysis.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/→/g,'<span style="color:var(--accent)">→</span>');
     const box = document.createElement('div');
     box.style.cssText = 'margin-top:10px;background:linear-gradient(135deg,rgba(6,182,212,.08),rgba(124,58,237,.06));border:1px solid rgba(6,182,212,.25);border-radius:12px;padding:14px';
