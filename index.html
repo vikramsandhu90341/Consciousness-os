@@ -7184,7 +7184,10 @@ function collectHealthProfile(){
     airQ:g('hAirQ'),screenTime:g('hScreenTime'),envExp:gc('hEnvExp'),
     bloodTest:g('hBloodTest'),dental:g('hDental'),
     stairs:g('hStairs'),balance:g('hBalance'),energyDay:g('hEnergyDay'),
-    goals:gc('hGoals'),mainConcern:g('hMainConcern'),notes:g('hHealthNotes')
+    goals:gc('hGoals'),mainConcern:g('hMainConcern'),notes:g('hHealthNotes'),
+    dxBlood:gc('hDxBlood'),dxUrine:gc('hDxUrine'),dxImaging:gc('hDxImaging'),
+    dxCardiac:gc('hDxCardiac'),dxPulm:gc('hDxPulm'),dxNeuro:gc('hDxNeuro'),
+    dxGI:gc('hDxGI'),dxSpecial:gc('hDxSpecial'),dxNotes:g('hDxNotes')
   };
 }
 
@@ -7214,7 +7217,16 @@ PAIN: ${h.pain} | HEADACHES: ${h.headaches} | NEUROLOGICAL: ${h.neuro}
 SCREEN TIME: ${h.screenTime} | ENV EXPOSURES: ${h.envExp}
 HEALTH GOALS: ${h.goals}
 MAIN CONCERN: ${h.mainConcern}
-NOTES: ${h.notes}`;
+NOTES: ${h.notes}
+TESTS DONE — BLOOD: ${h.dxBlood||'Not specified'}
+TESTS DONE — URINE: ${h.dxUrine||'Not specified'}
+TESTS DONE — IMAGING: ${h.dxImaging||'Not specified'}
+TESTS DONE — CARDIAC: ${h.dxCardiac||'Not specified'}
+TESTS DONE — PULMONARY: ${h.dxPulm||'Not specified'}
+TESTS DONE — NEUROLOGY: ${h.dxNeuro||'Not specified'}
+TESTS DONE — GI/BIOPSY: ${h.dxGI||'Not specified'}
+TESTS DONE — SPECIAL: ${h.dxSpecial||'Not specified'}
+TEST RESULTS/NOTES: ${h.dxNotes||'None provided'}`;
 
   const prompt = `You are an elite integrative medicine doctor combining Western, Ayurvedic, Homeopathic, and Naturopathic knowledge. Based on this patient profile, provide a COMPREHENSIVE 360-degree health report.
 
@@ -7278,6 +7290,29 @@ Respond in this EXACT markdown format:
 ### 🎯 Highest ROI Intervention
 [Single most impactful change for their specific profile — 2 sentences]
 
+### 🔬 Diagnostic Gap Analysis
+Based on their symptoms, conditions, and what tests they've already done, identify:
+
+**✅ Tests Already Done (interpret if results noted):**
+[Reference their actual done tests and what the results mean for their profile — or note if results weren't provided]
+
+**🚨 Critical Missing Tests (order immediately):**
+- [Test name] — [why critical given their specific symptoms/conditions]
+- [Test name] — [reason tied to their data]
+
+**⚠️ Important Gaps (order within 1 month):**
+- [Test name] — [reason]
+- [Test name] — [reason]
+
+**🗓️ Routine Monitoring (annual/biannual):**
+- [Test name] — [screening rationale for their age/sex/risk]
+
+**🩻 Imaging / Procedures Recommended:**
+- [Modality + view] — [specific finding to rule in/out for their case]
+
+**💡 Key Insight from Test Pattern:**
+[1-2 sentences — what their testing history (complete or incomplete) reveals about their health management, and the single highest-leverage diagnostic action]
+
 ---
 ⚕️ For educational purposes. Consult qualified physicians before starting treatments.`;
 
@@ -7296,6 +7331,7 @@ Respond in this EXACT markdown format:
       <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
         <button onclick="copyMsgText(this,'${encodeURIComponent(aiText)}')" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:6px 14px;font-size:12px;cursor:pointer;color:var(--text2)">📋 Copy Full Report</button>
         <button onclick="generateTreatmentPlan()" style="background:linear-gradient(135deg,var(--success),var(--accent));color:#fff;border:none;border-radius:8px;padding:6px 14px;font-size:12px;cursor:pointer;font-weight:700">💊 Detailed Treatment Plan</button>
+        <button onclick="openWorkupFromHealth('${encodeURIComponent((h.mainConcern||h.conditions||'').slice(0,120))}','${encodeURIComponent((h.symptoms||h.heartSymp||'').slice(0,120))}')" style="background:linear-gradient(135deg,#0891b2,#7c3aed);color:#fff;border:none;border-radius:8px;padding:6px 14px;font-size:12px;cursor:pointer;font-weight:700">🔬 Quick Workup</button>
       </div>`;
   }catch(e){
     output.innerHTML=`<div style="font-size:13px;color:var(--text2);padding:12px;background:var(--bg2);border-radius:10px">
@@ -7303,6 +7339,42 @@ Respond in this EXACT markdown format:
       AI analysis temporarily unavailable. Based on your profile, prioritize: sleep quality, daily movement, stress reduction, and hydration.<br>
       <span style="font-size:11px;color:var(--text3)">⚕️ Educational only.</span></div>`;
   }
+}
+
+function openWorkupFromHealth(encodedConcern, encodedSymptoms) {
+  const concern   = decodeURIComponent(encodedConcern  || '');
+  const symptoms  = decodeURIComponent(encodedSymptoms || '');
+
+  // Switch to health tab first (we're already there), then navigate to Medicine OS Workup
+  switchTab('health');
+
+  // Small delay so tab paint completes before we scroll + fill
+  setTimeout(() => {
+    // Open Medicine OS card's Workup sub-tab
+    const workupBtn = document.querySelector('.med-os-tab[onclick*="workup"]');
+    if (workupBtn) switchMedOS('workup', workupBtn);
+
+    // Pre-fill the Workup fields from health profile data
+    const sympEl    = document.getElementById('workupSymptoms');
+    const diseaseEl = document.getElementById('workupDisease');
+    const ageEl     = document.getElementById('workupAge');
+    const sexEl     = document.getElementById('workupSex');
+
+    if (sympEl)    sympEl.value    = symptoms || concern;
+    if (diseaseEl) diseaseEl.value = concern  || '';
+
+    // Pull age + sex from health profile if available
+    const hAge = document.getElementById('hAge');
+    const hSex = document.querySelector('input[name="hSex"]:checked');
+    if (ageEl && hAge && hAge.value)  ageEl.value = hAge.value;
+    if (sexEl && hSex)                sexEl.value = hSex.value.replace(/\s*\(.*\)/,'').trim();
+
+    // Scroll Medicine OS card into view
+    const medCard = document.getElementById('medicineOSCard');
+    if (medCard) medCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    showToast('🔬 Workup pre-filled from your health profile');
+  }, 200);
 }
 
 async function generateTreatmentPlan(){
@@ -7802,6 +7874,10 @@ Only include procedures that are clinically warranted.
 
   try {
     const text = await callGroqFast(prompt, 'You are a senior clinician generating a diagnostic workup. Be complete and specific. Include EVERY relevant investigation for the given presentation. Prioritize by urgency. Use real Indian hospital test nomenclature (LFT, KFT, CBP, etc.) alongside international names. Format must be strict markdown with tables.', 1600);
+
+    // Auto-save summary to health profile immediately after generation
+    _autoSaveWorkupToProfile(text, symptoms, disease);
+
     el.innerHTML = '<div style="background:linear-gradient(135deg,rgba(6,182,212,.08),rgba(124,58,237,.06));border:2px solid rgba(6,182,212,.35);border-radius:12px;padding:14px">' +
       '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">' +
       '<span style="font-size:18px">🔬</span>' +
@@ -7811,9 +7887,87 @@ Only include procedures that are clinically warranted.
       '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">' +
       '<button onclick="copyMsgText(this,\'' + encodeURIComponent(text) + '\')" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:6px 14px;font-size:12px;cursor:pointer;color:var(--text2)">📋 Copy Workup</button>' +
       '<button onclick="switchMedOS(\'labs\',document.querySelectorAll(\'.med-os-tab\')[2])" style="background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff;border:none;border-radius:8px;padding:6px 14px;font-size:12px;cursor:pointer;font-weight:700">🧪 Enter Results → Interpret</button>' +
-      '</div></div>';
+      '<button onclick="saveWorkupToProfile(\'' + encodeURIComponent(text) + '\',\'' + encodeURIComponent(symptoms) + '\',\'' + encodeURIComponent(disease) + '\')" style="background:linear-gradient(135deg,#10b981,#0891b2);color:#fff;border:none;border-radius:8px;padding:6px 14px;font-size:12px;cursor:pointer;font-weight:700">💾 Save to Profile</button>' +
+      '</div>' +
+      '<div style="margin-top:8px;font-size:10px;color:var(--text3)">✅ Priority summary auto-saved to Health Profile → Diagnostic Workup → Test Results</div>' +
+      '</div>';
   } catch(e) {
     el.innerHTML = '<div style="color:var(--danger);font-size:12px;padding:8px">❌ ' + e.message + '</div>';
+  }
+}
+
+// Extract priority summary lines from workup AI text
+function _extractWorkupSummary(text, symptoms, disease) {
+  const label = (symptoms || disease || 'Workup').slice(0, 60);
+  const date  = new Date().toLocaleDateString('en-IN');
+
+  // Try to grab the Priority Summary section
+  const summaryMatch = text.match(/Priority Summary[\s\S]*?(?=###|##|$)/i);
+  const summary = summaryMatch
+    ? summaryMatch[0].replace(/#{1,3}\s*/g,'').trim().slice(0, 800)
+    : text.split('\n').filter(l => l.trim() && !l.startsWith('#')).slice(0,8).join('\n').slice(0,600);
+
+  return `[${date}] Workup: ${label}\n${summary}\n---\n`;
+}
+
+function _autoSaveWorkupToProfile(text, symptoms, disease) {
+  try {
+    const summary = _extractWorkupSummary(text, symptoms, disease);
+
+    // 1. Write into the hDxNotes textarea if it exists in DOM
+    const notesEl = document.getElementById('hDxNotes');
+    if (notesEl) {
+      notesEl.value = (notesEl.value ? notesEl.value + '\n' : '') + summary;
+    }
+
+    // 2. Persist into cos_health_profile localStorage
+    const stored = JSON.parse(localStorage.getItem('cos_health_profile') || '{}');
+    const prev   = stored.dxNotes || '';
+    stored.dxNotes = (prev ? prev + '\n' : '') + summary;
+    stored._workupLastSaved = new Date().toISOString();
+    localStorage.setItem('cos_health_profile', JSON.stringify(stored));
+  } catch(err) {
+    console.warn('[COS] Auto-save workup failed:', err);
+  }
+}
+
+function saveWorkupToProfile(encodedText, encodedSymptoms, encodedDisease) {
+  try {
+    const text     = decodeURIComponent(encodedText);
+    const symptoms = decodeURIComponent(encodedSymptoms);
+    const disease  = decodeURIComponent(encodedDisease);
+
+    // Full text save (not just summary) on explicit user action
+    const date  = new Date().toLocaleDateString('en-IN');
+    const label = (symptoms || disease || 'Workup').slice(0, 60);
+    const entry = `[${date}] FULL WORKUP: ${label}\n${text.slice(0, 1200)}\n---\n`;
+
+    const notesEl = document.getElementById('hDxNotes');
+    if (notesEl) {
+      // Replace auto-saved summary with full entry (avoid duplication)
+      const alreadyHas = notesEl.value.includes(`[${date}] Workup: ${label.slice(0,30)}`);
+      if (alreadyHas) {
+        notesEl.value = notesEl.value.replace(
+          new RegExp(`\\[${date}\\] Workup: [^\\n]*\\n[\\s\\S]*?---\\n`), entry
+        );
+      } else {
+        notesEl.value = (notesEl.value ? notesEl.value + '\n' : '') + entry;
+      }
+    }
+
+    const stored = JSON.parse(localStorage.getItem('cos_health_profile') || '{}');
+    stored.dxNotes = notesEl ? notesEl.value : ((stored.dxNotes || '') + '\n' + entry);
+    stored._workupLastSaved = new Date().toISOString();
+    localStorage.setItem('cos_health_profile', JSON.stringify(stored));
+
+    // Jump to the Diagnostic Workup section in Health tab so user sees it saved
+    const sectionIdx = Array.from(document.querySelectorAll('.health-section'))
+      .findIndex(s => s.querySelector('.card-title')?.textContent?.includes('Diagnostic Workup'));
+    if (sectionIdx > -1) jumpToSection(sectionIdx);
+
+    showToast('💾 Full workup saved to Health Profile → Diagnostic Workup');
+  } catch(err) {
+    showToast('⚠️ Save failed: ' + err.message);
   }
 }
 
