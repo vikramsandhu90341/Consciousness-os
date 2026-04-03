@@ -70,6 +70,12 @@ const GEMINI_KEY=_k;
 // All AI calls go through: https://hidden-wildflower-3301.vikramsandhu90341.workers.dev
 // No key in this file. No key in localStorage. Nothing to leak.
 let GROQ_KEY = 'worker-proxy'; // placeholder so existing references don't crash
+// ── Android-safe fetch with timeout (AbortSignal.timeout unsupported on older Android Chrome) ──
+function cosFetch(url, opts, ms) {
+  const ac = new AbortController();
+  const t = setTimeout(() => ac.abort(), ms || 7000);
+  return fetch(url, { ...(opts||{}), signal: ac.signal }).finally(() => clearTimeout(t));
+}
 const _WORKER_URL='https://hidden-wildflower-3301.vikramsandhu90341.workers.dev';
 // ── COS CONTEXT BUILDER (like CLAUDE.md — injected every Groq call) ──────
 function buildCOSContext(){
@@ -12023,8 +12029,8 @@ async function fetchMetalsPrices(){
   if(cache&&(Date.now()-cache.ts)<300000)return cache.data; // 5 min cache
   try{
     const [gRes,sRes]=await Promise.allSettled([
-      fetch('https://api.metals.live/v1/spot/gold',{signal:AbortSignal.timeout(6000)}),
-      fetch('https://api.metals.live/v1/spot/silver',{signal:AbortSignal.timeout(6000)})
+      cosFetch('https://api.metals.live/v1/spot/gold',{},6000),
+      cosFetch('https://api.metals.live/v1/spot/silver',{},6000)
     ]);
     const goldUSD=gRes.status==='fulfilled'?(await gRes.value.json())[0]?.price:null;
     const silverUSD=sRes.status==='fulfilled'?(await sRes.value.json())[0]?.price:null;
@@ -12538,6 +12544,51 @@ function liveCache(key, data) {
   return null;
 }
 
+// ── NEWS CLASSIFIER HELPERS ───────────────────────────────────────────
+function guessRegionEmoji(text) {
+  if (!text) return '🌍';
+  const t = text.toLowerCase();
+  if (/india|delhi|mumbai|modi|bjp|rupee|bse|nse|haryana|punjab/.test(t)) return '🇮🇳';
+  if (/china|beijing|xi jinping|pla|yuan|ccp|taiwan|hong kong/.test(t)) return '🇨🇳';
+  if (/\bus\b|usa|america|washington|biden|trump|\bfed\b|dollar|nasdaq|dow|pentagon/.test(t)) return '🇺🇸';
+  if (/russia|moscow|putin|ruble|ukraine|kremlin/.test(t)) return '🇷🇺';
+  if (/ukraine|kyiv|zelensky/.test(t)) return '🇺🇦';
+  if (/europe|\beu\b|euro |ecb|nato|brussels/.test(t)) return '🇪🇺';
+  if (/\buk\b|britain|london|sterling|boe|england/.test(t)) return '🇬🇧';
+  if (/japan|tokyo|yen|boj/.test(t)) return '🇯🇵';
+  if (/israel|gaza|hamas|tel aviv|idf/.test(t)) return '🇮🇱';
+  if (/iran|tehran|khamenei/.test(t)) return '🇮🇷';
+  if (/saudi|riyadh|opec/.test(t)) return '🇸🇦';
+  if (/pakistan|islamabad|imran/.test(t)) return '🇵🇰';
+  if (/africa|nigeria|kenya|ethiopia|ghana/.test(t)) return '🌍';
+  if (/brazil|latin|mexico|argentina/.test(t)) return '🌎';
+  if (/brics|g20|\bun\b|\bwho\b|\bimf\b|world bank/.test(t)) return '🌐';
+  return '🌍';
+}
+
+function guessSciCat(text) {
+  if (!text) return 'Science';
+  const t = text.toLowerCase();
+  if (/\bai\b|artificial intelligence|machine learning|llm|gpt|neural|deep learning|openai|deepmind|gemini|claude|mistral/.test(t)) return 'AI';
+  if (/space|nasa|rocket|satellite|mars|moon|asteroid|cosmos|orbit|iss|jwst|black hole|galaxy/.test(t)) return 'Space';
+  if (/dna|gene|genome|protein|cell|biology|evolution|crispr|organism|microbe/.test(t)) return 'Biology';
+  if (/climate|carbon|emission|warming|fossil|renewable|solar|wind energy|energy transition/.test(t)) return 'Climate';
+  if (/drug|vaccine|medicine|cancer|disease|virus|health|clinical trial|fda|therapy|pharma/.test(t)) return 'Health';
+  if (/physics|quantum|particle|atom|fusion|reactor|nuclear|superconductor/.test(t)) return 'Physics';
+  if (/brain|neuro|cognitive|consciousness|mental|synapse|memory|alzheimer/.test(t)) return 'Neuro';
+  if (/crypto|blockchain|bitcoin|web3|defi|semiconductor|chip|tech/.test(t)) return 'Tech';
+  return 'Science';
+}
+
+function guessMarketImpact(text) {
+  if (!text) return 'Neutral';
+  const t = text.toLowerCase();
+  if (/crash|collapse|war|conflict|sanction|ban|crisis|default|recession|attack|explosion/.test(t)) return 'Bearish';
+  if (/surge|rally|record|breakthrough|deal|growth|launch|bull|positive|gain|rise/.test(t)) return 'Bullish';
+  if (/rate|fed|inflation|gdp|jobs|employment|earnings|report/.test(t)) return 'Watch';
+  return 'Neutral';
+}
+
 // ── LIVE WORLD NEWS FETCHER ───────────────────────────────────────────
 async function fetchLiveWorldNews(force) {
   const cacheKey = 'cos_live_world_news';
@@ -12561,7 +12612,7 @@ async function fetchLiveWorldNews(force) {
   const tgResults = [];
   for (const ch of TG_WORLD_CHANNELS.slice(0, 3)) { // try top 3 to avoid slowness
     try {
-      const res = await fetch(TG_RSS_PROXY + ch + '?limit=8', { signal: AbortSignal.timeout(5000) });
+      const res = await cosFetch(TG_RSS_PROXY + ch + '?limit=8', {}, 5000);
       if (!res.ok) continue;
       const text = await res.text();
       const xml = new DOMParser().parseFromString(text, 'text/xml');
@@ -12694,7 +12745,7 @@ async function fetchCrypto() {
 
   const ids = 'bitcoin,ethereum,solana,binancecoin,ripple,cardano,dogecoin';
   const url = `https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd,inr&include_24hr_change=true&include_market_cap=true`;
-  const resp = await fetch(url, { signal: AbortSignal.timeout(8000) });
+  const resp = await cosFetch(url, {}, 8000);
   if (!resp.ok) throw new Error('CoinGecko ' + resp.status);
   const raw = await resp.json();
 
@@ -12741,7 +12792,7 @@ async function fetchForex() {
   if (cached && isFresh(cached.ts)) return cached.data;
 
   // Free tier — returns base USD rates, no key needed
-  const resp = await fetch('https://open.er-api.com/v6/latest/USD', { signal: AbortSignal.timeout(8000) });
+  const resp = await cosFetch('https://open.er-api.com/v6/latest/USD', {}, 8000);
   if (!resp.ok) throw new Error('ExchangeRate ' + resp.status);
   const raw = await resp.json();
   const rates = raw.rates || {};
@@ -13115,7 +13166,7 @@ async function _fetchTelegramIntelPanel() {
   for (const { ch, label, cat } of _TG_INTEL_CHANNELS.slice(0, 3)) {
     try {
       const url = `${TG_RSS}${ch}&count=3&_t=${Date.now()}`;
-      const res = await fetch(url, { signal: AbortSignal.timeout(6000) });
+      const res = await cosFetch(url, {}, 6000);
       if (!res.ok) continue;
       const data = await res.json();
       if (data.status !== 'ok' || !data.items?.length) continue;
@@ -13217,7 +13268,7 @@ async function fetchLiveScienceNews(force) {
   const tgSciResults = [];
   for (const ch of TG_SCI_CHANNELS.slice(0, 3)) {
     try {
-      const res = await fetch(TG_RSS_PROXY + ch + '?limit=8', { signal: AbortSignal.timeout(5000) });
+      const res = await cosFetch(TG_RSS_PROXY + ch + '?limit=8', {}, 5000);
       if (!res.ok) continue;
       const text = await res.text();
       const xml = new DOMParser().parseFromString(text, 'text/xml');
@@ -14309,7 +14360,7 @@ async function fetchTabNews(tabType) {
   // Try RSS feeds
   for (const feed of cfg.feeds) {
     try {
-      const res = await fetch(feed + '&_t=' + Date.now(), { signal: AbortSignal.timeout(7000), cache: 'no-store' });
+      const res = await cosFetch(feed + '&_t=' + Date.now(), { cache: 'no-store' }, 7000);
       const data = await res.json();
       if (data.status === 'ok' && data.items?.length >= 2) {
         items = data.items.slice(0, 6).map(i => ({
@@ -14975,12 +15026,14 @@ async function initScienceTab() {
 async function checkWorkerHealth() {
   const statusEls = document.querySelectorAll('.worker-status');
   try {
+    const ac = new AbortController();
+    const _pt = setTimeout(() => ac.abort(), 6000);
     const res = await fetch(_WORKER_URL, {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:1,messages:[{role:'user',content:'ping'}]}),
-      signal: AbortSignal.timeout(6000)
-    });
+      signal: ac.signal
+    }).finally(() => clearTimeout(_pt));
     const online = res.ok || res.status === 400;
     statusEls.forEach(el => {
       el.textContent = online ? '🟢 AI Online' : '🔴 Worker down';
