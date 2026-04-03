@@ -3876,6 +3876,9 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
 
   <div id="studySectionsContainer"></div>
 
+  <!-- Live news repeated below sections so it's always visible -->
+  <div id="careerNewsContainerMid" style="margin-bottom:4px"></div>
+
   <div style="display:flex;justify-content:space-between;margin-top:4px;margin-bottom:14px">
     <button class="btn btn-secondary" id="studyPrevBtn" onclick="studyPrev()" style="display:none">← Previous</button>
     <div style="flex:1"></div>
@@ -3930,6 +3933,9 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
     <button class="btn btn-primary btn-block" onclick="generateSchedule()">📅 Generate My Optimal Schedule</button>
     <div id="scheduleResult" style="margin-top:14px"></div>
   </div>
+
+  <!-- Live career news at bottom of tab -->
+  <div id="careerNewsContainerBottom" style="margin-top:4px"></div>
 </div>
 
 <!-- ════════════════════════════════════════════
@@ -4287,7 +4293,7 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
       </div>
     </div>
     <div id="tickerModalContent" style="display:grid;gap:8px"></div>
-    <div style="font-size:10px;color:var(--text3);margin-top:12px;text-align:center">Sources: CoinGecko (crypto) · metals.live (gold/silver) · ExchangeRate-API (forex) · Groq (indices ~est)</div>
+    <div style="font-size:10px;color:var(--text3);margin-top:12px;text-align:center">Sources: CoinGecko (crypto) · metals.live (gold/silver) · ExchangeRate-API (forex) · Yahoo Finance (indices · live)</div>
   </div>
 </div>
 
@@ -12819,48 +12825,88 @@ async function fetchForex() {
   return data;
 }
 
-// ── SOURCE 3: Groq — indices + commodities (structured AI fetch) ───────
-// NSE/Nifty has no free unauthenticated API. Groq is the most honest free source.
+// ── SOURCE 3: Yahoo Finance (real data) → Groq estimate fallback ────────
+// Yahoo Finance unofficial JSON — free, no key, works via allorigins CORS proxy
 async function fetchIndicesViaGroq() {
   const cacheKey = 'cos_indices_live';
   const cached = JSON.parse(localStorage.getItem(cacheKey) || 'null');
   if (cached && isFresh(cached.ts)) return cached.data;
 
-  const today = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
-  const prompt = `Today is ${today}. Give current approximate market levels for these assets based on your latest knowledge. Format as JSON array ONLY:
-[
-  {"name":"Nifty 50","type":"index","value":23150,"change":-0.4,"emoji":"🇮🇳","displayPrice":"23,150"},
-  {"name":"Sensex","type":"index","value":76200,"change":-0.3,"emoji":"📈","displayPrice":"76,200"},
-  {"name":"S&P 500","type":"index","value":5500,"change":0.5,"emoji":"🏛️","displayPrice":"5,500"},
-  {"name":"Nasdaq","type":"index","value":17800,"change":0.8,"emoji":"💻","displayPrice":"17,800"},
-  {"name":"Gold","type":"commodity","value":2350,"change":0.3,"emoji":"🥇","displayPrice":"$2,350"},
-  {"name":"Oil WTI","type":"commodity","value":78,"change":-0.8,"emoji":"🛢️","displayPrice":"$78"},
-  {"name":"Silver","type":"commodity","value":27,"change":1.1,"emoji":"🪙","displayPrice":"$27"},
-  {"name":"VIX","type":"index","value":16,"change":-3.2,"emoji":"😱","displayPrice":"16.0"}
-]
-Return ONLY the JSON array. Use real approximate current values. Label these as estimates.`;
+  // Tickers: ^NSEI=Nifty50, ^BSESN=Sensex, ^GSPC=S&P500, ^IXIC=Nasdaq,
+  //          GC=F=Gold, CL=F=Oil, SI=F=Silver, ^VIX=VIX
+  const TICKERS = [
+    { sym: '^NSEI',  name: 'Nifty 50',  type: 'index',     emoji: '🇮🇳', fmt: (v)=>(v/1).toLocaleString('en-IN',{maximumFractionDigits:0}) },
+    { sym: '^BSESN', name: 'Sensex',    type: 'index',     emoji: '📈', fmt: (v)=>(v/1).toLocaleString('en-IN',{maximumFractionDigits:0}) },
+    { sym: '^GSPC',  name: 'S&P 500',   type: 'index',     emoji: '🏛️', fmt: (v)=>(v/1).toLocaleString('en-US',{maximumFractionDigits:0}) },
+    { sym: '^IXIC',  name: 'Nasdaq',    type: 'index',     emoji: '💻', fmt: (v)=>(v/1).toLocaleString('en-US',{maximumFractionDigits:0}) },
+    { sym: 'GC=F',   name: 'Gold',      type: 'commodity', emoji: '🥇', fmt: (v)=>'$'+(v/1).toLocaleString('en-US',{maximumFractionDigits:0}) },
+    { sym: 'CL=F',   name: 'Oil WTI',   type: 'commodity', emoji: '🛢️', fmt: (v)=>'$'+(v/1).toFixed(2) },
+    { sym: 'SI=F',   name: 'Silver',    type: 'commodity', emoji: '🪙', fmt: (v)=>'$'+(v/1).toFixed(2) },
+    { sym: '^VIX',   name: 'VIX',       type: 'index',     emoji: '😱', fmt: (v)=>(v/1).toFixed(2) },
+  ];
 
   try {
-    const raw = await callGroqJSON(prompt, 'You are a financial data assistant. Return ONLY valid JSON array. No markdown, no explanation.', 800);
-    const match = raw.match(/\[[\s\S]*\]/);
-    if (!match) throw new Error('No JSON array');
-    const parsed = JSON.parse(match[0]);
-    const data = parsed.map(item => mkAsset(
-      item.name, item.type || 'index', item.value, item.change || 0,
-      { displayPrice: item.displayPrice || String(item.value), emoji: item.emoji || '📊', source: 'Groq estimate' }
-    ));
+    // Batch fetch all tickers in one Yahoo Finance call
+    const syms = TICKERS.map(t => t.sym).join(',');
+    const yahooUrl = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(syms)}&fields=regularMarketPrice,regularMarketChangePercent`;
+    const proxyUrl = 'https://api.allorigins.win/get?url=' + encodeURIComponent(yahooUrl);
+    const res = await cosFetch(proxyUrl, {}, 10000);
+    if (!res.ok) throw new Error('allorigins ' + res.status);
+    const outer = await res.json();
+    const payload = JSON.parse(outer.contents);
+    const quotes = payload?.quoteResponse?.result || [];
+    if (!quotes.length) throw new Error('No quotes returned');
+
+    const data = quotes.map(q => {
+      const meta = TICKERS.find(t => t.sym === q.symbol) || { name: q.shortName||q.symbol, type:'index', emoji:'📊', fmt:(v)=>String(v) };
+      const price = q.regularMarketPrice || 0;
+      const change = q.regularMarketChangePercent || 0;
+      return mkAsset(meta.name, meta.type, price, change, {
+        displayPrice: meta.fmt(price),
+        emoji: meta.emoji,
+        source: 'Yahoo Finance'
+      });
+    });
+
     localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), data }));
     return data;
   } catch(e) {
-    console.warn('[Indices/Groq]', e.message);
-    // Static fallback — clearly labelled as estimates
-    return [
-      mkAsset('Nifty 50',  'index', 23100, -0.4, { displayPrice:'~23,100', emoji:'🇮🇳', source:'Estimated' }),
-      mkAsset('Sensex',    'index', 76000, -0.3, { displayPrice:'~76,000', emoji:'📈',  source:'Estimated' }),
-      mkAsset('S&P 500',   'index', 5500,   0.5, { displayPrice:'~5,500',  emoji:'🏛️', source:'Estimated' }),
-      mkAsset('Gold',   'commodity', 2350,  0.3, { displayPrice:'~$2,350', emoji:'🥇', source:'Estimated' }),
-      mkAsset('Oil WTI','commodity',   78, -0.8, { displayPrice:'~$78',    emoji:'🛢️', source:'Estimated' }),
-    ];
+    console.warn('[Indices/Yahoo]', e.message, '→ falling back to Groq estimate');
+    // Groq fallback — clearly labelled as estimates
+    const today = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+    const prompt = `Today is ${today}. Give current approximate market levels for these assets. Return ONLY a JSON array:
+[{"name":"Nifty 50","type":"index","value":23150,"change":-0.4,"emoji":"🇮🇳","displayPrice":"23,150"},
+{"name":"Sensex","type":"index","value":76200,"change":-0.3,"emoji":"📈","displayPrice":"76,200"},
+{"name":"S&P 500","type":"index","value":5500,"change":0.5,"emoji":"🏛️","displayPrice":"5,500"},
+{"name":"Nasdaq","type":"index","value":17800,"change":0.8,"emoji":"💻","displayPrice":"17,800"},
+{"name":"Gold","type":"commodity","value":2350,"change":0.3,"emoji":"🥇","displayPrice":"$2,350"},
+{"name":"Oil WTI","type":"commodity","value":78,"change":-0.8,"emoji":"🛢️","displayPrice":"$78"},
+{"name":"Silver","type":"commodity","value":27,"change":1.1,"emoji":"🪙","displayPrice":"$27"},
+{"name":"VIX","type":"index","value":16,"change":-3.2,"emoji":"😱","displayPrice":"16.0"}]
+Use real approximate current values.`;
+    try {
+      const raw = await callGroqJSON(prompt, 'Return ONLY valid JSON array. No markdown.', 600);
+      const match = raw.match(/\[[\s\S]*\]/);
+      if (!match) throw new Error('no JSON');
+      const parsed = JSON.parse(match[0]);
+      const data = parsed.map(item => mkAsset(
+        item.name, item.type||'index', item.value, item.change||0,
+        { displayPrice: '~'+item.displayPrice, emoji: item.emoji||'📊', source: 'Groq estimate' }
+      ));
+      localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), data }));
+      return data;
+    } catch(e2) {
+      return [
+        mkAsset('Nifty 50',  'index',     23100, -0.4, { displayPrice:'~23,100', emoji:'🇮🇳', source:'Estimated' }),
+        mkAsset('Sensex',    'index',     76000, -0.3, { displayPrice:'~76,000', emoji:'📈',  source:'Estimated' }),
+        mkAsset('S&P 500',   'index',      5500,  0.5, { displayPrice:'~5,500',  emoji:'🏛️', source:'Estimated' }),
+        mkAsset('Nasdaq',    'index',     17800,  0.8, { displayPrice:'~17,800', emoji:'💻',  source:'Estimated' }),
+        mkAsset('Gold',      'commodity',  2350,  0.3, { displayPrice:'~$2,350', emoji:'🥇',  source:'Estimated' }),
+        mkAsset('Oil WTI',   'commodity',    78, -0.8, { displayPrice:'~$78',    emoji:'🛢️', source:'Estimated' }),
+        mkAsset('Silver',    'commodity',    27,  1.1, { displayPrice:'~$27',    emoji:'🪙',  source:'Estimated' }),
+        mkAsset('VIX',       'index',        16, -3.2, { displayPrice:'~16.0',   emoji:'😱',  source:'Estimated' }),
+      ];
+    }
   }
 }
 
@@ -12989,7 +13035,7 @@ function renderAllMarkets(m) {
   const srcEl = document.getElementById('marketSources');
   if (srcEl) {
     const sources = [...new Set([...m.crypto,...m.forex,...m.indices].map(a => a.source))].join(' · ');
-    srcEl.innerHTML = `<div style="font-size:10px;color:var(--text3);padding:8px 0">Sources: ${sources} &nbsp;|&nbsp; Crypto: live &nbsp;|&nbsp; Forex: live &nbsp;|&nbsp; Indices: ~estimated</div>`;
+    srcEl.innerHTML = `<div style="font-size:10px;color:var(--text3);padding:8px 0">Sources: ${sources} &nbsp;|&nbsp; Crypto: live &nbsp;|&nbsp; Forex: live &nbsp;|&nbsp; Indices: ${m.indices?.[0]?.source === 'Yahoo Finance' ? '<span style="color:#10b981">live ✓</span>' : '~estimated'}</div>`;
   }
 }
 
@@ -14322,7 +14368,19 @@ async function fetchTabNews(tabType) {
       icon: '💼',
       label: 'Career & Tech Intel',
       color: '#f59e0b',
-      aiPrompt: 'List 5 current trends in career, tech jobs, and skills that matter most in 2025-2026 India. Format: title | why it matters for an ambitious person | action step. Be specific.'
+      aiPrompt: (() => {
+        try {
+          const s = JSON.parse(localStorage.getItem('cos_study_profile') || '{}');
+          const field = s.stField || '';
+          const target = s.stTargetCareer || '';
+          const skills = s.stSkillsOwned ? (Array.isArray(s.stSkillsOwned) ? s.stSkillsOwned.join(', ') : s.stSkillsOwned) : '';
+          const edu = s.stEduLevel || '';
+          if (field || target) {
+            return `The user is a ${edu} student/professional in "${field || 'general'}" targeting "${target || 'career growth'}". ${skills ? 'Current skills: '+skills+'.' : ''} List 5 highly relevant current trends, job opportunities, and skill-building actions for THIS specific person in 2025-2026 India. Format: title | why it matters for this person | exact action step. Be hyper-specific to their field and goals.`;
+          }
+        } catch(e) {}
+        return 'List 5 current high-value trends in career, tech jobs, and skills for ambitious young professionals in India 2025-2026. Format: title | why it matters | action step today. Be specific and actionable.';
+      })()
     }
   };
   const cfg = configs[tabType];
@@ -14347,6 +14405,12 @@ async function fetchTabNews(tabType) {
   const cached = JSON.parse(localStorage.getItem(cacheKey) || 'null');
   if (cached && (Date.now() - cached.ts) < 15 * 60 * 1000) {
     renderTabNews(el, cached.items, cfg);
+    if (tabType === 'career') {
+      const mid = document.getElementById('careerNewsContainerMid');
+      const bot = document.getElementById('careerNewsContainerBottom');
+      if (mid) renderTabNews(mid, cached.items, cfg);
+      if (bot) renderTabNews(bot, cached.items, cfg);
+    }
     return;
   }
 
@@ -14391,6 +14455,13 @@ async function fetchTabNews(tabType) {
   if (items.length) {
     localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), items }));
     renderTabNews(el, items, cfg);
+    // Mirror to mid + bottom containers in Career tab
+    if (tabType === 'career') {
+      const mid = document.getElementById('careerNewsContainerMid');
+      const bot = document.getElementById('careerNewsContainerBottom');
+      if (mid) renderTabNews(mid, items, cfg);
+      if (bot) renderTabNews(bot, items, cfg);
+    }
   } else {
     el.innerHTML = '';
   }
