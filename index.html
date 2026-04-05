@@ -6,7 +6,7 @@
 <title>Consciousness OS</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#7c3aed">
-  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
@@ -29,10 +29,16 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db   = firebase.firestore();
 
-// Enable offline persistence — synchronizeTabs:true avoids multi-tab lock conflict
+// Enable offline persistence — compat SDK v10 (synchronizeTabs replaces enableMultiTabIndexedDbPersistence)
+try {
+  db.settings({ cacheSizeBytes: firebase.firestore.CACHE_SIZE_UNLIMITED });
+} catch(e) {}
 db.enablePersistence({ synchronizeTabs: true }).catch(err => {
-  if(err.code === 'failed-precondition') console.warn('[COS] Firestore persistence: multi-tab conflict — running in memory mode');
-  else if(err.code === 'unimplemented') console.warn('[COS] Firestore persistence: browser not supported');
+  if (err.code === 'failed-precondition') {
+    console.warn('[COS] Firestore: multi-tab conflict — memory mode');
+  } else if (err.code === 'unimplemented') {
+    console.warn('[COS] Firestore offline: browser not supported');
+  }
 });
 
 // Handle redirect result (mobile Google sign-in returns here)
@@ -256,7 +262,7 @@ function _handleAuthUser(fbUser) {
       if (typeof buildProfileBar === 'function') setTimeout(buildProfileBar, 500);
     }
   } else {
-    dbg('log', '🔐 Auth state: signed out — showing login screen');
+    // Auth state: not yet signed in (normal before Firebase resolves session)
     // Show login form (NOT spinner)
     if (overlay)   overlay.style.display = 'flex';
     if (restoreUI) restoreUI.style.display = 'none';
@@ -14969,24 +14975,44 @@ document.addEventListener('DOMContentLoaded',()=>{setTimeout(()=>{if(document.ge
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./service-worker.js?v=8')
+        // v10 forces re-install of SW, clearing broken modefault.js precache
+        navigator.serviceWorker.register('./service-worker.js?v=9')
           .then(reg => {
             console.log('✅ SW registered:', reg.scope);
-            reg.update(); // check for update immediately on load
-            setInterval(() => reg.update(), 60000); // re-check every 60s
-            // When a new SW is waiting, reload to activate it
+            reg.update();
+            setInterval(() => reg.update(), 60000);
             reg.addEventListener('updatefound', () => {
               const nw = reg.installing;
               if (!nw) return;
               nw.addEventListener('statechange', () => {
-                if (nw.state === 'installed' && navigator.serviceWorker.controller) {
-                  console.log('[SW] New version ready — reloading…');
-                  window.location.reload();
+                if (nw.state === 'installed') {
+                  nw.postMessage({ type: 'SKIP_WAITING' });
+                  if (navigator.serviceWorker.controller) {
+                    console.log('[SW] New version activated — reloading…');
+                    window.location.reload();
+                  }
                 }
               });
             });
           })
-          .catch(err => console.log('SW registration failed:', err));
+          .catch(err => console.warn('SW registration failed (non-fatal):', err.message));
+
+        // Reload once when new SW takes control (ensures fresh cache is used)
+        let _swRefreshing = false;
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          if (!_swRefreshing) { _swRefreshing = true; window.location.reload(); }
+        });
+
+        // Purge ALL old broken caches (removes modefault.js 404 source)
+        if ('caches' in window) {
+          caches.keys().then(keys => {
+            keys.forEach(k => {
+              if (k !== 'cos-static-v9') {
+                caches.delete(k).then(() => console.log('[COS] Purged stale cache:', k));
+              }
+            });
+          });
+        }
       });
     }
   
