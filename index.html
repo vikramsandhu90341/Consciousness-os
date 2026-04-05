@@ -2778,8 +2778,6 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
 ════════════════════════════════════════════ -->
 <div class="tab-panel" id="tab-health">
   <div class="section-header">❤️ Health Profile</div>
-  <!-- Live health news injected here -->
-  <div id="healthNewsContainer" style="margin-bottom:14px"></div>
 
   <div class="card">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
@@ -3138,6 +3136,9 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
     </div>
     <div id="calNutritionInsight" style="margin-top:10px;font-size:13px;line-height:1.6;color:var(--text2)"></div>
   </div>
+
+  <!-- ── Live Health News — bottom of tab ── -->
+  <div id="healthNewsContainer" style="margin-top:14px;margin-bottom:4px"></div>
 
 </div>
 
@@ -5782,7 +5783,7 @@ function switchTab(tabId) {
     else if (id === 'science') { buildScienceDisplay(); updateScienceTimestamp(); }
     if (id === 'world'    && typeof initWorldTab    === 'function') initWorldTab();
     else if (id === 'world') { buildWorldPanel(); buildClickableNews(); }
-    if (id === 'path'     || id === 'career') setTimeout(()=>fetchTabNews('career'),1200);
+    if (id === 'path'     || id === 'career') { try{buildStudySections();updateStudyNav();}catch(e){} setTimeout(()=>fetchTabNews('career'),1200); }
     if (id === 'analysis' && typeof initAnalysis    === 'function') initAnalysis();
     if (id === 'dreams'   && typeof initDreamsTab   === 'function') initDreamsTab();
     else if (id === 'dreams') { renderDreamJournal(); computeLucidProbability(); }
@@ -12465,6 +12466,7 @@ function init(){
   _safe(buildAIModelsBar,'buildAIModelsBar');
   _safe(buildApiKeysList,'buildApiKeysList');
   _safe(buildHealthSections,'buildHealthSections');
+  _safe(buildStudySections,'buildStudySections');
   _safe(buildGamesGrid,'buildGamesGrid');
   _safe(buildTechniques,'buildTechniques');
   _safe(buildRCGrid,'buildRCGrid');
