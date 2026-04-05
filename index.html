@@ -76,6 +76,32 @@ function cosFetch(url, opts, ms) {
   const t = setTimeout(() => ac.abort(), ms || 7000);
   return fetch(url, { ...(opts||{}), signal: ac.signal }).finally(() => clearTimeout(t));
 }
+// Route CORS-blocked URLs through Cloudflare Worker proxy
+// Worker must handle: POST {action:'proxy', url:'...'} → returns {ok, status, body, json}
+async function workerProxy(url, ms) {
+  const ac = new AbortController();
+  const t = setTimeout(() => ac.abort(), ms || 10000);
+  try {
+    const res = await fetch(_WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'proxy', url }),
+      signal: ac.signal
+    });
+    if (!res.ok) throw new Error('Worker proxy ' + res.status);
+    const d = await res.json();
+    if (!d.ok && !d.body) throw new Error('Worker proxy returned error: ' + JSON.stringify(d).slice(0,80));
+    // Return a response-like object
+    return {
+      ok: true,
+      status: d.status || 200,
+      json: async () => typeof d.json !== 'undefined' ? d.json : JSON.parse(d.body),
+      text: async () => d.body || ''
+    };
+  } finally {
+    clearTimeout(t);
+  }
+}
 const _WORKER_URL='https://hidden-wildflower-3301.vikramsandhu90341.workers.dev';
 // ── COS CONTEXT BUILDER (like CLAUDE.md — injected every Groq call) ──────
 function buildCOSContext(){
@@ -750,7 +776,7 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
 
 /* ── STUDY QUESTIONNAIRE ── */
 .study-section{display:none}
-.study-section.active{display:block}
+.study-section.active{display:block;animation:fadeUp .2s ease}
 .study-jump-bar{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:12px}
 .study-jump{padding:3px 8px;border-radius:16px;border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-size:10px;cursor:pointer;transition:all .2s}
 .study-jump.active{background:var(--primary);color:#fff;border-color:var(--primary)}
@@ -1717,7 +1743,7 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
       <button onclick="closeQuickSettingsPopup();switchTab('settings')" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:7px;font-size:11px;cursor:pointer;color:var(--text)">⚙️ Full Settings</button>
       <button onclick="closeQuickSettingsPopup();switchTab('vault')" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:7px;font-size:11px;cursor:pointer;color:var(--text)">🔮 Vault</button>
       <button onclick="closeQuickSettingsPopup();openReferralModal()" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:7px;font-size:11px;cursor:pointer;color:var(--text)">🎁 Refer & Earn</button>
-      <button onclick="closeQuickSettingsPopup();toggleDevPanel()" style="background:var(--bg3);border:1px solid rgba(124,58,237,.3);border-radius:8px;padding:7px;font-size:11px;cursor:pointer;color:var(--primary)" id="qsDevBtn">🛠️ Dev Panel</button>
+      <button onclick="closeQuickSettingsPopup();toggleDevPanel()" style="background:var(--bg3);border:1px solid rgba(124,58,237,.3);border-radius:8px;padding:7px;font-size:11px;cursor:pointer;color:var(--primary);display:none" id="qsDevBtn">🛠️ Dev Panel</button>
     </div>
   </div>
 </div>
@@ -3861,10 +3887,7 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
 ════════════════════════════════════════════ -->
 <div class="tab-panel" id="tab-path">
   <div class="section-header">🎓 Study & Career Intelligence</div>
-  <!-- Live career/tech news injected here -->
-  <div id="careerNewsContainer" style="margin-bottom:14px"></div>
-
-  <div class="card">
+  <div class="card" style="padding-bottom:8px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
       <div style="font-size:13px;font-weight:700;color:var(--text2)">Section <span id="studySectionNum">1</span> of 18</div>
       <div style="font-size:11px;color:var(--text3)" id="studySectionName">Identity & Academic Context</div>
@@ -3875,9 +3898,6 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
   </div>
 
   <div id="studySectionsContainer"></div>
-
-  <!-- Live news repeated below sections so it's always visible -->
-  <div id="careerNewsContainerMid" style="margin-bottom:4px"></div>
 
   <div style="display:flex;justify-content:space-between;margin-top:4px;margin-bottom:14px">
     <button class="btn btn-secondary" id="studyPrevBtn" onclick="studyPrev()" style="display:none">← Previous</button>
@@ -4293,7 +4313,7 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
       </div>
     </div>
     <div id="tickerModalContent" style="display:grid;gap:8px"></div>
-    <div style="font-size:10px;color:var(--text3);margin-top:12px;text-align:center">Sources: CoinGecko (crypto) · metals.live (gold/silver) · ExchangeRate-API (forex) · Yahoo Finance (indices · live)</div>
+    <div style="font-size:10px;color:var(--text3);margin-top:12px;text-align:center">Sources: CoinGecko (crypto) · Yahoo Finance (gold/silver/indices · live) · ExchangeRate-API (forex)</div>
   </div>
 </div>
 
@@ -12034,12 +12054,27 @@ async function fetchMetalsPrices(){
   const cache=JSON.parse(localStorage.getItem('cos_metals_live')||'null');
   if(cache&&(Date.now()-cache.ts)<300000)return cache.data; // 5 min cache
   try{
-    const [gRes,sRes]=await Promise.allSettled([
-      cosFetch('https://api.metals.live/v1/spot/gold',{},6000),
-      cosFetch('https://api.metals.live/v1/spot/silver',{},6000)
-    ]);
-    const goldUSD=gRes.status==='fulfilled'?(await gRes.value.json())[0]?.price:null;
-    const silverUSD=sRes.status==='fulfilled'?(await sRes.value.json())[0]?.price:null;
+    // Pull gold/silver from Yahoo Finance via Worker proxy (GC=F = Gold, SI=F = Silver)
+    const yahooUrl = 'https://query1.finance.yahoo.com/v7/finance/quote?symbols=GC%3DF%2CSI%3DF&fields=regularMarketPrice';
+    let goldUSD = null, silverUSD = null;
+    try {
+      const wr = await workerProxy(yahooUrl, 8000);
+      const payload = await wr.json();
+      const quotes = payload?.quoteResponse?.result || [];
+      const gq = quotes.find(q => q.symbol === 'GC=F');
+      const sq = quotes.find(q => q.symbol === 'SI=F');
+      goldUSD = gq?.regularMarketPrice || null;
+      silverUSD = sq?.regularMarketPrice || null;
+    } catch(_) {
+      // Final fallback: use cached indices data if available
+      const idxCache = JSON.parse(localStorage.getItem('cos_indices_live')||'null');
+      if (idxCache?.data) {
+        const gd = idxCache.data.find(d => d.name === 'Gold');
+        const sd = idxCache.data.find(d => d.name === 'Silver');
+        goldUSD = gd?.value || null;
+        silverUSD = sd?.value || null;
+      }
+    }
     // Convert to INR using cached forex rate
     const forexCache=JSON.parse(localStorage.getItem('cos_forex_live')||'null');
     const usdInr=forexCache?.data?.find(f=>f.name==='USD/INR')?.value||84;
@@ -12047,7 +12082,7 @@ async function fetchMetalsPrices(){
       goldUSD:goldUSD,silverUSD:silverUSD,
       goldINR:goldUSD?(goldUSD*usdInr/31.1035).toFixed(0):null, // per gram
       silverINR:silverUSD?(silverUSD*usdInr/1000).toFixed(0):null, // per kg
-      usdInr:usdInr,ts:Date.now(),source:'metals.live'
+      usdInr:usdInr,ts:Date.now(),source:'Yahoo Finance'
     };
     localStorage.setItem('cos_metals_live',JSON.stringify({ts:Date.now(),data}));
     return data;
@@ -12603,8 +12638,8 @@ async function fetchLiveWorldNews(force) {
     if (cached) return cached;
   }
 
-  // ── LAYER 0: Telegram public channels via RSS proxy ──────────────────────
-  // These channels have public RSS via tg.i-c-a.su (no token needed, public posts only)
+  // ── LAYER 0: Telegram public channels via Worker proxy (CORS-safe) ─────
+  // tg.i-c-a.su blocks GitHub Pages origin — route through Worker
   const TG_WORLD_CHANNELS = [
     'watcher_guru',       // Watcher.Guru — global breaking news
     'brics_news',         // BRICS News
@@ -12618,9 +12653,17 @@ async function fetchLiveWorldNews(force) {
   const tgResults = [];
   for (const ch of TG_WORLD_CHANNELS.slice(0, 3)) { // try top 3 to avoid slowness
     try {
-      const res = await cosFetch(TG_RSS_PROXY + ch + '?limit=8', {}, 5000);
-      if (!res.ok) continue;
-      const text = await res.text();
+      const tgUrl = TG_RSS_PROXY + ch + '?limit=8';
+      let text = '';
+      try {
+        const wr = await workerProxy(tgUrl, 5000);
+        text = await wr.text();
+      } catch(_) {
+        const res = await cosFetch(tgUrl, {}, 5000);
+        if (!res.ok) continue;
+        text = await res.text();
+      }
+      if (!text) continue;
       const xml = new DOMParser().parseFromString(text, 'text/xml');
       const items = Array.from(xml.querySelectorAll('item')).slice(0, 5);
       for (const item of items) {
@@ -12675,7 +12718,7 @@ async function fetchLiveWorldNews(force) {
     } catch(e) { console.log('[World L1]', e.message); }
   }
 
-  // ── LAYER 2: allorigins.win CORS proxy + raw XML parse ─────────────────
+  // ── LAYER 2: Worker proxy → allorigins.win fallback + raw XML parse ────
   const RAW_FEEDS = [
     'https://feeds.bbci.co.uk/news/world/rss.xml',
     'https://www.theguardian.com/world/rss',
@@ -12683,12 +12726,19 @@ async function fetchLiveWorldNews(force) {
   ];
   for (const rssUrl of RAW_FEEDS) {
     try {
-      const proxyUrl = 'https://api.allorigins.win/get?url=' + encodeURIComponent(rssUrl);
-      const res = await fetch(proxyUrl);
-      if (!res.ok) continue;
-      const data = await res.json();
-      if (!data.contents) continue;
-      const xml = new DOMParser().parseFromString(data.contents, 'text/xml');
+      let xmlText = '';
+      try {
+        const wr = await workerProxy(rssUrl, 8000);
+        xmlText = await wr.text();
+      } catch(_) {
+        const proxyUrl = 'https://api.allorigins.win/get?url=' + encodeURIComponent(rssUrl);
+        const res = await fetch(proxyUrl);
+        if (!res.ok) continue;
+        const data = await res.json();
+        xmlText = data.contents || '';
+      }
+      if (!xmlText) continue;
+      const xml = new DOMParser().parseFromString(xmlText, 'text/xml');
       const items = Array.from(xml.querySelectorAll('item')).slice(0, 8);
       if (items.length >= 3) {
         const parsed = items.map(item => {
@@ -12846,14 +12896,21 @@ async function fetchIndicesViaGroq() {
   ];
 
   try {
-    // Batch fetch all tickers in one Yahoo Finance call
+    // Batch fetch all tickers via Cloudflare Worker proxy (bypasses CORS)
     const syms = TICKERS.map(t => t.sym).join(',');
     const yahooUrl = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(syms)}&fields=regularMarketPrice,regularMarketChangePercent`;
-    const proxyUrl = 'https://api.allorigins.win/get?url=' + encodeURIComponent(yahooUrl);
-    const res = await cosFetch(proxyUrl, {}, 10000);
-    if (!res.ok) throw new Error('allorigins ' + res.status);
-    const outer = await res.json();
-    const payload = JSON.parse(outer.contents);
+    let res;
+    try {
+      res = await workerProxy(yahooUrl, 10000);
+    } catch(proxyErr) {
+      // Fallback: try allorigins directly
+      const proxyUrl = 'https://api.allorigins.win/get?url=' + encodeURIComponent(yahooUrl);
+      const raw = await cosFetch(proxyUrl, {}, 10000);
+      if (!raw.ok) throw new Error('allorigins ' + raw.status);
+      const outer = await raw.json();
+      res = { ok: true, json: async () => JSON.parse(outer.contents) };
+    }
+    const payload = await res.json();
     const quotes = payload?.quoteResponse?.result || [];
     if (!quotes.length) throw new Error('No quotes returned');
 
@@ -13314,9 +13371,17 @@ async function fetchLiveScienceNews(force) {
   const tgSciResults = [];
   for (const ch of TG_SCI_CHANNELS.slice(0, 3)) {
     try {
-      const res = await cosFetch(TG_RSS_PROXY + ch + '?limit=8', {}, 5000);
-      if (!res.ok) continue;
-      const text = await res.text();
+      const tgUrl = TG_RSS_PROXY + ch + '?limit=8';
+      let text = '';
+      try {
+        const wr = await workerProxy(tgUrl, 5000);
+        text = await wr.text();
+      } catch(_) {
+        const res = await cosFetch(tgUrl, {}, 5000);
+        if (!res.ok) continue;
+        text = await res.text();
+      }
+      if (!text) continue;
       const xml = new DOMParser().parseFromString(text, 'text/xml');
       const items = Array.from(xml.querySelectorAll('item')).slice(0, 5);
       for (const item of items) {
@@ -13369,7 +13434,7 @@ async function fetchLiveScienceNews(force) {
     } catch(e) { console.log('[Science L1]', e.message); }
   }
 
-  // ── LAYER 2: allorigins.win CORS proxy + raw XML ───────────────────────
+  // ── LAYER 2: Worker proxy → allorigins.win fallback + raw XML ──────────
   const RAW_FEEDS = [
     'https://www.sciencedaily.com/rss/top/science.xml',
     'https://rss.nytimes.com/services/xml/rss/nyt/Science.xml',
@@ -13377,12 +13442,19 @@ async function fetchLiveScienceNews(force) {
   ];
   for (const rssUrl of RAW_FEEDS) {
     try {
-      const proxyUrl = 'https://api.allorigins.win/get?url=' + encodeURIComponent(rssUrl);
-      const res = await fetch(proxyUrl);
-      if (!res.ok) continue;
-      const data = await res.json();
-      if (!data.contents) continue;
-      const xml = new DOMParser().parseFromString(data.contents, 'text/xml');
+      let xmlText = '';
+      try {
+        const wr = await workerProxy(rssUrl, 8000);
+        xmlText = await wr.text();
+      } catch(_) {
+        const proxyUrl = 'https://api.allorigins.win/get?url=' + encodeURIComponent(rssUrl);
+        const res = await fetch(proxyUrl);
+        if (!res.ok) continue;
+        const data = await res.json();
+        xmlText = data.contents || '';
+      }
+      if (!xmlText) continue;
+      const xml = new DOMParser().parseFromString(xmlText, 'text/xml');
       const items = Array.from(xml.querySelectorAll('item')).slice(0, 8);
       if (items.length >= 3) {
         const parsed = items.map(item => {
@@ -14364,7 +14436,7 @@ async function fetchTabNews(tabType) {
     },
     career: {
       feeds: CAREER_FEEDS,
-      containerId: 'careerNewsContainer',
+      containerId: 'careerNewsContainerBottom',
       icon: '💼',
       label: 'Career & Tech Intel',
       color: '#f59e0b',
@@ -14405,12 +14477,6 @@ async function fetchTabNews(tabType) {
   const cached = JSON.parse(localStorage.getItem(cacheKey) || 'null');
   if (cached && (Date.now() - cached.ts) < 15 * 60 * 1000) {
     renderTabNews(el, cached.items, cfg);
-    if (tabType === 'career') {
-      const mid = document.getElementById('careerNewsContainerMid');
-      const bot = document.getElementById('careerNewsContainerBottom');
-      if (mid) renderTabNews(mid, cached.items, cfg);
-      if (bot) renderTabNews(bot, cached.items, cfg);
-    }
     return;
   }
 
@@ -14455,13 +14521,6 @@ async function fetchTabNews(tabType) {
   if (items.length) {
     localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), items }));
     renderTabNews(el, items, cfg);
-    // Mirror to mid + bottom containers in Career tab
-    if (tabType === 'career') {
-      const mid = document.getElementById('careerNewsContainerMid');
-      const bot = document.getElementById('careerNewsContainerBottom');
-      if (mid) renderTabNews(mid, items, cfg);
-      if (bot) renderTabNews(bot, items, cfg);
-    }
   } else {
     el.innerHTML = '';
   }
@@ -14530,12 +14589,20 @@ async function fetchScienceNews(tier){
     } catch(e) { console.log('[Sci RSS]', e.message); }
   }
 
-  // Layer 2: allorigins proxy
+  // Layer 2: Worker proxy → allorigins fallback
   try {
-    const res = await fetch('https://api.allorigins.win/get?url=' + encodeURIComponent('https://www.sciencedaily.com/rss/all.xml') + '&_t=' + Date.now());
-    const data = await res.json();
-    if (data.contents) {
-      const xml = new DOMParser().parseFromString(data.contents, 'text/xml');
+    let xmlText = '';
+    const sciUrl = 'https://www.sciencedaily.com/rss/all.xml';
+    try {
+      const wr = await workerProxy(sciUrl, 8000);
+      xmlText = await wr.text();
+    } catch(_) {
+      const res = await fetch('https://api.allorigins.win/get?url=' + encodeURIComponent(sciUrl) + '&_t=' + Date.now());
+      const data = await res.json();
+      xmlText = data.contents || '';
+    }
+    if (xmlText) {
+      const xml = new DOMParser().parseFromString(xmlText, 'text/xml');
       const xmlItems = Array.from(xml.querySelectorAll('item')).slice(0, t.count);
       if (xmlItems.length >= 2) {
         items = xmlItems.map(i=>({
@@ -14587,12 +14654,20 @@ async function loadGeoNews(tier){
     } catch(e) { console.log('[Geo RSS]', e.message); }
   }
 
-  // Layer 2: allorigins proxy
+  // Layer 2: Worker proxy → allorigins fallback
   try {
-    const res = await fetch('https://api.allorigins.win/get?url=' + encodeURIComponent('https://feeds.bbci.co.uk/news/world/rss.xml') + '&_t=' + Date.now());
-    const data = await res.json();
-    if (data.contents) {
-      const xml = new DOMParser().parseFromString(data.contents, 'text/xml');
+    let xmlText = '';
+    const bbcUrl = 'https://feeds.bbci.co.uk/news/world/rss.xml';
+    try {
+      const wr = await workerProxy(bbcUrl, 8000);
+      xmlText = await wr.text();
+    } catch(_) {
+      const res = await fetch('https://api.allorigins.win/get?url=' + encodeURIComponent(bbcUrl) + '&_t=' + Date.now());
+      const data = await res.json();
+      xmlText = data.contents || '';
+    }
+    if (xmlText) {
+      const xml = new DOMParser().parseFromString(xmlText, 'text/xml');
       const xmlItems = Array.from(xml.querySelectorAll('item')).slice(0, t.count);
       if (xmlItems.length >= 2) {
         items = xmlItems.map(i=>({
@@ -16879,16 +16954,7 @@ async function computeDeterminismScore() {
   });
 })();
 
-// Oracle gate — force-unlocked in free phase
-const _origApplyProGates = typeof applyProGates === 'function' ? applyProGates : null;
-function applyProGates(isActive) {
-  if (_origApplyProGates) _origApplyProGates(true);
-  const gate = document.getElementById('oraclePredictGate');
-  const unlocked = document.getElementById('oraclePredictUnlocked');
-  if (gate) gate.style.display = 'none';
-  if (unlocked) unlocked.style.display = 'block';
-  if (typeof updateProBar === 'function') updateProBar();
-}
+// Oracle gate — force-unlocked in free phase (handled by applyProGates above)
 
 // ════════════════════════════════════════════════════════════════
 //  STREAK MILESTONE CELEBRATION
