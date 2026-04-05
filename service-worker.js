@@ -1,126 +1,89 @@
-// ─── Consciousness OS Service Worker ───────────────────────────────────────
-// v8.0.1 — Network-first HTML, cache-first static assets, never touch API/RSS
-// IMPORTANT: Bump CACHE_NAME on every deploy to invalidate stale cache
+// Consciousness OS — Service Worker v10
+// Network-first for HTML, cache-first for static assets
+// NO precache list — avoids 404s from missing files
 
-const CACHE_NAME = "cos-static-v8-0-1";
+const CACHE_NAME = 'cos-static-v1001';
 
-const STATIC_ASSETS = [
-  "./manifest.json",
-  "./icon-192.png",
-  "./icon-512.png"
+const PRECACHE = [
+  '/',
+  '/index.html',
 ];
 
-// ── INSTALL: cache only static icons/manifest (NOT index.html) ─────────────
-self.addEventListener("install", event => {
-  self.skipWaiting(); // activate immediately without waiting for old SW to die
+self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
-      return cache.addAll(STATIC_ASSETS).catch(err => {
-        console.warn('[COS SW] Static asset cache failed (non-fatal):', err.message);
+      return cache.addAll(PRECACHE).catch(err => {
+        console.warn('[SW] Precache partial failure (non-fatal):', err);
       });
-    })
+    }).then(() => self.skipWaiting())
   );
 });
 
-// ── ACTIVATE: delete ALL old caches ────────────────────────────────────────
-self.addEventListener("activate", event => {
+self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(keys =>
       Promise.all(
-        keys.filter(key => key !== CACHE_NAME).map(key => {
-          console.log('[COS SW] Deleting old cache:', key);
-          return caches.delete(key);
+        keys.map(k => {
+          if (k !== CACHE_NAME) {
+            console.log('[SW] Deleting old cache:', k);
+            return caches.delete(k);
+          }
         })
       )
-    ).then(() => self.clients.claim()) // take control of all open tabs immediately
+    ).then(() => self.clients.claim())
   );
 });
 
-// ── FETCH: routing strategy ─────────────────────────────────────────────────
-self.addEventListener("fetch", event => {
-  const req = event.request;
-  const url = new URL(req.url);
+self.addEventListener('fetch', event => {
+  const url = new URL(event.request.url);
 
-  // ── 1. ALWAYS network-first for HTML (navigation requests) ──────────────
-  // This is the PRIMARY fix: never serve stale index.html from cache
-  if (req.mode === "navigate" || req.destination === "document") {
+  if (
+    event.request.method !== 'GET' ||
+    url.protocol === 'chrome-extension:' ||
+    url.hostname.includes('firestore.googleapis.com') ||
+    url.hostname.includes('firebase') ||
+    url.hostname.includes('groq.com') ||
+    url.hostname.includes('coingecko.com') ||
+    url.hostname.includes('cloudflare') ||
+    url.hostname.includes('rss2json.com') ||
+    url.hostname.includes('allorigins') ||
+    url.hostname.includes('finance.yahoo.com') ||
+    url.hostname.includes('open.er-api') ||
+    url.hostname.includes('gstatic.com')
+  ) {
+    return;
+  }
+
+  if (event.request.headers.get('accept')?.includes('text/html') ||
+      url.pathname.endsWith('.html') || url.pathname === '/') {
     event.respondWith(
-      fetch(req, { cache: "no-store" })
-        .catch(() => {
-          // Offline fallback: serve cached version only if network totally fails
-          return caches.match("./index.html") || new Response(
-            "<h2>Consciousness OS — Offline</h2><p>Reconnect to load the app.</p>",
-            { headers: { "Content-Type": "text/html" } }
-          );
+      fetch(event.request)
+        .then(res => {
+          const clone = res.clone();
+          caches.open(CACHE_NAME).then(c => c.put(event.request, clone));
+          return res;
         })
+        .catch(() => caches.match(event.request))
     );
     return;
   }
 
-  // ── 2. NEVER cache API, Firebase, RSS, Groq, Worker calls ───────────────
-  const noCacheDomains = [
-    "firebaseapp.com",
-    "googleapis.com",
-    "gstatic.com",
-    "rss2json.com",
-    "allorigins.win",
-    "tg.i-c-a.su",
-    "workers.dev",
-    "anthropic.com",
-    "groq.com",
-    "openai.com",
-    "generativelanguage.googleapis.com"
-  ];
-  if (noCacheDomains.some(d => url.hostname.includes(d))) {
-    event.respondWith(fetch(req));
-    return;
-  }
-
-  // ── 3. NEVER cache API paths ─────────────────────────────────────────────
-  if (
-    url.pathname.includes("/api") ||
-    url.pathname.includes("/rss") ||
-    url.pathname.includes("/auth") ||
-    url.pathname.includes("/firestore") ||
-    req.method !== "GET"
-  ) {
-    event.respondWith(fetch(req));
-    return;
-  }
-
-  // ── 4. Cache-first for static assets (icons, images, fonts) ─────────────
-  if (
-    req.destination === "image" ||
-    req.destination === "style" ||
-    req.destination === "font" ||
-    url.pathname.endsWith(".png") ||
-    url.pathname.endsWith(".ico") ||
-    url.pathname.endsWith(".json") && url.pathname.includes("manifest")
-  ) {
+  if (url.origin === self.location.origin) {
     event.respondWith(
-      caches.match(req).then(cached => {
+      caches.match(event.request).then(cached => {
         if (cached) return cached;
-        return fetch(req).then(response => {
-          if (response && response.status === 200) {
-            const clone = response.clone();
-            caches.open(CACHE_NAME).then(cache => cache.put(req, clone));
+        return fetch(event.request).then(res => {
+          if (res.ok) {
+            const clone = res.clone();
+            caches.open(CACHE_NAME).then(c => c.put(event.request, clone));
           }
-          return response;
-        }).catch(() => cached); // return stale if network fails
+          return res;
+        }).catch(() => cached);
       })
     );
-    return;
   }
+});
 
-  // ── 5. Scripts: network-first with cache fallback ────────────────────────
-  // JS files from same origin: try network first, fall back to cache
-  if (req.destination === "script" && url.origin === self.location.origin) {
-    event.respondWith(
-      fetch(req, { cache: "no-store" }).catch(() => caches.match(req))
-    );
-    return;
-  }
-
-  // ── 6. Everything else: just fetch ──────────────────────────────────────
-  event.respondWith(fetch(req));
+self.addEventListener('message', event => {
+  if (event.data?.type === 'SKIP_WAITING') self.skipWaiting();
 });
