@@ -29,15 +29,22 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db   = firebase.firestore();
 
-// Enable offline persistence — compat SDK v10 (synchronizeTabs replaces enableMultiTabIndexedDbPersistence)
+// Apply Firestore settings once with merge:true to avoid "overriding host" warning
+// cacheSizeBytes must be set before any other Firestore operation
 try {
-  db.settings({ cacheSizeBytes: firebase.firestore.CACHE_SIZE_UNLIMITED });
+  db.settings({
+    cacheSizeBytes: firebase.firestore.CACHE_SIZE_UNLIMITED,
+    merge: true
+  });
 } catch(e) {}
+
+// enablePersistence is the compat-SDK equivalent of FirestoreSettings.cache
+// synchronizeTabs=true replaces the deprecated enableMultiTabIndexedDbPersistence()
 db.enablePersistence({ synchronizeTabs: true }).catch(err => {
   if (err.code === 'failed-precondition') {
-    console.warn('[COS] Firestore: multi-tab conflict — memory mode');
+    // Multiple tabs open — only one can have persistence; others silently use memory
   } else if (err.code === 'unimplemented') {
-    console.warn('[COS] Firestore offline: browser not supported');
+    // Browser doesn't support IndexedDB persistence (e.g. private mode on some browsers)
   }
 });
 
@@ -14861,18 +14868,22 @@ function _mbrsGenFallbackThumb(cat,cc){
 // Global fallback store — never embed base64 inside HTML attribute strings
 window._mbrsFallbacks = window._mbrsFallbacks || {};
 
-// 3-step clean fallback chain for YouTube thumbs
+// 3-step silent fallback chain for YouTube thumbs
+// hqdefault → sddefault → canvas fallback → gradient tile
+// Errors are caught silently — no console noise
 function _mbrsFail(img, vid) {
   var s = img.src || '';
-  if (s.indexOf('mqdefault') > -1) {
-    img.src = 'https://img.youtube.com/vi/' + vid + '/hqdefault.jpg';
-  } else if (s.indexOf('hqdefault') > -1) {
+  img.onerror = null; // prevent infinite loop before re-assigning
+  if (s.indexOf('hqdefault') > -1) {
+    img.onerror = function(){ _mbrsFail(this, vid); };
+    img.src = 'https://img.youtube.com/vi/' + vid + '/sddefault.jpg';
+  } else if (s.indexOf('sddefault') > -1) {
+    img.onerror = function(){ _mbrsFail(this, vid); };
     img.src = 'https://img.youtube.com/vi/' + vid + '/0.jpg';
   } else {
-    img.onerror = null;
+    // All YouTube CDN options exhausted — use canvas fallback or gradient tile
     var fb = window._mbrsFallbacks[vid];
     if (fb) { img.src = fb; return; }
-    // Last resort: replace with gradient tile
     var d = document.createElement('div');
     d.style.cssText = 'width:104px;height:60px;border-radius:8px;background:linear-gradient(135deg,#7c3aed,#0a0014);display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0';
     d.textContent = '🎬';
@@ -14887,8 +14898,8 @@ function _mbrsBuildCard(item){
   if(item.vid) window._mbrsFallbacks[item.vid] = _mbrsGenFallbackThumb(item.cat, item.cc);
   const thumbHtml=item.vid?
     `<div style="position:relative;flex-shrink:0;width:104px;height:60px;border-radius:8px;overflow:hidden;background:#111">
-      <img src="https://img.youtube.com/vi/${item.vid}/mqdefault.jpg" style="width:100%;height:100%;object-fit:cover;display:block"
-        onerror="_mbrsFail(this,'${item.vid}')" loading="eager">
+      <img src="https://img.youtube.com/vi/${item.vid}/hqdefault.jpg" style="width:100%;height:100%;object-fit:cover;display:block"
+        onerror="_mbrsFail(this,'${item.vid}')" loading="lazy">
       <div style="position:absolute;bottom:3px;right:4px;background:rgba(0,0,0,.85);border-radius:3px;padding:1px 5px;font-size:9px;color:#fff">▶</div>
     </div>`:
     `<div style="flex-shrink:0;width:104px;height:60px;border-radius:8px;background:linear-gradient(135deg,${item.cc||'#7c3aed'},#0a0014);display:flex;align-items:center;justify-content:center;font-size:30px">${(item.cat||'').split(' ')[0]||'🌌'}</div>`;
