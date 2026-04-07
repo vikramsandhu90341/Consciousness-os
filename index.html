@@ -2837,7 +2837,7 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
   ══════════════════════════════════════════ -->
   <div class="card" style="border:2px solid var(--primary);margin-top:14px" id="medicineOSCard">
     <div class="card-title"><span class="emoji">💊</span> Medicine OS <span style="font-size:10px;background:var(--primary);color:#fff;border-radius:10px;padding:2px 8px;margin-left:6px;font-weight:700">CLINICAL ENGINE</span></div>
-    <div style="font-size:12px;color:var(--text3);margin-bottom:12px">Drug guide · Dosage calculator · Lab interpreter · Emergency protocols · Treatment engine</div>
+    <div style="font-size:12px;color:var(--text3);margin-bottom:12px">Drug guide · Dosage calculator · Lab interpreter · Emergency protocols · Treatment engine · Drug Interaction Checker</div>
 
     <!-- Sub-tab row -->
     <div style="display:flex;gap:0;border-radius:10px;overflow:hidden;border:1px solid var(--border);margin-bottom:14px">
@@ -2846,6 +2846,7 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
       <button class="med-os-tab" onclick="switchMedOS('labs',this)" style="flex:1;padding:8px 4px;font-size:11px;font-weight:700;border:none;background:var(--bg3);color:var(--text2);cursor:pointer">🧪 Labs</button>
       <button class="med-os-tab" onclick="switchMedOS('emergency',this)" style="flex:1;padding:8px 4px;font-size:11px;font-weight:700;border:none;background:var(--bg3);color:var(--text2);cursor:pointer">🚨 SOS</button>
       <button class="med-os-tab" onclick="switchMedOS('workup',this)" style="flex:1;padding:8px 4px;font-size:11px;font-weight:700;border:none;background:var(--bg3);color:var(--text2);cursor:pointer">🔬 Workup</button>
+      <button class="med-os-tab" onclick="switchMedOS('interact',this)" style="flex:1;padding:8px 4px;font-size:11px;font-weight:700;border:none;background:var(--bg3);color:var(--text2);cursor:pointer">⚗️ Interact</button>
     </div>
 
     <!-- DRUGS PANEL -->
@@ -3171,6 +3172,38 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
   <div id="healthNewsContainer" style="margin-top:14px;margin-bottom:4px"></div>
 
 </div>
+
+    <!-- DRUG INTERACTION CHECKER PANEL -->
+    <div id="medOS-interact" style="display:none">
+      <div style="font-weight:800;font-size:14px;color:var(--text);margin-bottom:4px">⚗️ Drug Interaction Checker</div>
+      <div style="font-size:12px;color:var(--text3);margin-bottom:12px">RxNav/NLM + Groq AI · FDA database · Clinical analysis</div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px">
+        <div style="position:relative">
+          <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:4px">💊 Drug 1</div>
+          <input type="text" id="dicInput_drug1" class="form-input" placeholder="e.g. Warfarin, Aspirin, Metformin…" oninput="dicAutocomplete('drug1',this.value)" autocomplete="off" autocorrect="off" spellcheck="false" style="width:100%">
+          <div id="dicSuggest_drug1" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--bg2);border:1px solid var(--border);border-radius:8px;z-index:999;max-height:160px;overflow-y:auto;box-shadow:0 4px 16px rgba(0,0,0,.18)"></div>
+        </div>
+        <div style="position:relative">
+          <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:4px">💊 Drug 2</div>
+          <input type="text" id="dicInput_drug2" class="form-input" placeholder="e.g. Amoxicillin, Atorvastatin…" oninput="dicAutocomplete('drug2',this.value)" autocomplete="off" autocorrect="off" spellcheck="false" style="width:100%">
+          <div id="dicSuggest_drug2" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--bg2);border:1px solid var(--border);border-radius:8px;z-index:999;max-height:160px;overflow-y:auto;box-shadow:0 4px 16px rgba(0,0,0,.18)"></div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:14px">
+        <button onclick="checkDrugInteraction()" style="flex:1;padding:11px;background:var(--primary);color:#fff;border:none;border-radius:10px;font-weight:800;font-size:13px;cursor:pointer">⚗️ Check Interaction</button>
+        <button onclick="clearDIC()" style="padding:11px 14px;background:var(--bg3);color:var(--text2);border:1px solid var(--border);border-radius:10px;font-size:12px;cursor:pointer">✖</button>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
+        <div style="font-size:10px;color:var(--text3);width:100%;margin-bottom:2px">⚡ Quick check:</div>
+        <span class="chip" onclick="quickDIC('Warfarin','Aspirin')" style="cursor:pointer;font-size:10px;padding:3px 8px">Warfarin+Aspirin</span>
+        <span class="chip" onclick="quickDIC('Metformin','Alcohol')" style="cursor:pointer;font-size:10px;padding:3px 8px">Metformin+Alcohol</span>
+        <span class="chip" onclick="quickDIC('Atorvastatin','Clarithromycin')" style="cursor:pointer;font-size:10px;padding:3px 8px">Statin+Clarithro</span>
+        <span class="chip" onclick="quickDIC('Amoxicillin','Methotrexate')" style="cursor:pointer;font-size:10px;padding:3px 8px">Amox+MTX</span>
+      </div>
+      <div id="dicResult" style="min-height:80px">
+        <div style="text-align:center;padding:20px;color:var(--text3);font-size:13px">Enter two drug names above and tap Check →</div>
+      </div>
+    </div>
 
 <!-- ════════════════════════════════════════════
      TAB 6 — BRAIN GAMES
@@ -14030,6 +14063,205 @@ document.addEventListener('DOMContentLoaded', function() {
 function getCOSBrainSummary() { return buildCOSBrainContext(); }
 window.COS_BRAIN = COS_BRAIN;
 window.cosBrainSync = cosBrainSync;
+
+// ══════════════════════════════════════════════════════════════
+// DRUG INTERACTION CHECKER — OpenFDA + RxNav + Groq
+// ══════════════════════════════════════════════════════════════
+
+let _dicDrug1 = '', _dicDrug2 = '';
+
+async function dicAutocomplete(inputId, val) {
+  if (!val || val.length < 2) { hideDicSuggest(inputId); return; }
+  try {
+    const r = await fetch(`https://rxnav.nlm.nih.gov/REST/spellingsuggestions.json?name=${encodeURIComponent(val)}`);
+    const d = await r.json();
+    const sugs = d?.suggestionGroup?.suggestionList?.suggestion || [];
+    const box = document.getElementById('dicSuggest_' + inputId);
+    if (!box) return;
+    if (!sugs.length) { box.style.display = 'none'; return; }
+    box.style.display = 'block';
+    box.innerHTML = sugs.slice(0, 6).map(s =>
+      `<div onclick="pickDicSug('${inputId}','${s}')" style="padding:8px 12px;font-size:13px;cursor:pointer;border-bottom:1px solid var(--border);color:var(--text)">${s}</div>`
+    ).join('');
+  } catch(e) { hideDicSuggest(inputId); }
+}
+
+function pickDicSug(inputId, val) {
+  document.getElementById('dicInput_' + inputId).value = val;
+  if (inputId === 'drug1') _dicDrug1 = val; else _dicDrug2 = val;
+  hideDicSuggest(inputId);
+}
+function hideDicSuggest(inputId) {
+  const b = document.getElementById('dicSuggest_' + inputId);
+  if (b) b.style.display = 'none';
+}
+
+async function checkDrugInteraction() {
+  _dicDrug1 = document.getElementById('dicInput_drug1')?.value?.trim();
+  _dicDrug2 = document.getElementById('dicInput_drug2')?.value?.trim();
+  if (!_dicDrug1 || !_dicDrug2) { showToast('Enter both drug names'); return; }
+  if (_dicDrug1.toLowerCase() === _dicDrug2.toLowerCase()) { showToast('Enter two different drugs'); return; }
+
+  const outEl = document.getElementById('dicResult');
+  outEl.innerHTML = `<div style="text-align:center;padding:20px;color:var(--text3)">
+    <div style="font-size:28px;margin-bottom:8px">🔬</div>
+    <div style="font-size:13px">Searching FDA + AI analysis...</div>
+    <div style="width:100%;height:3px;background:var(--bg3);border-radius:2px;margin-top:12px;overflow:hidden">
+      <div style="width:60%;height:100%;background:var(--primary);border-radius:2px;animation:shimmer 1.5s ease-in-out infinite"></div>
+    </div></div>`;
+
+  try {
+    // Step 1: Get RxCUI for both drugs
+    const [cui1, cui2] = await Promise.all([getRxCUI(_dicDrug1), getRxCUI(_dicDrug2)]);
+
+    // Step 2: Get FDA interaction data
+    let fdaData = null;
+    if (cui1 && cui2) {
+      try {
+        const intRes = await fetch(`https://rxnav.nlm.nih.gov/REST/interaction/interaction.json?rxcui=${cui1}`);
+        const intD = await intRes.json();
+        const groups = intD?.interactionTypeGroup || [];
+        for (const g of groups) {
+          for (const t of (g.interactionType || [])) {
+            for (const pair of (t.interactionPair || [])) {
+              const drugs = pair.interactionConcept?.map(c => c.minConceptItem?.name?.toLowerCase()) || [];
+              if (drugs.some(d => _dicDrug2.toLowerCase().includes(d) || d.includes(_dicDrug2.toLowerCase()))) {
+                fdaData = { severity: pair.severity, description: pair.description };
+                break;
+              }
+            }
+            if (fdaData) break;
+          }
+          if (fdaData) break;
+        }
+      } catch(e) {}
+    }
+
+    // Step 3: AI clinical analysis via Groq
+    const aiPrompt = `You are a clinical pharmacist. Analyze the drug interaction between "${_dicDrug1}" and "${_dicDrug2}".
+FDA/RxNav data found: ${fdaData ? JSON.stringify(fdaData) : 'No direct interaction found in database — analyze from pharmacological knowledge'}.
+
+Respond in this EXACT JSON format (no extra text):
+{
+  "severity": "major|moderate|minor|none",
+  "severityColor": "#ef4444|#f97316|#eab308|#22c55e",
+  "mechanism": "One sentence pharmacological mechanism",
+  "clinicalEffect": "What happens to the patient",
+  "onset": "Rapid|Delayed|Unknown",
+  "management": "Clinical recommendation in 1-2 sentences",
+  "monitoring": "What to monitor",
+  "alternatives": "Brief alternative suggestion if interaction is major/moderate",
+  "pharmacistTip": "One practical tip from pharmacy practice"
+}`;
+
+    const aiRaw = await callGroqJSON(aiPrompt, 'You are a clinical pharmacist AI. Always respond with valid JSON only.', 800);
+    let ai;
+    try { ai = typeof aiRaw === 'object' ? aiRaw : JSON.parse(aiRaw); }
+    catch(e) {
+      // Fallback if JSON parse fails
+      ai = {
+        severity: 'unknown', severityColor: '#888',
+        mechanism: 'Analysis unavailable — check reference manually',
+        clinicalEffect: 'Unable to determine', onset: 'Unknown',
+        management: 'Consult clinical pharmacist or prescriber',
+        monitoring: 'Monitor patient closely', alternatives: 'Consult prescriber',
+        pharmacistTip: 'Always verify interactions using multiple sources'
+      };
+    }
+
+    // Step 4: Render result
+    const sevLabels = { major: '🔴 MAJOR', moderate: '🟠 MODERATE', minor: '🟡 MINOR', none: '🟢 NO INTERACTION', unknown: '⚪ UNKNOWN' };
+    const sevLabel = sevLabels[ai.severity?.toLowerCase()] || '⚪ UNKNOWN';
+
+    outEl.innerHTML = `
+      <div style="margin-bottom:12px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+          <div style="font-size:22px">⚗️</div>
+          <div>
+            <div style="font-weight:800;font-size:14px;color:var(--text)">${_dicDrug1} + ${_dicDrug2}</div>
+            <div style="font-size:11px;color:var(--text3)">Drug Interaction Analysis</div>
+          </div>
+        </div>
+        <div style="background:${ai.severityColor||'#888'}22;border:2px solid ${ai.severityColor||'#888'};border-radius:12px;padding:10px 14px;margin-bottom:12px;text-align:center">
+          <div style="font-weight:900;font-size:16px;color:${ai.severityColor||'#888'}">${sevLabel}</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:3px">Onset: ${ai.onset||'Unknown'}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;font-size:13px">
+          <div style="background:var(--bg3);border-radius:10px;padding:10px">
+            <div style="font-weight:700;color:var(--primary);font-size:11px;margin-bottom:4px">⚙️ MECHANISM</div>
+            <div style="color:var(--text);line-height:1.5">${ai.mechanism||'—'}</div>
+          </div>
+          <div style="background:var(--bg3);border-radius:10px;padding:10px">
+            <div style="font-weight:700;color:#ef4444;font-size:11px;margin-bottom:4px">⚠️ CLINICAL EFFECT</div>
+            <div style="color:var(--text);line-height:1.5">${ai.clinicalEffect||'—'}</div>
+          </div>
+          <div style="background:var(--bg3);border-radius:10px;padding:10px">
+            <div style="font-weight:700;color:#22c55e;font-size:11px;margin-bottom:4px">✅ MANAGEMENT</div>
+            <div style="color:var(--text);line-height:1.5">${ai.management||'—'}</div>
+          </div>
+          <div style="background:var(--bg3);border-radius:10px;padding:10px">
+            <div style="font-weight:700;color:#f59e0b;font-size:11px;margin-bottom:4px">📊 MONITORING</div>
+            <div style="color:var(--text);line-height:1.5">${ai.monitoring||'—'}</div>
+          </div>
+          ${ai.alternatives && ai.severity !== 'none' ? `<div style="background:var(--bg3);border-radius:10px;padding:10px">
+            <div style="font-weight:700;color:#8b5cf6;font-size:11px;margin-bottom:4px">💡 ALTERNATIVES</div>
+            <div style="color:var(--text);line-height:1.5">${ai.alternatives}</div>
+          </div>` : ''}
+          <div style="background:linear-gradient(135deg,rgba(124,58,237,.1),rgba(236,72,153,.08));border:1px solid rgba(124,58,237,.2);border-radius:10px;padding:10px">
+            <div style="font-weight:700;color:var(--primary);font-size:11px;margin-bottom:4px">💊 PHARMACIST TIP</div>
+            <div style="color:var(--text);line-height:1.5">${ai.pharmacistTip||'—'}</div>
+          </div>
+        </div>
+        <div style="font-size:10px;color:var(--text3);text-align:center;margin-top:10px;line-height:1.4">
+          ⚠️ For clinical use only. Always verify with official references.<br>Data: RxNav/NLM + Groq AI. Not a substitute for professional judgment.
+        </div>
+        <button onclick="saveDICResult()" style="width:100%;margin-top:10px;padding:10px;background:var(--primary);color:#fff;border:none;border-radius:10px;font-weight:700;font-size:13px;cursor:pointer">💾 Save to Patient File</button>
+      </div>`;
+
+  } catch(e) {
+    outEl.innerHTML = `<div style="color:var(--danger);padding:12px;font-size:13px;text-align:center">❌ ${e.message}<br><span style="font-size:11px;color:var(--text3)">Check connection and retry</span></div>`;
+    showToast('Interaction check failed');
+  }
+}
+
+async function getRxCUI(drugName) {
+  try {
+    const r = await fetch(`https://rxnav.nlm.nih.gov/REST/rxcui.json?name=${encodeURIComponent(drugName)}&search=1`);
+    const d = await r.json();
+    return d?.idGroup?.rxnormId?.[0] || null;
+  } catch(e) { return null; }
+}
+
+function saveDICResult() {
+  if (!_dicDrug1 || !_dicDrug2) return;
+  const resultText = document.getElementById('dicResult')?.innerText || '';
+  const entry = {
+    id: Date.now(),
+    date: new Date().toISOString(),
+    drug1: _dicDrug1,
+    drug2: _dicDrug2,
+    summary: resultText.slice(0, 500)
+  };
+  const saved = JSON.parse(localStorage.getItem('cos_dic_history') || '[]');
+  saved.unshift(entry);
+  localStorage.setItem('cos_dic_history', JSON.stringify(saved.slice(0, 50)));
+  showToast('✅ Saved to patient file');
+}
+
+function clearDIC() {
+  document.getElementById('dicInput_drug1').value = '';
+  document.getElementById('dicInput_drug2').value = '';
+  document.getElementById('dicResult').innerHTML = '<div style="text-align:center;padding:20px;color:var(--text3);font-size:13px">Enter two drug names above and tap Check →</div>';
+  _dicDrug1 = ''; _dicDrug2 = '';
+}
+
+function quickDIC(d1, d2) {
+  document.getElementById('dicInput_drug1').value = d1;
+  document.getElementById('dicInput_drug2').value = d2;
+  switchMedOS('interact', document.querySelector('.med-os-tab[onclick*="interact"]'));
+  setTimeout(checkDrugInteraction, 100);
+}
+
 </script>
 <script>
 // ════════════════════════════════════════════════════════════
