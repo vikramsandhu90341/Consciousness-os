@@ -1470,116 +1470,214 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
 
 <!-- ══ LOGIN OVERLAY ══ -->
 <div class="login-overlay" id="loginOverlay" style="display:flex">
-  <div class="login-card">
-    <div style="text-align:center;margin-bottom:20px">
-      <div style="font-size:48px">🧠</div>
+  <div class="login-card" style="max-height:92vh;overflow-y:auto">
+    <div style="text-align:center;margin-bottom:18px">
+      <div style="font-size:44px;margin-bottom:6px">🧠</div>
       <div style="font-family:Syne,sans-serif;font-weight:800;font-size:22px;background:linear-gradient(135deg,#7c3aed,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">Consciousness OS</div>
-      <div style="font-size:12px;color:#888;margin-top:4px">Your mind. Your data. Your evolution.</div>
+      <div style="font-size:11px;color:#888;margin-top:3px">Your mind. Your data. Your evolution.</div>
     </div>
 
-    <!-- SESSION RESTORE SPINNER: shown for returning users while Firebase resolves -->
-    
-<div id="sessionRestoreUI" style="display:none;text-align:center;padding:24px 0">
+    <!-- SESSION RESTORE SPINNER -->
+    <div id="sessionRestoreUI" style="display:none;text-align:center;padding:24px 0">
       <div style="width:36px;height:36px;border:3px solid rgba(124,58,237,.2);border-top-color:#7c3aed;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 14px"></div>
       <div style="font-size:14px;font-weight:700;color:#7c3aed;margin-bottom:6px">Restoring your session…</div>
       <div style="font-size:12px;color:#aaa;margin-bottom:18px">Connecting to Consciousness OS</div>
       <button onclick="document.getElementById('sessionRestoreUI').style.display='none';document.getElementById('loginFormUI').style.display=''" style="background:none;border:none;color:#aaa;font-size:12px;cursor:pointer;text-decoration:underline">Sign in manually instead</button>
     </div>
 
-    <!-- LOGIN FORM: hidden for returning users, shown for new users -->
+    <!-- LOGIN FORM -->
     <div id="loginFormUI">
-    <div class="login-tabs" id="loginTabs">
-      <button class="login-tab-btn active" onclick="switchLoginTab('login',this)">Sign In</button>
-      <button class="login-tab-btn" onclick="switchLoginTab('register',this)">Create Account</button>
-      <button class="login-tab-btn" onclick="switchLoginTab('guest',this)">Guest</button>
-    </div>
+      <div class="login-tabs" id="loginTabs">
+        <button class="login-tab-btn active" onclick="switchLoginTab('login',this)">Sign In</button>
+        <button class="login-tab-btn" onclick="switchLoginTab('register',this)">Create Account</button>
+        <button class="login-tab-btn" onclick="switchLoginTab('phone',this)">📱 Phone</button>
+      </div>
 
-    <!-- SIGN IN -->
-    <div id="loginPanel">
-      <div style="margin-bottom:12px">
-        <label style="font-size:12px;font-weight:700;color:#666;display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Username or Email</label>
-        <input type="text" id="loginUser" class="form-input" placeholder="Enter username or email" style="background:#f8f6ff;border:1.5px solid #e2d9f3">
+      <!-- ── SIGN IN PANEL ─────────────────────────────── -->
+      <div id="loginPanel">
+        <div style="margin-bottom:10px">
+          <label style="font-size:11px;font-weight:700;color:#666;display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Email</label>
+          <input type="email" id="loginUser" class="form-input" placeholder="your@email.com" style="background:#f8f6ff;border:1.5px solid #e2d9f3" autocomplete="email">
+        </div>
+        <div style="margin-bottom:6px">
+          <label style="font-size:11px;font-weight:700;color:#666;display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Password</label>
+          <input type="password" id="loginPass" class="form-input" placeholder="Enter password" style="background:#f8f6ff;border:1.5px solid #e2d9f3" onkeydown="if(event.key==='Enter')doLogin()" autocomplete="current-password">
+        </div>
+        <div style="text-align:right;margin-bottom:12px">
+          <button onclick="doForgotPassword()" style="background:none;border:none;color:#7c3aed;font-size:11px;cursor:pointer;text-decoration:underline">Forgot password?</button>
+        </div>
+        <button class="btn btn-primary btn-block" onclick="doLogin()" style="margin-bottom:10px">🔐 Sign In</button>
+        <div style="text-align:center;font-size:11px;color:#aaa;margin:8px 0">— or —</div>
+        <button class="btn btn-block" onclick="doGoogleLogin()" style="background:#fff;border:1.5px solid #ddd;color:#333;margin-bottom:6px;display:flex;align-items:center;justify-content:center;gap:8px">
+          <svg width="16" height="16" viewBox="0 0 48 48"><path fill="#4285F4" d="M24 9.5c3.5 0 6.6 1.2 9 3.2l6.7-6.7C35.8 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.6 13.3l7.8 6C12.2 13 17.6 9.5 24 9.5z"/><path fill="#34A853" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4 7.1-10 7.1-17z"/><path fill="#FBBC05" d="M10.4 28.6A14.5 14.5 0 0 1 9.5 24c0-1.6.3-3.1.8-4.6L2.5 13.3A24 24 0 0 0 0 24c0 3.8.9 7.4 2.6 10.6l7.8-6z"/><path fill="#EA4335" d="M24 48c6.2 0 11.4-2 15.2-5.5l-7.5-5.8c-2 1.4-4.7 2.2-7.7 2.2-6.4 0-11.8-4.3-13.6-10.2l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg>
+          Continue with Google
+        </button>
       </div>
-      <div style="margin-bottom:16px">
-        <label style="font-size:12px;font-weight:700;color:#666;display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Password</label>
-        <input type="password" id="loginPass" class="form-input" placeholder="Enter password" style="background:#f8f6ff;border:1.5px solid #e2d9f3" onkeydown="if(event.key==='Enter')doLogin()">
-      </div>
-      <button class="btn btn-primary btn-block" onclick="doLogin()" style="margin-bottom:10px">🔐 Sign In</button>
-      <div style="text-align:center;font-size:11px;color:#aaa;margin:8px 0">— or sign in with —</div>
-      <button class="btn btn-block" onclick="doGoogleLogin()" style="background:#fff;border:1.5px solid #ddd;color:#333;margin-bottom:6px">🔵 Continue with Google <span style="font-size:10px;color:#aaa">(desktop recommended)</span></button>
-    </div>
 
-    <!-- REGISTER -->
-    <div id="registerPanel" style="display:none">
-      <div style="margin-bottom:10px">
-        <label style="font-size:12px;font-weight:700;color:#666;display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Full Name</label>
-        <input type="text" id="regName" class="form-input" placeholder="Your name" style="background:#f8f6ff;border:1.5px solid #e2d9f3">
-      </div>
-      <div style="margin-bottom:10px">
-        <label style="font-size:12px;font-weight:700;color:#666;display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Username</label>
-        <input type="text" id="regUser" class="form-input" placeholder="Choose a username" style="background:#f8f6ff;border:1.5px solid #e2d9f3">
-      </div>
-      <div style="margin-bottom:10px">
-        <label style="font-size:12px;font-weight:700;color:#666;display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Email ✳️ Required for sync</label>
-        <input type="email" id="regEmail" class="form-input" placeholder="your@email.com" style="background:#f8f6ff;border:1.5px solid #7c3aed">
-      </div>
-      <div style="margin-bottom:10px">
-        <label style="font-size:12px;font-weight:700;color:#666;display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Phone (optional)</label>
-        <div style="display:flex;gap:6px">
-          <select class="form-select" id="regCountry" style="width:90px;flex-shrink:0;background:#f8f6ff">
-            <option>+91</option><option>+1</option><option>+44</option><option>+61</option><option>+81</option>
+      <!-- ── CREATE ACCOUNT PANEL ──────────────────────── -->
+      <div id="registerPanel" style="display:none">
+        <div style="margin-bottom:9px">
+          <label style="font-size:11px;font-weight:700;color:#666;display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Full Name ✳️</label>
+          <input type="text" id="regName" class="form-input" placeholder="Your name" style="background:#f8f6ff;border:1.5px solid #e2d9f3" autocomplete="name">
+        </div>
+        <div style="margin-bottom:9px">
+          <label style="font-size:11px;font-weight:700;color:#666;display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Email ✳️</label>
+          <input type="email" id="regEmail" class="form-input" placeholder="your@email.com" style="background:#f8f6ff;border:1.5px solid #7c3aed" autocomplete="email">
+        </div>
+        <div style="margin-bottom:9px">
+          <label style="font-size:11px;font-weight:700;color:#666;display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Password ✳️ <span style="color:#aaa;font-size:10px">(min 6 chars)</span></label>
+          <input type="password" id="regPass" class="form-input" placeholder="Create a strong password" style="background:#f8f6ff;border:1.5px solid #e2d9f3" autocomplete="new-password">
+        </div>
+        <div style="margin-bottom:9px">
+          <label style="font-size:11px;font-weight:700;color:#666;display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Country</label>
+          <select id="regCountrySelect" class="form-select" style="background:#f8f6ff">
+            <option value="IN">🇮🇳 India</option>
+            <option value="US">🇺🇸 United States</option>
+            <option value="GB">🇬🇧 United Kingdom</option>
+            <option value="AU">🇦🇺 Australia</option>
+            <option value="CA">🇨🇦 Canada</option>
+            <option value="DE">🇩🇪 Germany</option>
+            <option value="FR">🇫🇷 France</option>
+            <option value="JP">🇯🇵 Japan</option>
+            <option value="BR">🇧🇷 Brazil</option>
+            <option value="NG">🇳🇬 Nigeria</option>
+            <option value="ZA">🇿🇦 South Africa</option>
+            <option value="KE">🇰🇪 Kenya</option>
+            <option value="PK">🇵🇰 Pakistan</option>
+            <option value="BD">🇧🇩 Bangladesh</option>
+            <option value="SG">🇸🇬 Singapore</option>
+            <option value="AE">🇦🇪 UAE</option>
+            <option value="SA">🇸🇦 Saudi Arabia</option>
+            <option value="EG">🇪🇬 Egypt</option>
+            <option value="MX">🇲🇽 Mexico</option>
+            <option value="AR">🇦🇷 Argentina</option>
+            <option value="ID">🇮🇩 Indonesia</option>
+            <option value="PH">🇵🇭 Philippines</option>
+            <option value="TH">🇹🇭 Thailand</option>
+            <option value="VN">🇻🇳 Vietnam</option>
+            <option value="NL">🇳🇱 Netherlands</option>
+            <option value="SE">🇸🇪 Sweden</option>
+            <option value="NO">🇳🇴 Norway</option>
+            <option value="NZ">🇳🇿 New Zealand</option>
+            <option value="OTHER">🌍 Other</option>
           </select>
-          <input type="tel" class="form-input" id="regPhone" placeholder="Phone number" style="background:#f8f6ff;border:1.5px solid #e2d9f3">
         </div>
-      </div>
-      <div style="margin-bottom:10px">
-        <label style="font-size:12px;font-weight:700;color:#666;display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Password</label>
-        <input type="password" id="regPass" class="form-input" placeholder="Create a password" style="background:#f8f6ff;border:1.5px solid #e2d9f3">
-      </div>
-      <div style="margin-bottom:14px">
-        <label style="font-size:12px;font-weight:700;color:#666;display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Avatar</label>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <span style="font-size:24px;cursor:pointer;padding:4px;border-radius:8px;border:2px solid transparent" onclick="selAvatar(this,'🧠')" class="avatar-opt">🧠</span>
-          <span style="font-size:24px;cursor:pointer;padding:4px;border-radius:8px;border:2px solid transparent" onclick="selAvatar(this,'🌟')" class="avatar-opt">🌟</span>
-          <span style="font-size:24px;cursor:pointer;padding:4px;border-radius:8px;border:2px solid transparent" onclick="selAvatar(this,'🔮')" class="avatar-opt">🔮</span>
-          <span style="font-size:24px;cursor:pointer;padding:4px;border-radius:8px;border:2px solid transparent" onclick="selAvatar(this,'🌙')" class="avatar-opt">🌙</span>
-          <span style="font-size:24px;cursor:pointer;padding:4px;border-radius:8px;border:2px solid transparent" onclick="selAvatar(this,'⚡')" class="avatar-opt">⚡</span>
-          <span style="font-size:24px;cursor:pointer;padding:4px;border-radius:8px;border:2px solid transparent" onclick="selAvatar(this,'🦋')" class="avatar-opt">🦋</span>
-          <span style="font-size:24px;cursor:pointer;padding:4px;border-radius:8px;border:2px solid transparent" onclick="selAvatar(this,'🌸')" class="avatar-opt">🌸</span>
-          <span style="font-size:24px;cursor:pointer;padding:4px;border-radius:8px;border:2px solid transparent" onclick="selAvatar(this,'🏔️')" class="avatar-opt">🏔️</span>
+        <div style="margin-bottom:12px">
+          <label style="font-size:11px;font-weight:700;color:#666;display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Avatar</label>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <span style="font-size:24px;cursor:pointer;padding:4px;border-radius:8px;border:2px solid transparent" onclick="selAvatar(this,'🧠')" class="avatar-opt">🧠</span>
+            <span style="font-size:24px;cursor:pointer;padding:4px;border-radius:8px;border:2px solid transparent" onclick="selAvatar(this,'🌟')" class="avatar-opt">🌟</span>
+            <span style="font-size:24px;cursor:pointer;padding:4px;border-radius:8px;border:2px solid transparent" onclick="selAvatar(this,'🔮')" class="avatar-opt">🔮</span>
+            <span style="font-size:24px;cursor:pointer;padding:4px;border-radius:8px;border:2px solid transparent" onclick="selAvatar(this,'🌙')" class="avatar-opt">🌙</span>
+            <span style="font-size:24px;cursor:pointer;padding:4px;border-radius:8px;border:2px solid transparent" onclick="selAvatar(this,'⚡')" class="avatar-opt">⚡</span>
+            <span style="font-size:24px;cursor:pointer;padding:4px;border-radius:8px;border:2px solid transparent" onclick="selAvatar(this,'🦋')" class="avatar-opt">🦋</span>
+            <span style="font-size:24px;cursor:pointer;padding:4px;border-radius:8px;border:2px solid transparent" onclick="selAvatar(this,'🌸')" class="avatar-opt">🌸</span>
+            <span style="font-size:24px;cursor:pointer;padding:4px;border-radius:8px;border:2px solid transparent" onclick="selAvatar(this,'🏔️')" class="avatar-opt">🏔️</span>
+          </div>
+          <input type="hidden" id="regAvatar" value="🧠">
         </div>
-        <input type="hidden" id="regAvatar" value="🧠">
+        <button class="btn btn-primary btn-block" onclick="doRegister()" style="margin-bottom:8px">✨ Create Account</button>
+        <div style="text-align:center;font-size:11px;color:#aaa">— or —</div>
+        <button class="btn btn-block" onclick="doGoogleLogin()" style="background:#fff;border:1.5px solid #ddd;color:#333;margin-top:8px;display:flex;align-items:center;justify-content:center;gap:8px">
+          <svg width="16" height="16" viewBox="0 0 48 48"><path fill="#4285F4" d="M24 9.5c3.5 0 6.6 1.2 9 3.2l6.7-6.7C35.8 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.6 13.3l7.8 6C12.2 13 17.6 9.5 24 9.5z"/><path fill="#34A853" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4 7.1-10 7.1-17z"/><path fill="#FBBC05" d="M10.4 28.6A14.5 14.5 0 0 1 9.5 24c0-1.6.3-3.1.8-4.6L2.5 13.3A24 24 0 0 0 0 24c0 3.8.9 7.4 2.6 10.6l7.8-6z"/><path fill="#EA4335" d="M24 48c6.2 0 11.4-2 15.2-5.5l-7.5-5.8c-2 1.4-4.7 2.2-7.7 2.2-6.4 0-11.8-4.3-13.6-10.2l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg>
+          Sign up with Google
+        </button>
       </div>
-      <button class="btn btn-primary btn-block" onclick="doRegister()">✨ Create Account</button>
-    </div>
 
-    <!-- GUEST -->
-    <div id="guestPanel" style="display:none">
-      <div style="background:rgba(124,58,237,.08);border-radius:14px;padding:16px;margin-bottom:16px;text-align:center">
-        <div style="font-size:36px;margin-bottom:8px">🔒</div>
-        <div style="font-size:14px;font-weight:700;margin-bottom:6px">Guest / Private Mode</div>
-        <div style="font-size:12px;color:#888;line-height:1.6">Your data stays on this device only. No account needed. You can create an account later to sync your data.</div>
-      </div>
-      <button class="btn btn-primary btn-block" onclick="guestMode()" style="margin-bottom:8px">🚀 Continue as Guest</button>
-      <div id="phoneLoginSection" style="margin-top:12px;border-top:1px solid #eee;padding-top:12px">
-        <div style="font-size:13px;font-weight:700;margin-bottom:8px">📱 Quick Phone Signup</div>
-        <div style="display:flex;gap:6px;margin-bottom:8px">
-          <select class="form-select" id="guestPhoneCC" style="width:80px;flex-shrink:0;background:#f8f6ff"><option>+91</option><option>+1</option><option>+44</option></select>
-          <input type="tel" class="form-input" id="guestPhone" placeholder="Phone number" style="background:#f8f6ff">
+      <!-- ── PHONE AUTH PANEL ──────────────────────────── -->
+      <div id="phonePanel" style="display:none">
+        <div style="background:rgba(124,58,237,.07);border-radius:12px;padding:12px;margin-bottom:14px;text-align:center">
+          <div style="font-size:28px;margin-bottom:4px">📱</div>
+          <div style="font-size:13px;font-weight:700;color:#7c3aed">Phone Number Sign-In</div>
+          <div style="font-size:11px;color:#888;margin-top:3px">Works worldwide · Real SMS verification</div>
         </div>
-        <button class="btn btn-secondary btn-block" onclick="phoneQuickSignup()">📲 Send OTP</button>
-        <div id="otpSection" style="display:none;margin-top:10px">
-          <input type="number" class="form-input" id="otpInput" placeholder="Enter 6-digit OTP" style="text-align:center;font-size:18px;font-weight:700;letter-spacing:6px;margin-bottom:8px">
-          <button class="btn btn-primary btn-block" onclick="verifyOTP()">✅ Verify & Enter</button>
-        </div>
-      </div>
-    </div>
 
-    <div id="loginMsg" style="margin-top:10px;font-size:13px;text-align:center;min-height:20px;color:var(--danger)"></div>
-    <div style="text-align:center;margin-top:12px;font-size:11px;color:#aaa">By continuing, you agree to our <a href="#" onclick="openLegal('terms')" style="color:#7c3aed">Terms</a> & <a href="#" onclick="openLegal('privacy')" style="color:#7c3aed">Privacy Policy</a></div>
+        <!-- Step 1: Enter phone -->
+        <div id="phoneStep1">
+          <label style="font-size:11px;font-weight:700;color:#666;display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">Country + Phone Number</label>
+          <div style="display:flex;gap:6px;margin-bottom:12px">
+            <select id="phoneCountryCode" class="form-select" style="width:110px;flex-shrink:0;background:#f8f6ff;font-size:12px">
+              <option value="+91">🇮🇳 +91</option>
+              <option value="+1">🇺🇸 +1</option>
+              <option value="+44">🇬🇧 +44</option>
+              <option value="+61">🇦🇺 +61</option>
+              <option value="+1" data-ca>🇨🇦 +1</option>
+              <option value="+49">🇩🇪 +49</option>
+              <option value="+33">🇫🇷 +33</option>
+              <option value="+81">🇯🇵 +81</option>
+              <option value="+55">🇧🇷 +55</option>
+              <option value="+234">🇳🇬 +234</option>
+              <option value="+27">🇿🇦 +27</option>
+              <option value="+254">🇰🇪 +254</option>
+              <option value="+92">🇵🇰 +92</option>
+              <option value="+880">🇧🇩 +880</option>
+              <option value="+65">🇸🇬 +65</option>
+              <option value="+971">🇦🇪 +971</option>
+              <option value="+966">🇸🇦 +966</option>
+              <option value="+20">🇪🇬 +20</option>
+              <option value="+52">🇲🇽 +52</option>
+              <option value="+54">🇦🇷 +54</option>
+              <option value="+62">🇮🇩 +62</option>
+              <option value="+63">🇵🇭 +63</option>
+              <option value="+66">🇹🇭 +66</option>
+              <option value="+84">🇻🇳 +84</option>
+              <option value="+31">🇳🇱 +31</option>
+              <option value="+46">🇸🇪 +46</option>
+              <option value="+47">🇳🇴 +47</option>
+              <option value="+64">🇳🇿 +64</option>
+              <option value="+7">🇷🇺 +7</option>
+              <option value="+86">🇨🇳 +86</option>
+              <option value="+82">🇰🇷 +82</option>
+              <option value="+234">🇳🇬 +234</option>
+              <option value="+233">🇬🇭 +233</option>
+              <option value="+255">🇹🇿 +255</option>
+              <option value="+256">🇺🇬 +256</option>
+              <option value="+212">🇲🇦 +212</option>
+              <option value="+213">🇩🇿 +213</option>
+              <option value="+216">🇹🇳 +216</option>
+              <option value="+90">🇹🇷 +90</option>
+              <option value="+98">🇮🇷 +98</option>
+              <option value="+964">🇮🇶 +964</option>
+              <option value="+972">🇮🇱 +972</option>
+              <option value="+351">🇵🇹 +351</option>
+              <option value="+34">🇪🇸 +34</option>
+              <option value="+39">🇮🇹 +39</option>
+              <option value="+48">🇵🇱 +48</option>
+              <option value="+380">🇺🇦 +380</option>
+              <option value="+94">🇱🇰 +94</option>
+              <option value="+977">🇳🇵 +977</option>
+              <option value="+95">🇲🇲 +95</option>
+              <option value="+60">🇲🇾 +60</option>
+            </select>
+            <input type="tel" id="phoneNumberInput" class="form-input" placeholder="Phone number" style="background:#f8f6ff;border:1.5px solid #7c3aed" autocomplete="tel">
+          </div>
+          <!-- reCAPTCHA container (invisible) -->
+          <div id="recaptcha-container"></div>
+          <button class="btn btn-primary btn-block" onclick="sendPhoneOTP()">📲 Send Verification Code</button>
+        </div>
+
+        <!-- Step 2: Enter OTP -->
+        <div id="phoneStep2" style="display:none">
+          <div style="background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);border-radius:10px;padding:10px;text-align:center;margin-bottom:12px">
+            <div style="font-size:12px;color:#16a34a;font-weight:700">✅ Code sent to <span id="phoneSentTo" style="color:#7c3aed"></span></div>
+            <div style="font-size:11px;color:#666;margin-top:3px">Check your SMS. Valid for 5 minutes.</div>
+          </div>
+          <label style="font-size:11px;font-weight:700;color:#666;display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">Enter 6-Digit Code</label>
+          <input type="number" id="otpInput" class="form-input" placeholder="000000" maxlength="6"
+            style="text-align:center;font-size:24px;font-weight:800;letter-spacing:8px;margin-bottom:12px;border:2px solid #7c3aed"
+            oninput="if(this.value.length===6)verifyPhoneOTP()"
+            autocomplete="one-time-code">
+          <button class="btn btn-primary btn-block" onclick="verifyPhoneOTP()" style="margin-bottom:8px">✅ Verify & Enter</button>
+          <button onclick="document.getElementById('phoneStep1').style.display='';document.getElementById('phoneStep2').style.display='none';document.getElementById('otpInput').value=''" style="background:none;border:none;color:#888;font-size:12px;cursor:pointer;width:100%;text-align:center">← Change number</button>
+        </div>
+      </div>
+
+      <div id="loginMsg" style="margin-top:10px;font-size:12px;text-align:center;min-height:18px;color:var(--danger)"></div>
+      <div style="text-align:center;margin-top:10px;font-size:10px;color:#aaa;line-height:1.5">By continuing, you agree to our <a href="#" onclick="openLegal('terms')" style="color:#7c3aed">Terms</a> & <a href="#" onclick="openLegal('privacy')" style="color:#7c3aed">Privacy Policy</a><br>🔒 Your data is private and encrypted</div>
     </div><!-- /loginFormUI -->
   </div>
 </div>
+
 
 <!-- ══ STREAK MILESTONE CELEBRATION MODAL ══ -->
 <div id="milestoneModal" style="display:none;position:fixed;inset:0;z-index:9600;background:rgba(0,0,0,.8);backdrop-filter:blur(10px);align-items:center;justify-content:center;padding:20px">
@@ -11066,10 +11164,17 @@ function onboardNav(dir){
 // NEW FEATURE BLOCK — v7.0 UPGRADES
 // ══════════════════════════════════════════════════════════════
 
-// ─── MULTI-USER / LOGIN SYSTEM ───────────────────────────────
-const USERS_KEY='cos_v7_users';
-const CURRENT_KEY='cos_v7_current';
-let selectedAvatar='🧠';
+
+// ══════════════════════════════════════════════════════════════
+// AUTH SYSTEM v9 — Firebase Email + Google + Real Phone OTP
+// No guest bypass. Worldwide. Real SMS via Firebase Phone Auth.
+// ══════════════════════════════════════════════════════════════
+
+const USERS_KEY   = 'cos_v7_users';
+const CURRENT_KEY = 'cos_v7_current';
+let selectedAvatar = '🧠';
+let _phoneConfirmationResult = null;  // Firebase phone auth confirmation
+let _recaptchaVerifier = null;        // Firebase invisible reCAPTCHA
 
 function getUsers(){return JSON.parse(localStorage.getItem(USERS_KEY)||'[]');}
 function saveUsers(u){localStorage.setItem(USERS_KEY,JSON.stringify(u));}
@@ -11079,241 +11184,291 @@ function getCurrentUser(){
   return getUsers().find(u=>u.id===id)||null;
 }
 function setCurrentUser(id){localStorage.setItem(CURRENT_KEY,id);}
-function getUserDataKey(uid,key){return`cos_u_${uid}_${key}`;}
+function getUserDataKey(uid,key){return `cos_u_${uid}_${key}`;}
 
 function selAvatar(el,emoji){
   document.querySelectorAll('.avatar-opt').forEach(a=>a.style.border='2px solid transparent');
   el.style.border='2px solid #7c3aed';
   selectedAvatar=emoji;
-  document.getElementById('regAvatar').value=emoji;
+  const r=document.getElementById('regAvatar');if(r)r.value=emoji;
 }
 
 function switchLoginTab(tab,btn){
   document.querySelectorAll('.login-tab-btn').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
-  document.getElementById('loginPanel').style.display=tab==='login'?'':'none';
-  document.getElementById('registerPanel').style.display=tab==='register'?'':'none';
-  document.getElementById('guestPanel').style.display=tab==='guest'?'':'none';
-  document.getElementById('loginMsg').textContent='';
+  ['loginPanel','registerPanel','phonePanel'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el)el.style.display='none';
+  });
+  const panelId = tab==='login'?'loginPanel':tab==='register'?'registerPanel':'phonePanel';
+  const panel=document.getElementById(panelId);
+  if(panel)panel.style.display='';
+  const msg=document.getElementById('loginMsg');
+  if(msg)msg.textContent='';
 }
 
+// ─── EMAIL SIGN IN ────────────────────────────────────────────
 async function doLogin(){
-  const u=document.getElementById('loginUser').value.trim();
-  const p=document.getElementById('loginPass').value;
+  const u=(document.getElementById('loginUser').value||'').trim();
+  const p=(document.getElementById('loginPass').value||'');
   const msgEl=document.getElementById('loginMsg');
-  if(!u||!p){msgEl.textContent='Please enter email and password.';return;}
-  msgEl.textContent='Signing in...';
+  if(!u||!p){msgEl.textContent='Please enter your email and password.';return;}
+  msgEl.textContent='⏳ Signing in…';
   try{
     const cred=await auth.signInWithEmailAndPassword(u,p);
     const fbUser=cred.user;
     const profile={
       id:fbUser.uid,
       name:fbUser.displayName||u.split('@')[0]||'User',
-      username:u,email:fbUser.email,avatar:'🧠',isFirebase:true,
+      username:u, email:fbUser.email, avatar:'🧠', isFirebase:true,
       created:new Date().toISOString()
     };
-    const users=getUsers();
-    const idx=users.findIndex(x=>x.id===fbUser.uid);
-    if(idx===-1)users.push(profile);else users[idx]={...users[idx],...profile};
-    saveUsers(users);
-    setCurrentUser(fbUser.uid);
-    localStorage.setItem('cos_has_account','1');
-    closeLoginOverlay();
-    showToast('👋 Welcome back, '+profile.name+'! Loading your data...');
-    loadUserProfile(profile);
-    buildProfileBar();
-    switchTab('log');
-    loadLogsFromFirestore(fbUser.uid);
-    loadDreamsFromFirestore(fbUser.uid);
+    _saveProfileAndEnter(fbUser,profile,'👋 Welcome back, '+profile.name+'!');
   }catch(e){
-    msgEl.textContent='❌ '+e.message;
+    const friendly={
+      'auth/user-not-found':'❌ No account with that email. Create one?',
+      'auth/wrong-password':'❌ Wrong password. Try again or reset.',
+      'auth/invalid-email':'❌ Invalid email format.',
+      'auth/too-many-requests':'⚠️ Too many attempts. Try again later.',
+      'auth/network-request-failed':'❌ No internet connection.'
+    };
+    msgEl.textContent=friendly[e.code]||('❌ '+e.message);
   }
 }
 
+// ─── EMAIL REGISTER ───────────────────────────────────────────
 async function doRegister(){
-  const name=document.getElementById('regName').value.trim();
-  const username=document.getElementById('regUser').value.trim();
-  const email=document.getElementById('regEmail').value.trim();
-  const pass=document.getElementById('regPass').value;
+  const name=(document.getElementById('regName').value||'').trim();
+  const email=(document.getElementById('regEmail').value||'').trim();
+  const pass=(document.getElementById('regPass').value||'');
+  const country=document.getElementById('regCountrySelect')?.value||'';
   const msgEl=document.getElementById('loginMsg');
-  if(!name||!pass){msgEl.textContent='Name and password required.';return;}
-  if(!email){msgEl.textContent='Email is required to sync across devices.';return;}
-  if(pass.length<6){msgEl.textContent='Password must be at least 6 characters.';return;}
-  msgEl.textContent='Creating account...';
+  if(!name){msgEl.textContent='❌ Name is required.';return;}
+  if(!email||!email.includes('@')){msgEl.textContent='❌ Valid email is required.';return;}
+  if(pass.length<6){msgEl.textContent='❌ Password must be at least 6 characters.';return;}
+  msgEl.textContent='⏳ Creating account…';
   try{
-    // Create Firebase Auth account
-    const cred = await auth.createUserWithEmailAndPassword(email, pass);
-    const fbUser = cred.user;
-    // Update display name
-    await fbUser.updateProfile({ displayName: name });
+    const cred=await auth.createUserWithEmailAndPassword(email,pass);
+    const fbUser=cred.user;
+    await fbUser.updateProfile({displayName:name});
     const profile={
-      id:fbUser.uid,
-      name,
-      username:username||email.split('@')[0],
-      email:fbUser.email,
-      phone:document.getElementById('regPhone')?.value||'',
-      avatar:selectedAvatar||'🧠',
-      isFirebase:true,
+      id:fbUser.uid, name, username:email.split('@')[0], email:fbUser.email,
+      avatar:selectedAvatar||'🧠', country, isFirebase:true,
       created:new Date().toISOString()
     };
-    const users=getUsers();
-    users.push(profile);
-    saveUsers(users);
-    setCurrentUser(fbUser.uid);
-    localStorage.setItem('cos_has_account','1');
-    // Save to Firestore
+    // Save to Firestore with country data for analytics
     try{
       await db.collection('users').doc(fbUser.uid).set({
         name:profile.name, email:profile.email, avatar:profile.avatar,
-        username:profile.username,
+        country, platform: navigator.platform||'web',
+        userAgent: navigator.userAgent.slice(0,100),
         created:profile.created,
-        lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+        lastLogin:firebase.firestore.FieldValue.serverTimestamp()
       });
-    }catch(e){ console.warn('Firestore profile:', e.message); }
-    closeLoginOverlay();
-    showToast('🎉 Welcome, '+name+'! Account created & synced ☁️');
-    loadUserProfile(profile);
-    buildProfileBar();
-    switchTab('log');
+    }catch(e2){console.warn('Firestore user save:',e2.message);}
+    _saveProfileAndEnter(fbUser,profile,'🎉 Welcome, '+name+'! Account created ☁️');
+  }catch(e){
+    const friendly={
+      'auth/email-already-in-use':'❌ Email already registered. Sign in instead.',
+      'auth/weak-password':'❌ Password too weak. Use 6+ characters.',
+      'auth/invalid-email':'❌ Invalid email format.',
+      'auth/network-request-failed':'❌ No internet connection.'
+    };
+    msgEl.textContent=friendly[e.code]||('❌ '+e.message);
+  }
+}
+
+// ─── FORGOT PASSWORD ──────────────────────────────────────────
+async function doForgotPassword(){
+  const email=(document.getElementById('loginUser')?.value||'').trim();
+  if(!email){
+    document.getElementById('loginMsg').textContent='Enter your email above first.';
+    return;
+  }
+  try{
+    await auth.sendPasswordResetEmail(email);
+    document.getElementById('loginMsg').style.color='#22c55e';
+    document.getElementById('loginMsg').textContent='✅ Reset email sent! Check your inbox.';
+    setTimeout(()=>{
+      const m=document.getElementById('loginMsg');
+      if(m){m.style.color='';m.textContent='';}
+    },5000);
   }catch(e){
     document.getElementById('loginMsg').textContent='❌ '+e.message;
   }
 }
 
-function guestMode(){
-  const guestUser={
-    id:'guest_'+Date.now(),
-    name:'Guest',username:'guest',
-    avatar:'🔒',
-    isGuest:true,
-    created:new Date().toISOString()
-  };
-  const users=getUsers();
-  users.push(guestUser);
-  saveUsers(users);
-  setCurrentUser(guestUser.id);
-  closeLoginOverlay();
-  showToast('🔒 Guest mode — data stays on device');
-  buildProfileBar();
-  switchTab('log');
-}
-
-let pendingOTP='';
-function phoneQuickSignup(){
-  const phone=document.getElementById('guestPhone').value.trim();
-  if(!phone){showToast('Enter phone number');return;}
-  pendingOTP=Math.floor(100000+Math.random()*900000).toString();
-  document.getElementById('otpSection').style.display='';
-  showToast(`📲 OTP: ${pendingOTP} (simulated — copy this!)`);
-  // In production this would call a real SMS service
-  alert(`Your OTP is: ${pendingOTP}\n(In production this would be sent via SMS)`);
-}
-function verifyOTP(){
-  const entered=document.getElementById('otpInput').value.trim();
-  if(entered===pendingOTP){
-    const phone=document.getElementById('guestPhone').value.trim();
-    const cc=document.getElementById('guestPhoneCC').value;
-    const newUser={
-      id:'phone_'+Date.now(),
-      name:'User '+phone.slice(-4),
-      username:'user_'+phone.slice(-4),
-      avatar:'📱',
-      phone:cc+phone,
-      created:new Date().toISOString()
-    };
-    const users=getUsers();users.push(newUser);saveUsers(users);
-    setCurrentUser(newUser.id);
-    closeLoginOverlay();
-    showToast('✅ Phone verified! Welcome!');
-    buildProfileBar();
-  }else{
-    document.getElementById('loginMsg').textContent='❌ Wrong OTP.';
-  }
-}
-
+// ─── GOOGLE SIGN IN (mobile-safe: popup → redirect fallback) ──
 async function doGoogleLogin(){
-  const provider = new firebase.auth.GoogleAuthProvider();
+  const msgEl=document.getElementById('loginMsg');
+  const provider=new firebase.auth.GoogleAuthProvider();
   provider.addScope('email');
   provider.addScope('profile');
-  provider.setCustomParameters({ prompt: 'select_account' });
-  try {
-    showToast('🔵 Opening Google sign-in popup...');
-    const result = await auth.signInWithPopup(provider);
-    const fbUser = result.user;
-    const profile = {
-      id: fbUser.uid,
-      name: fbUser.displayName || 'Google User',
-      username: fbUser.email || fbUser.uid,
-      email: fbUser.email || '',
-      avatar: '🔵',
-      isGoogle: true,
-      isFirebase: true,
-      created: new Date().toISOString()
+  provider.setCustomParameters({prompt:'select_account'});
+
+  // Detect mobile — use redirect on mobile for reliability
+  const isMobile=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  if(isMobile){
+    try{
+      msgEl.textContent='⏳ Opening Google…';
+      await auth.signInWithRedirect(provider);
+    }catch(e){
+      msgEl.textContent='❌ '+e.message;
+    }
+    return;
+  }
+
+  // Desktop: popup
+  try{
+    msgEl.textContent='⏳ Opening Google sign-in…';
+    const result=await auth.signInWithPopup(provider);
+    const fbUser=result.user;
+    const profile={
+      id:fbUser.uid, name:fbUser.displayName||'Google User',
+      username:fbUser.email||fbUser.uid, email:fbUser.email||'',
+      avatar:'🔵', isGoogle:true, isFirebase:true, created:new Date().toISOString()
     };
-    // Save to local users list
-    const users = getUsers();
-    const idx = users.findIndex(u => u.id === fbUser.uid);
-    if(idx === -1) users.push(profile); else users[idx] = {...users[idx], ...profile};
-    saveUsers(users);
-    setCurrentUser(fbUser.uid);
-    localStorage.setItem('cos_has_account','1');
-    closeLoginOverlay();
-    showToast('🔵 Signed in as ' + profile.name + '! Syncing data...');
-    loadUserProfile(profile);
-    buildProfileBar();
-    switchTab('log');
-    loadLogsFromFirestore(fbUser.uid);
-    // Save user profile to Firestore
-    try {
+    try{
       await db.collection('users').doc(fbUser.uid).set({
-        name: profile.name,
-        email: profile.email,
-        avatar: '🔵',
-        lastLogin: firebase.firestore.FieldValue.serverTimestamp()
-      }, {merge: true});
-    } catch(e){ console.warn('Profile sync:', e.message); }
-  } catch(error) {
-    console.error('Google sign-in error:', error);
-    if(error.code === 'auth/popup-blocked'){
-      showToast('⚠️ Popup blocked — trying redirect...');
-      const provider2 = new firebase.auth.GoogleAuthProvider();
-      await auth.signInWithRedirect(provider2);
-    } else {
-      showToast('❌ Sign-in failed: ' + error.message);
+        name:profile.name, email:profile.email, avatar:'🔵',
+        lastLogin:firebase.firestore.FieldValue.serverTimestamp()
+      },{merge:true});
+    }catch(e2){}
+    _saveProfileAndEnter(fbUser,profile,'🔵 Signed in as '+profile.name+'!');
+  }catch(e){
+    if(e.code==='auth/popup-blocked'||e.code==='auth/popup-closed-by-user'){
+      msgEl.textContent='⏳ Popup blocked — trying redirect…';
+      const p2=new firebase.auth.GoogleAuthProvider();
+      await auth.signInWithRedirect(p2);
+    }else if(e.code==='auth/cancelled-popup-request'){
+      msgEl.textContent='';
+    }else{
+      msgEl.textContent='❌ '+e.message;
     }
   }
 }
-function doPhoneLogin(){switchLoginTab('guest',document.querySelectorAll('.login-tab-btn')[2]);}
 
-function closeLoginOverlay(){
-  document.getElementById('loginOverlay').style.display='none';
-}
-function openLoginOverlay(preferTab){
-  // Always show the form (not the spinner) when manually opening
-  const restoreUI = document.getElementById('sessionRestoreUI');
-  const formUI    = document.getElementById('loginFormUI');
-  if (restoreUI) restoreUI.style.display = 'none';
-  if (formUI)    formUI.style.display    = '';
-  document.getElementById('loginOverlay').style.display='flex';
-  // Default to 'login' for returning users, 'register' for first-timers
-  const tab = preferTab || (localStorage.getItem('cos_has_account') ? 'login' : 'register');
-  const btn = document.querySelector(`.login-tab-btn[onclick*="'${tab}'"]`);
-  if(btn) switchLoginTab(tab, btn);
-}
+// ─── REAL PHONE AUTH via Firebase ────────────────────────────
+async function sendPhoneOTP(){
+  const cc=document.getElementById('phoneCountryCode').value;
+  const num=(document.getElementById('phoneNumberInput').value||'').replace(/\D/g,'').trim();
+  const msgEl=document.getElementById('loginMsg');
+  if(!num||num.length<6){msgEl.textContent='❌ Enter a valid phone number.';return;}
+  const fullPhone=cc+num;
+  msgEl.textContent='⏳ Sending verification code…';
 
-async function signOut(){
-  if(confirm('Sign out? Your local data stays on this device.')){
-    try { await auth.signOut(); } catch(e){}
-    localStorage.removeItem(CURRENT_KEY);
-    showToast('👋 Signed out');
-    updateAccountUI();
-    buildProfileBar();
-    setTimeout(()=>{ if(!getCurrentUser()) openLoginOverlay(); }, 800);
+  try{
+    // Init invisible reCAPTCHA (Firebase requirement for phone auth)
+    if(!_recaptchaVerifier){
+      _recaptchaVerifier=new firebase.auth.RecaptchaVerifier('recaptcha-container',{
+        size:'invisible',
+        callback:()=>{},
+        'expired-callback':()=>{
+          _recaptchaVerifier=null;
+          msgEl.textContent='reCAPTCHA expired. Please retry.';
+        }
+      });
+    }
+    _phoneConfirmationResult=await auth.signInWithPhoneNumber(fullPhone,_recaptchaVerifier);
+    document.getElementById('phoneStep1').style.display='none';
+    document.getElementById('phoneStep2').style.display='';
+    document.getElementById('phoneSentTo').textContent=fullPhone;
+    msgEl.textContent='';
+    showToast('📲 SMS sent to '+fullPhone);
+  }catch(e){
+    // Reset reCAPTCHA on error
+    if(_recaptchaVerifier){try{_recaptchaVerifier.clear();}catch(e2){} _recaptchaVerifier=null;}
+    const friendly={
+      'auth/invalid-phone-number':'❌ Invalid phone number format.',
+      'auth/too-many-requests':'⚠️ Too many SMS requests. Try again in 1 hour.',
+      'auth/quota-exceeded':'⚠️ SMS quota exceeded. Use email/Google instead.',
+      'auth/captcha-check-failed':'❌ reCAPTCHA failed. Refresh and retry.',
+      'auth/network-request-failed':'❌ No internet connection.'
+    };
+    msgEl.textContent=friendly[e.code]||('❌ '+e.message);
+    // Show step1 again
+    document.getElementById('phoneStep1').style.display='';
   }
 }
 
+async function verifyPhoneOTP(){
+  const code=(document.getElementById('otpInput').value||'').trim();
+  const msgEl=document.getElementById('loginMsg');
+  if(!code||code.length!==6){msgEl.textContent='❌ Enter the 6-digit code.';return;}
+  if(!_phoneConfirmationResult){msgEl.textContent='❌ Session expired. Resend code.';return;}
+  msgEl.textContent='⏳ Verifying…';
+  try{
+    const result=await _phoneConfirmationResult.confirm(code);
+    const fbUser=result.user;
+    const phone=document.getElementById('phoneSentTo')?.textContent||'';
+    const profile={
+      id:fbUser.uid, name:'User '+phone.slice(-4),
+      username:'user_'+phone.slice(-4), phone,
+      avatar:'📱', isFirebase:true, created:new Date().toISOString()
+    };
+    try{
+      await db.collection('users').doc(fbUser.uid).set({
+        phone, avatar:'📱', lastLogin:firebase.firestore.FieldValue.serverTimestamp()
+      },{merge:true});
+    }catch(e2){}
+    _saveProfileAndEnter(fbUser,profile,'✅ Phone verified! Welcome!');
+  }catch(e){
+    const friendly={
+      'auth/invalid-verification-code':'❌ Wrong code. Check your SMS.',
+      'auth/code-expired':'❌ Code expired. Tap "Change number" and resend.',
+      'auth/session-expired':'❌ Session expired. Please resend the code.'
+    };
+    msgEl.textContent=friendly[e.code]||('❌ '+e.message);
+  }
+}
+
+// ─── SHARED PROFILE SAVE + APP ENTRY ─────────────────────────
+function _saveProfileAndEnter(fbUser,profile,toast){
+  const users=getUsers();
+  const idx=users.findIndex(u=>u.id===fbUser.uid);
+  if(idx===-1)users.push(profile);else users[idx]={...users[idx],...profile};
+  saveUsers(users);
+  setCurrentUser(fbUser.uid);
+  localStorage.setItem('cos_has_account','1');
+  closeLoginOverlay();
+  showToast(toast);
+  if(typeof loadUserProfile==='function')loadUserProfile(profile);
+  if(typeof buildProfileBar==='function')buildProfileBar();
+  if(typeof switchTab==='function')switchTab('log');
+  if(typeof loadLogsFromFirestore==='function')loadLogsFromFirestore(fbUser.uid);
+  if(typeof loadDreamsFromFirestore==='function')loadDreamsFromFirestore(fbUser.uid);
+}
+
+function closeLoginOverlay(){
+  const ol=document.getElementById('loginOverlay');
+  if(ol)ol.style.display='none';
+}
+function openLoginOverlay(preferTab){
+  const restoreUI=document.getElementById('sessionRestoreUI');
+  const formUI=document.getElementById('loginFormUI');
+  if(restoreUI)restoreUI.style.display='none';
+  if(formUI)formUI.style.display='';
+  const ol=document.getElementById('loginOverlay');
+  if(ol)ol.style.display='flex';
+  const tab=preferTab||(localStorage.getItem('cos_has_account')?'login':'register');
+  const btn=document.querySelector(`.login-tab-btn[onclick*="'${tab}'"]`);
+  if(btn)switchLoginTab(tab,btn);
+}
+
+// DISABLED: Guest mode removed — all users must create an account
+function guestMode(){
+  document.getElementById('loginMsg').textContent='Please create a free account to continue. It only takes 30 seconds!';
+  const btn=document.querySelector(".login-tab-btn[onclick*="'register'"]");
+  if(btn)switchLoginTab('register',btn);
+}
+
+// Legacy stubs
 function signInGoogle(){doGoogleLogin();}
 function signInLocal(){guestMode();}
+function phoneQuickSignup(){switchLoginTab('phone',document.querySelector(".login-tab-btn[onclick*="'phone'"]"));}
+function verifyOTP(){verifyPhoneOTP();}
+function doPhoneLogin(){switchLoginTab('phone',document.querySelector(".login-tab-btn[onclick*="'phone'"]"));}
+
 
 function loadUserProfile(user){
   if(!user)return;
