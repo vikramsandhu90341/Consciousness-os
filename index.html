@@ -1877,7 +1877,6 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
       <button onclick="closeQuickSettingsPopup();switchTab('settings')" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:7px;font-size:11px;cursor:pointer;color:var(--text)">⚙️ Full Settings</button>
       <button onclick="closeQuickSettingsPopup();switchTab('vault')" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:7px;font-size:11px;cursor:pointer;color:var(--text)">🔮 Vault</button>
       <button onclick="closeQuickSettingsPopup();openReferralModal()" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:7px;font-size:11px;cursor:pointer;color:var(--text)">🎁 Refer & Earn</button>
-      <button onclick="closeQuickSettingsPopup();toggleDevPanel()" style="background:var(--bg3);border:1px solid rgba(124,58,237,.3);border-radius:8px;padding:7px;font-size:11px;cursor:pointer;color:var(--primary);display:none" id="qsDevBtn">🛠️ Dev Panel</button>
     </div>
   </div>
 </div>
@@ -1909,7 +1908,6 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
       <button class="tb-btn" onclick="openAppGuide()" title="App Guide" style="min-width:30px;width:30px;height:30px;padding:4px;font-size:15px">📖</button>
       <button class="tb-btn" onclick="toggleTheme()" id="themeBtnMob" title="Toggle theme" style="min-width:30px;width:30px;height:30px;padding:4px">🌙</button>
       <button class="tb-btn" onclick="openProfileSwitcher()" id="profileTopBtnMob" title="Account" style="min-width:30px;width:30px;height:30px;padding:4px">👤</button>
-      <button class="tb-btn" onclick="toggleDevPanel()" id="devPanelBtn" title="Dev Panel" style="font-size:13px;display:none;min-width:30px;width:30px;height:30px;padding:4px">🛠️</button>
     </div>
   </div>
   <!-- Row 2: Desktop quick action buttons -->
@@ -11451,23 +11449,24 @@ function openLoginOverlay(preferTab){
   const ol=document.getElementById('loginOverlay');
   if(ol)ol.style.display='flex';
   const tab=preferTab||(localStorage.getItem('cos_has_account')?'login':'register');
-  const btn=document.querySelector(`.login-tab-btn[onclick*="'${tab}'"]`);
+  const tabIndex={'login':0,'register':1,'phone':2}[tab]||0;
+  const btn=document.querySelectorAll('.login-tab-btn')[tabIndex];
   if(btn)switchLoginTab(tab,btn);
 }
 
 // DISABLED: Guest mode removed — all users must create an account
 function guestMode(){
   document.getElementById('loginMsg').textContent='Please create a free account to continue. It only takes 30 seconds!';
-  const btn=document.querySelector(".login-tab-btn[onclick*="'register'"]");
+  const btn=document.querySelectorAll('.login-tab-btn')[1];
   if(btn)switchLoginTab('register',btn);
 }
 
 // Legacy stubs
 function signInGoogle(){doGoogleLogin();}
 function signInLocal(){guestMode();}
-function phoneQuickSignup(){switchLoginTab('phone',document.querySelector(".login-tab-btn[onclick*="'phone'"]"));}
+function phoneQuickSignup(){const b=document.querySelectorAll('.login-tab-btn')[2];if(b)switchLoginTab('phone',b);}
 function verifyOTP(){verifyPhoneOTP();}
-function doPhoneLogin(){switchLoginTab('phone',document.querySelector(".login-tab-btn[onclick*="'phone'"]"));}
+function doPhoneLogin(){const b=document.querySelectorAll('.login-tab-btn')[2];if(b)switchLoginTab('phone',b);}
 
 
 function loadUserProfile(user){
@@ -16810,12 +16809,11 @@ function devFirebaseSync() {
   showToast('🔄 Firestore sync triggered');
 }
 
-// Show/hide DevPanel and its trigger button based on orientation
+// Dev panel hidden from public — access via Firestore console only
 function handleDevPanelOrientation() {
   const btn = document.getElementById('devPanelBtn');
-  const isLandscape = window.innerWidth > window.innerHeight;
-  if (btn) btn.style.display = isLandscape ? 'flex' : 'none';
-  if (!isLandscape && _devPanelOpen) {
+  if (btn) btn.style.display = 'none'; // Always hidden in production
+  if (_devPanelOpen) {
     _devPanelOpen = false;
     const panel = document.getElementById('devPanel');
     if (panel) panel.style.display = 'none';
@@ -16922,9 +16920,7 @@ function openQuickSettingsPopup(event) {
     if (b.getAttribute('onclick') === `qsSetLang('${lang}')`) b.classList.add('active');
   });
 
-  // Show dev btn only in landscape
-  const devBtn = document.getElementById('qsDevBtn');
-  if (devBtn) devBtn.style.display = window.innerWidth > window.innerHeight ? '' : 'none';
+  // Dev panel removed from public UI
 }
 
 function closeQuickSettingsPopup() {
