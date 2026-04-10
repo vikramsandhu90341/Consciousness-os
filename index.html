@@ -71,8 +71,8 @@ db.enablePersistence({ synchronizeTabs: true }).catch(err => {
   }
 });
 
-// Handle redirect result (mobile Google sign-in returns here)
-auth.getRedirectResult().then(result => {
+// Handle redirect result — ALL Google sign-in (mobile + desktop) returns here
+auth.getRedirectResult().then(async result => {
   if(result && result.user){
     const fbUser = result.user;
     const profile = {
@@ -85,16 +85,26 @@ auth.getRedirectResult().then(result => {
       isFirebase: true,
       created: new Date().toISOString()
     };
-    const users = getUsers ? getUsers() : [];
+    // Save locally
+    const users = typeof getUsers === 'function' ? getUsers() : [];
     const idx = users.findIndex(u => u.id === fbUser.uid);
     if(idx === -1) users.push(profile); else users[idx] = {...users[idx], ...profile};
     if(typeof saveUsers === 'function') saveUsers(users);
     if(typeof setCurrentUser === 'function') setCurrentUser(fbUser.uid);
     localStorage.setItem('cos_has_account','1');
+    // Save to Firestore
+    try{
+      await db.collection('users').doc(fbUser.uid).set({
+        name: profile.name, email: profile.email, avatar: '🔵',
+        lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+      },{merge:true});
+    }catch(e2){}
     if(typeof closeLoginOverlay === 'function') closeLoginOverlay();
-    showToast('🔵 Signed in as ' + profile.name + '! Syncing...');
+    if(typeof showToast === 'function') showToast('🔵 Signed in as ' + profile.name + '!');
     if(typeof loadLogsFromFirestore === 'function') loadLogsFromFirestore(fbUser.uid);
-    if(typeof buildProfileBar === 'function') buildProfileBar();
+    if(typeof loadDreamsFromFirestore === 'function') loadDreamsFromFirestore(fbUser.uid);
+    if(typeof buildProfileBar === 'function') setTimeout(buildProfileBar, 400);
+    if(typeof switchTab === 'function') setTimeout(()=>switchTab('log'), 600);
   }
 }).catch(err => { if(err.code !== 'auth/no-auth-event') console.error('Redirect result error:', err); });
 
@@ -11298,52 +11308,18 @@ async function doForgotPassword(){
 
 // ─── GOOGLE SIGN IN (mobile-safe: popup → redirect fallback) ──
 async function doGoogleLogin(){
+  // ALWAYS redirect — never popup.
+  // Popup opens firebaseapp.com which is blocked by API key referrer restrictions.
+  // Redirect returns to GitHub Pages (authorized) — no block.
   const msgEl=document.getElementById('loginMsg');
-  const provider=new firebase.auth.GoogleAuthProvider();
-  provider.addScope('email');
-  provider.addScope('profile');
-  provider.setCustomParameters({prompt:'select_account'});
-
-  // Detect mobile — use redirect on mobile for reliability
-  const isMobile=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-  if(isMobile){
-    try{
-      msgEl.textContent='⏳ Opening Google…';
-      await auth.signInWithRedirect(provider);
-    }catch(e){
-      msgEl.textContent='❌ '+e.message;
-    }
-    return;
-  }
-
-  // Desktop: popup
   try{
-    msgEl.textContent='⏳ Opening Google sign-in…';
-    const result=await auth.signInWithPopup(provider);
-    const fbUser=result.user;
-    const profile={
-      id:fbUser.uid, name:fbUser.displayName||'Google User',
-      username:fbUser.email||fbUser.uid, email:fbUser.email||'',
-      avatar:'🔵', isGoogle:true, isFirebase:true, created:new Date().toISOString()
-    };
-    try{
-      await db.collection('users').doc(fbUser.uid).set({
-        name:profile.name, email:profile.email, avatar:'🔵',
-        lastLogin:firebase.firestore.FieldValue.serverTimestamp()
-      },{merge:true});
-    }catch(e2){}
-    _saveProfileAndEnter(fbUser,profile,'🔵 Signed in as '+profile.name+'!');
-  }catch(e){
-    if(e.code==='auth/popup-blocked'||e.code==='auth/popup-closed-by-user'){
-      msgEl.textContent='⏳ Popup blocked — trying redirect…';
-      const p2=new firebase.auth.GoogleAuthProvider();
-      await auth.signInWithRedirect(p2);
-    }else if(e.code==='auth/cancelled-popup-request'){
-      msgEl.textContent='';
-    }else{
-      msgEl.textContent='❌ '+e.message;
-    }
-  }
+    msgEl.textContent='⏳ Redirecting to Google…';
+    const provider=new firebase.auth.GoogleAuthProvider();
+    provider.addScope('email');
+    provider.addScope('profile');
+    provider.setCustomParameters({prompt:'select_account'});
+    await auth.signInWithRedirect(provider);
+  }catch(e){ msgEl.textContent='❌ '+e.message; }
 }
 
 // ─── REAL PHONE AUTH via Firebase ────────────────────────────
