@@ -25,11 +25,11 @@
     'You are overriding the original host'  // settings() called post-init (merge:true fix)
   ];
   console.warn = function() {
-    var msg = arguments[0];
-    if (typeof msg === 'string') {
-      for (var i = 0; i < SUPPRESS.length; i++) {
-        if (msg.indexOf(SUPPRESS[i]) !== -1) return; // drop silently
-      }
+    // Firebase SDK can pass non-string first args (objects, format strings) — always coerce
+    var msg = '';
+    try { msg = String(arguments[0] || ''); } catch(e) {}
+    for (var i = 0; i < SUPPRESS.length; i++) {
+      if (msg.indexOf(SUPPRESS[i]) !== -1) return; // drop silently
     }
     _warn.apply(console, arguments);
   };
@@ -73,7 +73,12 @@ db.enablePersistence({ synchronizeTabs: true }).catch(err => {
 
 // Store redirect result promise — processed after DOM loads in initAuthState
 // CRITICAL: Cannot call closeLoginOverlay/switchTab here — DOM not ready yet
-window._googleRedirectPromise = auth.getRedirectResult();
+// _googleRedirectPending: blocks onAuthStateChanged(null) from showing login form
+// during the brief window while Firebase processes the OAuth redirect result.
+window._googleRedirectPending = true;
+window._googleRedirectPromise = auth.getRedirectResult().finally(function() {
+  window._googleRedirectPending = false;
+});
 
 // ─── API KEY ────────────────────────────────────────────────
 // Keys assembled at runtime (obfuscated)
@@ -311,8 +316,10 @@ function _handleAuthUser(fbUser) {
       if (typeof buildProfileBar === 'function') setTimeout(buildProfileBar, 500);
     }
   } else {
-    // Auth state: not yet signed in (normal before Firebase resolves session)
-    // Show login form (NOT spinner)
+    // Auth state: not yet signed in.
+    // GUARD: if a Google redirect is still in-flight, don't flash the login form —
+    // getRedirectResult() will resolve shortly and closeLoginOverlay() will fire.
+    if (window._googleRedirectPending) return;
     if (overlay)   overlay.style.display = 'flex';
     if (restoreUI) restoreUI.style.display = 'none';
     if (formUI)    formUI.style.display = '';
@@ -11368,6 +11375,7 @@ async function sendPhoneOTP(){
     // Reset reCAPTCHA on error
     if(_recaptchaVerifier){try{_recaptchaVerifier.clear();}catch(e2){} _recaptchaVerifier=null;}
     const friendly={
+      'auth/billing-not-enabled':'⚠️ Phone sign-in is temporarily unavailable. Please use Google or Email instead.',
       'auth/invalid-phone-number':'❌ Invalid phone number format.',
       'auth/too-many-requests':'⚠️ Too many SMS requests. Try again in 1 hour.',
       'auth/quota-exceeded':'⚠️ SMS quota exceeded. Use email/Google instead.',
