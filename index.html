@@ -2542,6 +2542,43 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
     <div id="stateEngineResult" style="margin-top:12px"></div>
   </div>
 
+  <!-- ── APEX PHYSICAL PROTOCOL ── -->
+  <div class="card" style="border:2px solid var(--accent)">
+    <div class="card-title"><span class="emoji">⚡</span> Apex Physical Protocol — 60-Min Structured Sessions</div>
+    <div style="font-size:12px;color:var(--text3);margin-bottom:12px">Auto-advancing binaural sequences for hormonal optimization, anabolic recovery, and peak physical state. <strong>Stereo headphones mandatory.</strong></div>
+
+    <!-- Protocol selector -->
+    <div style="display:flex;gap:8px;margin-bottom:14px">
+      <button class="wave-btn active" id="apexBtnMorning" onclick="apexSelectProtocol('morning',this)">🌅 The Forge (Morning)</button>
+      <button class="wave-btn" id="apexBtnNight" onclick="apexSelectProtocol('night',this)">🌙 The Rebuild (Night)</button>
+    </div>
+
+    <!-- Protocol meta -->
+    <div id="apexMeta" style="background:var(--bg3);border-radius:10px;padding:10px;margin-bottom:12px;font-size:12px;color:var(--text2);line-height:1.6"></div>
+
+    <!-- Stage timeline -->
+    <div id="apexStageList" style="margin-bottom:14px"></div>
+
+    <!-- Progress -->
+    <div style="background:var(--bg3);border-radius:8px;height:8px;margin-bottom:8px;overflow:hidden">
+      <div id="apexProgressBar" style="height:100%;width:0%;background:linear-gradient(90deg,var(--accent),var(--primary));transition:width 1s linear;border-radius:8px"></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3);margin-bottom:12px">
+      <span id="apexElapsed">00:00</span>
+      <span id="apexStageName" style="font-weight:700;color:var(--primary)">Select protocol above</span>
+      <span>60:00</span>
+    </div>
+
+    <!-- Controls -->
+    <div style="display:flex;gap:8px;align-items:center">
+      <button class="btn btn-primary" id="apexPlayBtn" onclick="toggleApexProtocol()" style="flex:1">▶ Start Protocol</button>
+      <button class="btn btn-secondary btn-sm" onclick="stopApexProtocol()">■ Stop</button>
+    </div>
+
+    <!-- Tips -->
+    <div id="apexTips" style="margin-top:10px;background:rgba(124,58,237,.07);border-radius:8px;padding:9px;font-size:11px;color:var(--text3);line-height:1.6"></div>
+  </div>
+
   <!-- ── ADAPTIVE AUDIO (Wave 3) ── -->
   <div class="card">
     <div class="card-title"><span class="emoji">🔄</span> Adaptive Audio Mode (Wave 3)</div>
@@ -6790,6 +6827,157 @@ function setBWVol(v){if(bwGain)bwGain.gain.value=v/100*0.3;}
 function setBWType(type,btn){bwType=type;document.querySelectorAll('.wave-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');if(bwIsPlaying)startBW();}
 function bwNextTrack(){selectBWTrack((bwCurrentTrack+1)%BW_TRACKS.length);if(bwIsPlaying)startBW();}
 function bwPrevTrack(){selectBWTrack((bwCurrentTrack-1+BW_TRACKS.length)%BW_TRACKS.length);if(bwIsPlaying)startBW();}
+
+// ─── APEX PHYSICAL PROTOCOL ─────────────────────────────────
+const APEX_PROTOCOLS={
+  morning:{
+    id:'morning',
+    label:'🌅 The Forge',
+    meta:'Testosterone surge, anabolic activation, dominance mindset boot. Pair with: cold shower before, sunlight exposure, fasted state.',
+    tips:'💡 Carrier: 200 Hz base · Volume: 60–70 dB · Headphones: essential\n🏋️ Stack: Vitamin D3 5000 IU + Zinc 30 mg + Ashwagandha KSM-66 600 mg\n⚠️ Do not skip warm-up stages — frequency ramp prevents auditory shock',
+    stages:[
+      {name:'Neural Ignition',desc:'Rapid activation — wake cortex, suppress brain fog',base:200,beat:40,dur:5},
+      {name:'Drive & Aggression',desc:'Active beta — controlled drive, physical motivation',base:200,beat:18,dur:10},
+      {name:'Testosterone Alpha',desc:'Peak alpha + 528 Hz carrier — HPG axis priming, confidence state',base:528,beat:10,dur:15},
+      {name:'Schumann Power State',desc:'7.83 Hz earth resonance — hormonal balance, peak neural firing',base:200,beat:7.83,dur:15},
+      {name:'Dominance Lock',desc:'Focused beta — posture, eye contact, vocal presence rewiring',base:200,beat:14,dur:10},
+      {name:'Gamma Seal',desc:'40 Hz gamma burst — lock the activated state, launch into day',base:200,beat:40,dur:5},
+    ]
+  },
+  night:{
+    id:'night',
+    label:'🌙 The Rebuild',
+    meta:'GH release, deep tissue repair, testosterone replenishment, anabolic recovery. Pair with: Magnesium glycinate 400 mg, Zinc 30 mg, 18–19°C room, lights off.',
+    tips:'💡 Carrier: 136.1 Hz (Om frequency) base · Volume: 40–50 dB · Can use speaker under pillow\n🌿 Stack: Magnesium glycinate 400 mg + Zinc 30 mg 30 min before\n😴 GH is released in largest pulse 90 min after sleep onset — stage 4–5 prime that window',
+    stages:[
+      {name:'Cortisol Flush',desc:'10 Hz alpha — dissolve day stress, begin hormonal wind-down',base:180,beat:10,dur:10},
+      {name:'Subconscious Gate',desc:'6 Hz theta — maximum hypnotic receptivity, self-programming window',base:180,beat:6,dur:10},
+      {name:'GH Pulse Zone',desc:'4 Hz delta + 639 Hz carrier — hormonal restoration, growth hormone priming',base:639,beat:4,dur:15},
+      {name:'Max Anabolic Delta',desc:'2 Hz deep delta — peak anabolic state, muscle protein synthesis activation',base:136,beat:2,dur:10},
+      {name:'432 Hz Recovery',desc:'432 Hz pure tone + 3.4 Hz delta — cardiovascular & endocrine calm, reproductive system restoration',base:432,beat:3.4,dur:10},
+      {name:'Sleep Seal',desc:'6 Hz theta fade-out — transition to natural sleep, seal the programming',base:180,beat:6,dur:5},
+    ]
+  }
+};
+let apexState={active:false,protocolId:'morning',stageIdx:0,stageSec:0,totalSec:0,ticker:null,apexAudioCtx:null,apexOscL:null,apexOscR:null,apexGain:null};
+
+function apexSelectProtocol(id,btn){
+  if(apexState.active)return;
+  apexState.protocolId=id;
+  document.querySelectorAll('#apexBtnMorning,#apexBtnNight').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  apexRenderUI();
+}
+function apexRenderUI(){
+  const proto=APEX_PROTOCOLS[apexState.protocolId];
+  document.getElementById('apexMeta').textContent=proto.meta;
+  document.getElementById('apexTips').innerHTML=proto.tips.replace(/\n/g,'<br>');
+  const list=document.getElementById('apexStageList');
+  const cumSecs=[];let s=0;
+  proto.stages.forEach(st=>{cumSecs.push(s);s+=st.dur*60;});
+  list.innerHTML=proto.stages.map((st,i)=>{
+    const start=cumSecs[i];const mm=Math.floor(start/60);const ss=start%60;
+    const isActive=apexState.active&&i===apexState.stageIdx;
+    return `<div id="apexStage_${i}" style="display:flex;gap:10px;align-items:flex-start;padding:8px 10px;border-radius:9px;margin-bottom:5px;background:${isActive?'rgba(124,58,237,.15)':'var(--bg3)'};border:1px solid ${isActive?'var(--primary)':'var(--border)'};transition:all .3s">
+      <div style="min-width:38px;font-size:10px;color:var(--text3);padding-top:2px;font-weight:700">${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}</div>
+      <div style="flex:1">
+        <div style="font-size:12px;font-weight:700;color:${isActive?'var(--primary)':'var(--text)'}">${isActive?'▶ ':''}${st.name} <span style="font-size:10px;color:var(--accent);font-weight:600">(${st.dur} min)</span></div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px">${st.desc}</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:1px">Base: ${st.base} Hz · Beat: ${st.beat} Hz</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+function toggleApexProtocol(){
+  if(apexState.active){stopApexProtocol();}else{startApexProtocol();}
+}
+function startApexProtocol(){
+  const proto=APEX_PROTOCOLS[apexState.protocolId];
+  apexState.active=true;apexState.stageIdx=0;apexState.stageSec=0;apexState.totalSec=0;
+  document.getElementById('apexPlayBtn').textContent='⏸ Pause';
+  apexLaunchAudio(proto.stages[0]);
+  apexRenderUI();
+  apexState.ticker=setInterval(()=>apexTick(),1000);
+  showToast('⚡ '+proto.label+' protocol started — use headphones');
+}
+function apexTick(){
+  const proto=APEX_PROTOCOLS[apexState.protocolId];
+  apexState.stageSec++;apexState.totalSec++;
+  const stage=proto.stages[apexState.stageIdx];
+  const totalDur=proto.stages.reduce((a,s)=>a+s.dur*60,0);
+  // Update progress
+  const pct=Math.min((apexState.totalSec/totalDur)*100,100);
+  const el=document.getElementById('apexProgressBar');if(el)el.style.width=pct+'%';
+  const elapsed=document.getElementById('apexElapsed');
+  const stageNameEl=document.getElementById('apexStageName');
+  if(elapsed)elapsed.textContent=apexFmtTime(apexState.totalSec);
+  if(stageNameEl)stageNameEl.textContent=stage.name;
+  // Stage advance
+  if(apexState.stageSec>=stage.dur*60){
+    apexState.stageIdx++;apexState.stageSec=0;
+    if(apexState.stageIdx>=proto.stages.length){
+      stopApexProtocol();
+      showToast('✅ Protocol complete — rest, hydrate, log your state');
+      return;
+    }
+    const nextStage=proto.stages[apexState.stageIdx];
+    apexUpdateFrequency(nextStage);
+    showToast('🔄 Stage: '+nextStage.name);
+    apexRenderUI();
+  }
+}
+function apexFmtTime(s){return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');}
+function apexLaunchAudio(stage){
+  apexKillAudio();
+  try{
+    apexState.apexAudioCtx=new(window.AudioContext||window.webkitAudioContext)();
+    const ctx=apexState.apexAudioCtx;
+    apexState.apexGain=ctx.createGain();
+    apexState.apexGain.gain.value=0.22;
+    apexState.apexGain.connect(ctx.destination);
+    const merger=ctx.createChannelMerger(2);
+    apexState.apexOscL=ctx.createOscillator();
+    apexState.apexOscL.frequency.value=stage.base;
+    apexState.apexOscL.type='sine';
+    apexState.apexOscR=ctx.createOscillator();
+    apexState.apexOscR.frequency.value=stage.base+stage.beat;
+    apexState.apexOscR.type='sine';
+    const gL=ctx.createGain(),gR=ctx.createGain();
+    apexState.apexOscL.connect(gL);apexState.apexOscR.connect(gR);
+    gL.connect(merger,0,0);gR.connect(merger,0,1);
+    merger.connect(apexState.apexGain);
+    apexState.apexOscL.start();apexState.apexOscR.start();
+  }catch(e){showToast('Audio error: '+e.message);}
+}
+function apexUpdateFrequency(stage){
+  // Update live without restarting AudioContext — smooth frequency transition
+  try{
+    if(apexState.apexOscL&&apexState.apexOscR){
+      const now=apexState.apexAudioCtx.currentTime;
+      apexState.apexOscL.frequency.linearRampToValueAtTime(stage.base,now+2);
+      apexState.apexOscR.frequency.linearRampToValueAtTime(stage.base+stage.beat,now+2);
+    }else{apexLaunchAudio(stage);}
+  }catch(e){apexLaunchAudio(stage);}
+}
+function stopApexProtocol(){
+  clearInterval(apexState.ticker);apexState.ticker=null;
+  apexKillAudio();
+  apexState.active=false;apexState.stageIdx=0;apexState.stageSec=0;apexState.totalSec=0;
+  const pb=document.getElementById('apexProgressBar');if(pb)pb.style.width='0%';
+  const el=document.getElementById('apexElapsed');if(el)el.textContent='00:00';
+  const sn=document.getElementById('apexStageName');if(sn)sn.textContent='Select protocol above';
+  const btn=document.getElementById('apexPlayBtn');if(btn)btn.textContent='▶ Start Protocol';
+  apexRenderUI();
+}
+function apexKillAudio(){
+  if(apexState.apexOscL)try{apexState.apexOscL.stop();}catch(e){}
+  if(apexState.apexOscR)try{apexState.apexOscR.stop();}catch(e){}
+  if(apexState.apexAudioCtx)try{apexState.apexAudioCtx.close();}catch(e){}
+  apexState.apexOscL=apexState.apexOscR=apexState.apexGain=apexState.apexAudioCtx=null;
+}
+// Init on tab load
+function initApexProtocol(){apexRenderUI();}
+// ─── END APEX PHYSICAL PROTOCOL ─────────────────────────────
 function buildBWVisualizer(){
   document.getElementById('bwVisualizer').innerHTML=Array.from({length:24},(_,i)=>`<div class="bw-bar animating" style="height:50px;--dur:${0.3+Math.random()*0.5}s;animation-delay:${i*0.03}s"></div>`).join('');
 }
@@ -12679,6 +12867,7 @@ function init(){
   _safe(buildNav,'buildNav');
   _safe(buildSliders,'buildSliders');
   _safe(buildBWGrid,'buildBWGrid');
+  _safe(initApexProtocol,'initApexProtocol');
   _safe(buildAIModelsBar,'buildAIModelsBar');
   _safe(buildApiKeysList,'buildApiKeysList');
   _safe(buildHealthSections,'buildHealthSections');
