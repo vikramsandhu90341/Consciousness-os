@@ -2566,7 +2566,7 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
     <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3);margin-bottom:12px">
       <span id="apexElapsed">00:00</span>
       <span id="apexStageName" style="font-weight:700;color:var(--primary)">Select protocol above</span>
-      <span>60:00</span>
+      <span>30:00</span>
     </div>
 
     <!-- Controls -->
@@ -6814,6 +6814,7 @@ function startBW(){
     const trackName=(BW_TRACKS[bwCurrentTrack]||{}).name||'unknown';
     const freqType=trackName.toLowerCase().includes('theta')?'theta':trackName.toLowerCase().includes('alpha')?'alpha':trackName.toLowerCase().includes('delta')?'delta':trackName.toLowerCase().includes('gamma')?'gamma':'beta';
     pushCSEStimulus(freqType,0);
+    window.PassiveMind?.recordBrainwaveIntent(freqType);
   }catch(e){showToast('Audio requires interaction or unsupported browser: '+e.message);}
 }
 function stopBW(){
@@ -6836,12 +6837,12 @@ const APEX_PROTOCOLS={
     meta:'Testosterone surge, anabolic activation, dominance mindset boot. Pair with: cold shower before, sunlight exposure, fasted state.',
     tips:'💡 Carrier: 200 Hz base · Volume: 60–70 dB · Headphones: essential\n🏋️ Stack: Vitamin D3 5000 IU + Zinc 30 mg + Ashwagandha KSM-66 600 mg\n⚠️ Do not skip warm-up stages — frequency ramp prevents auditory shock',
     stages:[
-      {name:'Neural Ignition',desc:'Rapid activation — wake cortex, suppress brain fog',base:200,beat:40,dur:5},
-      {name:'Drive & Aggression',desc:'Active beta — controlled drive, physical motivation',base:200,beat:18,dur:10},
-      {name:'Testosterone Alpha',desc:'Peak alpha + 528 Hz carrier — HPG axis priming, confidence state',base:528,beat:10,dur:15},
-      {name:'Schumann Power State',desc:'7.83 Hz earth resonance — hormonal balance, peak neural firing',base:200,beat:7.83,dur:15},
-      {name:'Dominance Lock',desc:'Focused beta — posture, eye contact, vocal presence rewiring',base:200,beat:14,dur:10},
-      {name:'Gamma Seal',desc:'40 Hz gamma burst — lock the activated state, launch into day',base:200,beat:40,dur:5},
+      {name:'Neural Ignition',desc:'Rapid activation — wake cortex, suppress brain fog',base:200,beat:40,dur:2},
+      {name:'Drive & Aggression',desc:'Active beta — controlled drive, physical motivation',base:200,beat:18,dur:5},
+      {name:'Testosterone Alpha',desc:'Peak alpha + 528 Hz carrier — HPG axis priming, confidence state',base:528,beat:10,dur:8},
+      {name:'Schumann Power State',desc:'7.83 Hz earth resonance — hormonal balance, peak neural firing',base:200,beat:7.83,dur:8},
+      {name:'Dominance Lock',desc:'Focused beta — posture, eye contact, vocal presence rewiring',base:200,beat:14,dur:5},
+      {name:'Gamma Seal',desc:'40 Hz gamma burst — lock the activated state, launch into day',base:200,beat:40,dur:2},
     ]
   },
   night:{
@@ -6850,12 +6851,12 @@ const APEX_PROTOCOLS={
     meta:'GH release, deep tissue repair, testosterone replenishment, anabolic recovery. Pair with: Magnesium glycinate 400 mg, Zinc 30 mg, 18–19°C room, lights off.',
     tips:'💡 Carrier: 136.1 Hz (Om frequency) base · Volume: 40–50 dB · Can use speaker under pillow\n🌿 Stack: Magnesium glycinate 400 mg + Zinc 30 mg 30 min before\n😴 GH is released in largest pulse 90 min after sleep onset — stage 4–5 prime that window',
     stages:[
-      {name:'Cortisol Flush',desc:'10 Hz alpha — dissolve day stress, begin hormonal wind-down',base:180,beat:10,dur:10},
-      {name:'Subconscious Gate',desc:'6 Hz theta — maximum hypnotic receptivity, self-programming window',base:180,beat:6,dur:10},
-      {name:'GH Pulse Zone',desc:'4 Hz delta + 639 Hz carrier — hormonal restoration, growth hormone priming',base:639,beat:4,dur:15},
-      {name:'Max Anabolic Delta',desc:'2 Hz deep delta — peak anabolic state, muscle protein synthesis activation',base:136,beat:2,dur:10},
-      {name:'432 Hz Recovery',desc:'432 Hz pure tone + 3.4 Hz delta — cardiovascular & endocrine calm, reproductive system restoration',base:432,beat:3.4,dur:10},
-      {name:'Sleep Seal',desc:'6 Hz theta fade-out — transition to natural sleep, seal the programming',base:180,beat:6,dur:5},
+      {name:'Cortisol Flush',desc:'10 Hz alpha — dissolve day stress, begin hormonal wind-down',base:180,beat:10,dur:5},
+      {name:'Subconscious Gate',desc:'6 Hz theta — maximum hypnotic receptivity, self-programming window',base:180,beat:6,dur:5},
+      {name:'GH Pulse Zone',desc:'4 Hz delta + 639 Hz carrier — hormonal restoration, growth hormone priming',base:639,beat:4,dur:7},
+      {name:'Max Anabolic Delta',desc:'2 Hz deep delta — peak anabolic state, muscle protein synthesis activation',base:136,beat:2,dur:5},
+      {name:'432 Hz Recovery',desc:'432 Hz pure tone + 3.4 Hz delta — cardiovascular & endocrine calm, reproductive system restoration',base:432,beat:3.4,dur:5},
+      {name:'Sleep Seal',desc:'6 Hz theta fade-out — transition to natural sleep, seal the programming',base:180,beat:6,dur:3},
     ]
   }
 };
@@ -7009,7 +7010,7 @@ function buildBWEducation(){
 
 // ─── AI HUB ──────────────────────────────────────────────────
 // Titan Protocol prefix injected into every persona
-const _TITAN=`[TITAN PROTOCOL] First-principles thinking. Lead with counterarguments. No fluff. Action > theory. Systems thinking. Da Vinci·Tesla·Ramanujan framework. Separate facts/estimates/opinions. User: B.Pharm student + indie dev, India, limited resources → maximum leverage.\n\n`;
+const _TITAN = (typeof buildCOSMasterPrompt === 'function') ? buildCOSMasterPrompt('challenge', {}) : `[TITAN PROTOCOL] First-principles thinking. Lead with counterarguments. No fluff. Action > theory. Systems thinking. Da Vinci·Tesla·Ramanujan framework. Separate facts/estimates/opinions. User: B.Pharm student + indie dev, India, limited resources → maximum leverage.\n\n`;
 const AI_MODELS=[
   {id:'twin',name:'AI Twin',emoji:'🧠',provider:'groq',apiModel:'llama-3.3-70b-versatile',persona:_TITAN+'You are the user\'s AI Digital Twin inside Consciousness OS. You have deeply analyzed ALL their consciousness logs, dreams, and patterns. Be warm, insightful, and deeply personal. Reference their actual data when answering. Challenge their assumptions before agreeing.'},
   {id:'coach',name:'Coach',emoji:'🏆',provider:'groq',apiModel:'llama-3.3-70b-versatile',persona:_TITAN+'You are an elite performance coach and neuroscientist inside Consciousness OS. Give direct, actionable advice for peak mental performance based on the user\'s actual tracked data. Lead with the hardest truth they need to hear.'},
@@ -18411,5 +18412,1552 @@ Titan Protocol: no fluff, specific, actionable. Max 500 words.`;
   }
 }
 </script>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     CONSCIOUSNESS OS v10.2 — FUTURE ME TAB ADDITION
+     
+     HOW TO INTEGRATE INTO index.html:
+     
+     STEP 1 — Add nav entry to NAV_ITEMS array (line ~5924):
+     Add this AS THE SECOND ITEM (after log):
+     {id:'futureme',icon:'🔮',key:'nav_futureme'},
+     
+     Also add to LANGS.en object:
+     nav_futureme:"Future Me",
+     
+     STEP 2 — Paste this entire block just BEFORE the closing </body> tag.
+     
+     STEP 3 — In your existing Daily Log tab, find the "Save Entry" button
+     and add the SmartLog pre-fill call. Instructions in the JS section below.
+═══════════════════════════════════════════════════════════════ -->
+
+<!-- ══════════════════════════════════════════════════
+     FUTURE ME TAB STYLES
+══════════════════════════════════════════════════ -->
+<style>
+/* ── FUTURE ME TAB ── */
+#tab-futureme { animation: fmFadeIn .4s ease; }
+@keyframes fmFadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+/* Akinator Question Card */
+.akinator-card {
+  background: linear-gradient(135deg, rgba(124,58,237,.15), rgba(6,182,212,.1));
+  border: 1.5px solid rgba(124,58,237,.3);
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 16px;
+  position: relative;
+  overflow: hidden;
+}
+.akinator-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #7c3aed, #06b6d4, #ec4899);
+  border-radius: 16px 16px 0 0;
+}
+.akinator-label {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  color: var(--accent);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.akinator-q {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.5;
+  margin-bottom: 4px;
+  font-family: 'Syne', sans-serif;
+}
+.akinator-hint {
+  font-size: 11px;
+  color: var(--text3);
+  margin-bottom: 12px;
+  font-style: italic;
+}
+.akinator-input {
+  width: 100%;
+  background: var(--bg2);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  resize: none;
+  outline: none;
+  min-height: 70px;
+  transition: border-color .2s;
+}
+.akinator-input:focus { border-color: var(--primary); }
+.akinator-actions { display: flex; gap: 8px; margin-top: 10px; }
+.akinator-skip { background: transparent; border: 1px solid var(--border); color: var(--text3); border-radius: 8px; padding: 8px 14px; font-size: 12px; cursor: pointer; }
+.akinator-submit { background: linear-gradient(135deg, #7c3aed, #06b6d4); color: #fff; border: none; border-radius: 8px; padding: 8px 18px; font-size: 12px; font-weight: 700; cursor: pointer; flex: 1; }
+
+/* 3D Twin Section */
+.twin-section {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 14px;
+  margin-bottom: 14px;
+}
+.twin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.twin-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--text);
+}
+.horizon-btns {
+  display: flex;
+  gap: 4px;
+}
+.horizon-btn {
+  padding: 4px 9px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--bg3);
+  color: var(--text3);
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all .2s;
+}
+.horizon-btn.active {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+
+/* Twin Scene — 3D Container */
+.twin-scene {
+  perspective: 800px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 30px;
+  padding: 10px 0 16px;
+  min-height: 240px;
+  cursor: grab;
+  user-select: none;
+  touch-action: pan-y;
+}
+.twin-scene:active { cursor: grabbing; }
+
+.twin-figure-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.twin-label-small {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.twin-label-small.current { color: var(--text3); }
+.twin-label-small.future  { color: var(--accent); }
+
+/* The 3D rotating wrapper */
+.twin-body-wrap {
+  transform-style: preserve-3d;
+  transition: transform .05s linear;
+}
+
+/* SVG Avatar dimensions */
+.twin-svg { overflow: visible; }
+
+/* Dimension Legend */
+.twin-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+  justify-content: center;
+}
+.twin-dim {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  color: var(--text3);
+}
+.twin-dim-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Score Ring under avatar */
+.twin-score-ring {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: conic-gradient(var(--primary) var(--pct, 0%), var(--bg3) var(--pct, 0%));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 800;
+  font-family: 'Syne', sans-serif;
+  color: var(--text);
+  position: relative;
+  margin-top: -20px;
+}
+.twin-score-ring::before {
+  content: '';
+  position: absolute;
+  inset: 5px;
+  border-radius: 50%;
+  background: var(--bg2);
+}
+.twin-score-num {
+  position: relative;
+  z-index: 1;
+  font-size: 13px;
+}
+
+/* Gap Analysis Bar */
+.gap-bar-wrap { margin-top: 12px; }
+.gap-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 7px;
+}
+.gap-dim-name {
+  font-size: 10px;
+  color: var(--text3);
+  width: 60px;
+  flex-shrink: 0;
+}
+.gap-track {
+  flex: 1;
+  height: 6px;
+  background: var(--bg3);
+  border-radius: 3px;
+  overflow: hidden;
+  position: relative;
+}
+.gap-current-bar {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  border-radius: 3px;
+  transition: width .6s ease;
+}
+.gap-future-outline {
+  position: absolute;
+  right: 0; top: -1px; bottom: -1px;
+  width: 2px;
+  border-radius: 1px;
+  opacity: .5;
+}
+.gap-pct {
+  font-size: 10px;
+  font-weight: 700;
+  width: 30px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* Future Me Chat */
+.fm-chat-section {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+  margin-bottom: 14px;
+}
+.fm-chat-header {
+  padding: 12px 14px;
+  background: linear-gradient(135deg, rgba(124,58,237,.12), rgba(6,182,212,.08));
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.fm-avatar-dot {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #7c3aed, #06b6d4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+  box-shadow: 0 0 12px rgba(124,58,237,.4);
+}
+.fm-chat-meta { flex: 1; }
+.fm-chat-name { font-size: 13px; font-weight: 800; color: var(--text); }
+.fm-chat-sub  { font-size: 10px; color: var(--accent); font-weight: 600; }
+
+.fm-mode-bar {
+  display: flex;
+  gap: 4px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.fm-mode-bar::-webkit-scrollbar { display: none; }
+.fm-mode-btn {
+  flex-shrink: 0;
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--bg3);
+  color: var(--text3);
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all .2s;
+  white-space: nowrap;
+}
+.fm-mode-btn.active {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+
+.fm-messages {
+  height: 280px;
+  overflow-y: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--bg3);
+}
+.fm-msg {
+  max-width: 88%;
+  padding: 10px 13px;
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.6;
+  animation: fmMsgIn .2s ease;
+}
+@keyframes fmMsgIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.fm-msg.user {
+  align-self: flex-end;
+  background: linear-gradient(135deg, var(--primary), #06b6d4);
+  color: #fff;
+  border-bottom-right-radius: 3px;
+}
+.fm-msg.future {
+  align-self: flex-start;
+  background: var(--bg2);
+  border: 1px solid rgba(124,58,237,.25);
+  color: var(--text);
+  border-bottom-left-radius: 3px;
+  position: relative;
+}
+.fm-msg.future::before {
+  content: '🔮';
+  font-size: 10px;
+  display: block;
+  margin-bottom: 4px;
+  opacity: .6;
+}
+.fm-loading-dots {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  padding: 8px 0;
+}
+.fm-loading-dots span {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--primary);
+  animation: fmDot 1s ease-in-out infinite;
+}
+.fm-loading-dots span:nth-child(2) { animation-delay: .2s; }
+.fm-loading-dots span:nth-child(3) { animation-delay: .4s; }
+@keyframes fmDot { 0%,80%,100%{opacity:.3;transform:scale(.8)} 40%{opacity:1;transform:scale(1)} }
+
+.fm-input-row {
+  display: flex;
+  gap: 8px;
+  padding: 10px;
+  border-top: 1px solid var(--border);
+}
+.fm-input {
+  flex: 1;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 9px 12px;
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  outline: none;
+  resize: none;
+  height: 40px;
+  transition: border .2s;
+}
+.fm-input:focus { border-color: var(--primary); }
+.fm-send {
+  width: 40px; height: 40px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #7c3aed, #06b6d4);
+  border: none;
+  color: #fff;
+  font-size: 16px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: opacity .2s;
+}
+.fm-send:active { opacity: .8; }
+
+/* Quick Starter Prompts */
+.fm-starters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px 10px 0;
+}
+.fm-starter {
+  padding: 5px 10px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--bg3);
+  color: var(--text2);
+  font-size: 11px;
+  cursor: pointer;
+  transition: all .2s;
+  white-space: nowrap;
+}
+.fm-starter:hover { border-color: var(--primary); color: var(--primary); }
+
+/* Smart Log Banner */
+.smart-log-banner {
+  background: linear-gradient(135deg, rgba(16,185,129,.15), rgba(6,182,212,.1));
+  border: 1.5px solid rgba(16,185,129,.3);
+  border-radius: 14px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.smart-log-icon { font-size: 22px; flex-shrink: 0; }
+.smart-log-text { flex: 1; }
+.smart-log-title { font-size: 13px; font-weight: 700; color: var(--text); }
+.smart-log-sub   { font-size: 11px; color: var(--text3); margin-top: 1px; }
+.smart-log-confirm {
+  background: linear-gradient(135deg, #10b981, #06b6d4);
+  color: #fff;
+  border: none;
+  border-radius: 9px;
+  padding: 9px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* Transformation Card */
+.transform-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 14px;
+  margin-bottom: 14px;
+}
+.transform-title {
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  font-size: 13px;
+  color: var(--text);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+</style>
+
+<!-- ══════════════════════════════════════════════════
+     FUTURE ME TAB PANEL
+══════════════════════════════════════════════════ -->
+<div class="tab-panel" id="tab-futureme">
+  <div style="padding:0 2px">
+
+    <!-- Smart Log Banner (shown when pre-fill is ready) -->
+    <div class="smart-log-banner" id="fmSmartLogBanner" style="display:none">
+      <div class="smart-log-icon">⚡</div>
+      <div class="smart-log-text">
+        <div class="smart-log-title">Smart Log Ready</div>
+        <div class="smart-log-sub" id="fmSmartLogSub">Pre-filled from your patterns</div>
+      </div>
+      <button class="smart-log-confirm" onclick="confirmSmartLog()">Confirm & Save →</button>
+    </div>
+
+    <!-- Akinator Question Card -->
+    <div class="akinator-card" id="fmAkinatorCard">
+      <div class="akinator-label">🎯 Daily Discovery Question</div>
+      <div class="akinator-q" id="fmAkinatorQ">Loading your question...</div>
+      <div class="akinator-hint" id="fmAkinatorHint"></div>
+      <textarea class="akinator-input" id="fmAkinatorInput" placeholder="Answer honestly — only the system sees this..." rows="3"></textarea>
+      <div class="akinator-actions">
+        <button class="akinator-skip" onclick="skipAkinatorQ()">Skip today</button>
+        <button class="akinator-submit" onclick="submitAkinatorQ()">Save answer →</button>
+      </div>
+    </div>
+
+    <!-- 3D Twin Section -->
+    <div class="twin-section">
+      <div class="twin-header">
+        <div class="twin-title">🧬 Your Digital Twin</div>
+        <div class="horizon-btns">
+          <button class="horizon-btn active" onclick="setHorizon('1yr', this)">1 yr</button>
+          <button class="horizon-btn" onclick="setHorizon('5yr', this)">5 yr</button>
+          <button class="horizon-btn" onclick="setHorizon('10yr', this)">10 yr</button>
+        </div>
+      </div>
+
+      <!-- The 3D scene — drag to rotate -->
+      <div class="twin-scene" id="twinScene">
+
+        <!-- Current Self -->
+        <div class="twin-figure-wrap">
+          <div class="twin-label-small current">NOW</div>
+          <div class="twin-body-wrap" id="twinCurrentWrap">
+            <svg class="twin-svg" width="90" height="200" viewBox="0 0 90 200" id="twinCurrentSVG">
+              <!-- Head -->
+              <circle cx="45" cy="22" r="18" fill="var(--bg3)" stroke="var(--border)" stroke-width="1.5"/>
+              <circle cx="45" cy="22" r="18" fill="url(#headGradCurrent)" opacity="0.7"/>
+              <!-- Cognitive ring -->
+              <circle cx="45" cy="22" r="18" fill="none" stroke="#06b6d4" stroke-width="2.5" stroke-dasharray="113" stroke-dashoffset="0" id="cogRingCurrent" opacity="0.6" transform="rotate(-90 45 22)"/>
+              <!-- Face dots -->
+              <circle cx="39" cy="20" r="2" fill="var(--text3)" opacity=".5"/>
+              <circle cx="51" cy="20" r="2" fill="var(--text3)" opacity=".5"/>
+              <path d="M40 27 Q45 31 50 27" stroke="var(--text3)" stroke-width="1.5" fill="none" opacity=".4"/>
+
+              <!-- Neck -->
+              <rect x="41" y="38" width="8" height="8" rx="2" fill="var(--bg3)" stroke="var(--border)" stroke-width="1"/>
+
+              <!-- Torso -->
+              <path d="M20 46 L25 90 L65 90 L70 46 Q60 42 45 42 Q30 42 20 46Z" fill="var(--bg3)" stroke="var(--border)" stroke-width="1.5"/>
+              <path d="M20 46 L25 90 L65 90 L70 46 Q60 42 45 42 Q30 42 20 46Z" fill="url(#torsoGradCurrent)" opacity="0.6"/>
+              <!-- Heart glow (social) -->
+              <circle cx="45" cy="62" r="8" fill="#ec4899" id="heartGlowCurrent" opacity="0.2"/>
+
+              <!-- Left arm -->
+              <path d="M22 48 L10 85 Q8 90 12 91 L15 91 Q18 90 20 85 L28 52Z" fill="var(--bg3)" stroke="var(--border)" stroke-width="1.2"/>
+              <path d="M22 48 L10 85 Q8 90 12 91 L15 91 Q18 90 20 85 L28 52Z" fill="url(#armGradCurrent)" opacity="0.5"/>
+
+              <!-- Right arm -->
+              <path d="M68 48 L80 85 Q82 90 78 91 L75 91 Q72 90 70 85 L62 52Z" fill="var(--bg3)" stroke="var(--border)" stroke-width="1.2"/>
+              <path d="M68 48 L80 85 Q82 90 78 91 L75 91 Q72 90 70 85 L62 52Z" fill="url(#armGradCurrent)" opacity="0.5"/>
+
+              <!-- Pelvis/Hips -->
+              <rect x="22" y="88" width="46" height="14" rx="6" fill="var(--bg3)" stroke="var(--border)" stroke-width="1.2"/>
+              <rect x="22" y="88" width="46" height="14" rx="6" fill="url(#torsoGradCurrent)" opacity="0.4"/>
+
+              <!-- Left leg -->
+              <path d="M26 100 L22 170 Q21 176 26 177 L32 177 Q37 176 36 170 L38 100Z" fill="var(--bg3)" stroke="var(--border)" stroke-width="1.2"/>
+              <path d="M26 100 L22 170 Q21 176 26 177 L32 177 Q37 176 36 170 L38 100Z" fill="url(#legGradCurrent)" opacity="0.5"/>
+
+              <!-- Right leg -->
+              <path d="M64 100 L68 170 Q69 176 64 177 L58 177 Q53 176 54 170 L52 100Z" fill="var(--bg3)" stroke="var(--border)" stroke-width="1.2"/>
+              <path d="M64 100 L68 170 Q69 176 64 177 L58 177 Q53 176 54 170 L52 100Z" fill="url(#legGradCurrent)" opacity="0.5"/>
+
+              <!-- Feet -->
+              <ellipse cx="29" cy="182" rx="10" ry="5" fill="var(--bg3)" stroke="var(--border)" stroke-width="1"/>
+              <ellipse cx="61" cy="182" rx="10" ry="5" fill="var(--bg3)" stroke="var(--border)" stroke-width="1"/>
+
+              <!-- Gradient defs for current self -->
+              <defs>
+                <radialGradient id="headGradCurrent" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stop-color="#06b6d4" stop-opacity="0.3"/>
+                  <stop offset="100%" stop-color="#06b6d4" stop-opacity="0"/>
+                </radialGradient>
+                <linearGradient id="torsoGradCurrent" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#ec4899" stop-opacity="0.4"/>
+                  <stop offset="50%" stop-color="#7c3aed" stop-opacity="0.3"/>
+                  <stop offset="100%" stop-color="#10b981" stop-opacity="0.3"/>
+                </linearGradient>
+                <linearGradient id="armGradCurrent" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.5"/>
+                  <stop offset="100%" stop-color="#f59e0b" stop-opacity="0.1"/>
+                </linearGradient>
+                <linearGradient id="legGradCurrent" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stop-color="#10b981" stop-opacity="0.5"/>
+                  <stop offset="100%" stop-color="#10b981" stop-opacity="0.1"/>
+                </linearGradient>
+              </defs>
+            </svg>
+          </div>
+          <!-- Score ring below current -->
+          <div class="twin-score-ring" id="currentScoreRing" style="--pct:0%">
+            <span class="twin-score-num" id="currentScoreNum">–</span>
+          </div>
+        </div>
+
+        <!-- VS divider -->
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding-bottom:60px">
+          <div style="font-size:9px;font-weight:800;color:var(--text3);letter-spacing:2px">GAP</div>
+          <div style="width:1px;height:60px;background:linear-gradient(to bottom,transparent,var(--border),transparent)"></div>
+          <div style="font-size:9px;color:var(--text3)" id="fmHorizonLabel">1 Year</div>
+        </div>
+
+        <!-- Future Self -->
+        <div class="twin-figure-wrap">
+          <div class="twin-label-small future" id="futureTwinLabel">YOU · 1YR</div>
+          <div class="twin-body-wrap" id="twinFutureWrap">
+            <svg class="twin-svg" width="100" height="220" viewBox="0 0 90 200" id="twinFutureSVG">
+              <!-- Head — glowing -->
+              <circle cx="45" cy="22" r="20" fill="var(--bg3)" stroke="rgba(6,182,212,.5)" stroke-width="2"/>
+              <circle cx="45" cy="22" r="20" fill="url(#headGradFuture)"/>
+              <!-- Cognitive ring — full -->
+              <circle cx="45" cy="22" r="20" fill="none" stroke="#06b6d4" stroke-width="3" stroke-dasharray="126" stroke-dashoffset="0" id="cogRingFuture" opacity="0.9" transform="rotate(-90 45 22)"/>
+              <!-- Aura glow around head -->
+              <circle cx="45" cy="22" r="26" fill="none" stroke="#06b6d4" stroke-width="1" opacity="0.2"/>
+              <circle cx="45" cy="22" r="32" fill="none" stroke="#7c3aed" stroke-width="0.5" opacity="0.1"/>
+              <!-- Face -->
+              <circle cx="39" cy="20" r="2.5" fill="var(--accent)"/>
+              <circle cx="51" cy="20" r="2.5" fill="var(--accent)"/>
+              <path d="M38 28 Q45 33 52 28" stroke="var(--accent)" stroke-width="2" fill="none"/>
+
+              <!-- Neck -->
+              <rect x="40" y="40" width="10" height="10" rx="3" fill="var(--bg3)" stroke="rgba(6,182,212,.4)" stroke-width="1.5"/>
+
+              <!-- Torso — fully glowing -->
+              <path d="M18 48 L22 92 L68 92 L72 48 Q60 43 45 43 Q30 43 18 48Z" fill="var(--bg3)" stroke="rgba(124,58,237,.4)" stroke-width="1.5"/>
+              <path d="M18 48 L22 92 L68 92 L72 48 Q60 43 45 43 Q30 43 18 48Z" fill="url(#torsoGradFuture)"/>
+              <!-- Heart glow strong -->
+              <circle cx="45" cy="63" r="10" fill="#ec4899" id="heartGlowFuture" opacity="0.35"/>
+              <circle cx="45" cy="63" r="6" fill="#ec4899" opacity="0.2"/>
+              <!-- Career shoulders glow -->
+              <ellipse cx="24" cy="52" rx="8" ry="5" fill="#3b82f6" opacity="0.25"/>
+              <ellipse cx="66" cy="52" rx="8" ry="5" fill="#3b82f6" opacity="0.25"/>
+
+              <!-- Left arm -->
+              <path d="M20 50 L7 88 Q5 93 9 94 L13 94 Q16 93 18 88 L26 54Z" fill="var(--bg3)" stroke="rgba(245,158,11,.4)" stroke-width="1.2"/>
+              <path d="M20 50 L7 88 Q5 93 9 94 L13 94 Q16 93 18 88 L26 54Z" fill="url(#armGradFuture)"/>
+              <!-- Gold hand glow -->
+              <ellipse cx="10" cy="92" rx="6" ry="4" fill="#f59e0b" opacity="0.4"/>
+
+              <!-- Right arm -->
+              <path d="M70 50 L83 88 Q85 93 81 94 L77 94 Q74 93 72 88 L64 54Z" fill="var(--bg3)" stroke="rgba(245,158,11,.4)" stroke-width="1.2"/>
+              <path d="M70 50 L83 88 Q85 93 81 94 L77 94 Q74 93 72 88 L64 54Z" fill="url(#armGradFuture)"/>
+              <!-- Gold hand glow -->
+              <ellipse cx="80" cy="92" rx="6" ry="4" fill="#f59e0b" opacity="0.4"/>
+
+              <!-- Pelvis/Hips -->
+              <rect x="20" y="90" width="50" height="16" rx="7" fill="var(--bg3)" stroke="rgba(124,58,237,.3)" stroke-width="1.2"/>
+              <rect x="20" y="90" width="50" height="16" rx="7" fill="url(#torsoGradFuture)" opacity="0.5"/>
+
+              <!-- Left leg -->
+              <path d="M24 104 L19 176 Q18 183 24 184 L31 184 Q37 183 36 176 L38 104Z" fill="var(--bg3)" stroke="rgba(16,185,129,.4)" stroke-width="1.2"/>
+              <path d="M24 104 L19 176 Q18 183 24 184 L31 184 Q37 183 36 176 L38 104Z" fill="url(#legGradFuture)"/>
+
+              <!-- Right leg -->
+              <path d="M66 104 L71 176 Q72 183 66 184 L59 184 Q53 183 54 176 L52 104Z" fill="var(--bg3)" stroke="rgba(16,185,129,.4)" stroke-width="1.2"/>
+              <path d="M66 104 L71 176 Q72 183 66 184 L59 184 Q53 183 54 176 L52 104Z" fill="url(#legGradFuture)"/>
+
+              <!-- Feet with glow -->
+              <ellipse cx="27" cy="188" rx="12" ry="6" fill="#10b981" opacity="0.3"/>
+              <ellipse cx="63" cy="188" rx="12" ry="6" fill="#10b981" opacity="0.3"/>
+
+              <!-- Full body aura -->
+              <ellipse cx="45" cy="120" rx="48" ry="110" fill="url(#bodyAuraFuture)" opacity="0.12"/>
+
+              <defs>
+                <radialGradient id="headGradFuture" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stop-color="#06b6d4" stop-opacity="0.7"/>
+                  <stop offset="100%" stop-color="#7c3aed" stop-opacity="0.2"/>
+                </radialGradient>
+                <linearGradient id="torsoGradFuture" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#ec4899" stop-opacity="0.6"/>
+                  <stop offset="40%" stop-color="#7c3aed" stop-opacity="0.5"/>
+                  <stop offset="100%" stop-color="#10b981" stop-opacity="0.5"/>
+                </linearGradient>
+                <linearGradient id="armGradFuture" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.7"/>
+                  <stop offset="100%" stop-color="#f59e0b" stop-opacity="0.2"/>
+                </linearGradient>
+                <linearGradient id="legGradFuture" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stop-color="#10b981" stop-opacity="0.7"/>
+                  <stop offset="100%" stop-color="#10b981" stop-opacity="0.2"/>
+                </linearGradient>
+                <radialGradient id="bodyAuraFuture" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stop-color="#7c3aed"/>
+                  <stop offset="100%" stop-color="#7c3aed" stop-opacity="0"/>
+                </radialGradient>
+              </defs>
+            </svg>
+          </div>
+          <!-- Score ring below future -->
+          <div class="twin-score-ring" id="futureScoreRing" style="--pct:0%;background:conic-gradient(var(--accent) var(--pct,0%),var(--bg3) var(--pct,0%))">
+            <span class="twin-score-num" id="futureScoreNum">∞</span>
+          </div>
+        </div>
+
+      </div><!-- /twin-scene -->
+
+      <div style="font-size:10px;color:var(--text3);text-align:center;margin:-4px 0 10px">← drag to rotate →</div>
+
+      <!-- Dimension Legend -->
+      <div class="twin-legend">
+        <div class="twin-dim"><div class="twin-dim-dot" style="background:#06b6d4"></div>Cognitive</div>
+        <div class="twin-dim"><div class="twin-dim-dot" style="background:#10b981"></div>Physical</div>
+        <div class="twin-dim"><div class="twin-dim-dot" style="background:#f59e0b"></div>Wealth</div>
+        <div class="twin-dim"><div class="twin-dim-dot" style="background:#ec4899"></div>Social</div>
+        <div class="twin-dim"><div class="twin-dim-dot" style="background:#7c3aed"></div>Spiritual</div>
+        <div class="twin-dim"><div class="twin-dim-dot" style="background:#3b82f6"></div>Career</div>
+      </div>
+
+      <!-- Gap Analysis Bars -->
+      <div class="gap-bar-wrap" id="twinGapBars"></div>
+
+    </div><!-- /twin-section -->
+
+    <!-- Future Me AI Chat -->
+    <div class="fm-chat-section">
+      <div class="fm-chat-header">
+        <div class="fm-avatar-dot">🔮</div>
+        <div class="fm-chat-meta">
+          <div class="fm-chat-name">Future Me</div>
+          <div class="fm-chat-sub" id="fmChatSub">Speak to the version of you that already succeeded</div>
+        </div>
+        <div style="font-size:10px;color:var(--success);font-weight:700">● Live</div>
+      </div>
+
+      <!-- Mode selector -->
+      <div class="fm-mode-bar">
+        <button class="fm-mode-btn active" onclick="setFMMode('guide',this)">🌅 Guide</button>
+        <button class="fm-mode-btn" onclick="setFMMode('analyze',this)">📊 Analyze</button>
+        <button class="fm-mode-btn" onclick="setFMMode('challenge',this)">⚡ Challenge</button>
+        <button class="fm-mode-btn" onclick="setFMMode('transform',this)">🔄 Transform</button>
+        <button class="fm-mode-btn" onclick="setFMMode('oracle',this)">🧿 Oracle</button>
+        <button class="fm-mode-btn" onclick="setFMMode('mirror',this)">🪞 Mirror</button>
+      </div>
+
+      <!-- Quick starters -->
+      <div class="fm-starters" id="fmStarterChips"></div>
+
+      <!-- Messages -->
+      <div class="fm-messages" id="fmMessages">
+        <div class="fm-msg future" id="fmWelcomeMsg">
+          I remember this exact moment. You opened the app, probably feeling like not enough has happened yet. <br><br>Here's what I want you to know: the version of you typing this message right now is the most important version. Not because of what you've done — because of what you're about to decide. <br><br>Ask me anything. I've already lived through what you're facing.
+        </div>
+      </div>
+
+      <!-- Input -->
+      <div class="fm-input-row">
+        <textarea class="fm-input" id="fmInput" placeholder="Ask your future self..." rows="1"></textarea>
+        <button class="fm-send" onclick="sendFMMessage()">↑</button>
+      </div>
+    </div>
+
+    <!-- Transformation Map Card -->
+    <div class="transform-card">
+      <div class="transform-title">🗺️ Transformation Map</div>
+      <div id="fmTransformMap">
+        <div style="font-size:12px;color:var(--text3);text-align:center;padding:10px">
+          Complete the Akinator session to unlock your personal transformation roadmap.
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div><!-- /tab-futureme -->
+
+
+<!-- ══════════════════════════════════════════════════
+     FUTURE ME TAB — JAVASCRIPT ENGINE
+══════════════════════════════════════════════════ -->
+<script>
+// ═══════════════════════════════════════════════════════
+// PASSIVE MIND ENGINE v10.2
+// Silently collects behavioral signals each session.
+// ═══════════════════════════════════════════════════════
+const PassiveMind = {
+  _key: 'cos_passive_mind_v2',
+  _sessionStart: Date.now(),
+
+  get() {
+    try { return JSON.parse(localStorage.getItem(this._key) || '{}'); } catch(e) { return {}; }
+  },
+  save(d) { try { localStorage.setItem(this._key, JSON.stringify(d)); } catch(e) {} },
+
+  recordSession() {
+    const d = this.get();
+    const now = new Date();
+    const hour = now.getHours();
+    const dateStr = now.toISOString().split('T')[0];
+    if (!d.openHours) d.openHours = {};
+    d.openHours[String(hour)] = (d.openHours[String(hour)] || 0) + 1;
+    if (!d.sessionDates) d.sessionDates = {};
+    d.sessionDates[dateStr] = (d.sessionDates[dateStr] || 0) + 1;
+    d.lastOpenHour = hour;
+    d.lastOpenDate = dateStr;
+    d.totalSessions = (d.totalSessions || 0) + 1;
+    this.save(d);
+  },
+
+  recordTabDwell(tabName, durationSec) {
+    const d = this.get();
+    if (!d.tabDwell) d.tabDwell = {};
+    d.tabDwell[tabName] = (d.tabDwell[tabName] || 0) + durationSec;
+    this.save(d);
+  },
+
+  recordAIQuery(queryText) {
+    const d = this.get();
+    if (!d.queryTopics) d.queryTopics = [];
+    d.queryTopics.unshift((queryText || '').slice(0, 60));
+    if (d.queryTopics.length > 20) d.queryTopics.pop();
+    d.lastQuery = (queryText || '').slice(0, 80);
+    d.lastQueryTime = Date.now();
+    this.save(d);
+  },
+
+  recordBrainwaveIntent(type) {
+    const d = this.get();
+    if (!d.bwIntents) d.bwIntents = {};
+    d.bwIntents[type] = (d.bwIntents[type] || 0) + 1;
+    d.lastBWIntent = { type, ts: Date.now() };
+    this.save(d);
+  },
+
+  deriveInsights() {
+    const d = this.get();
+    const insights = {};
+    if (d.openHours) {
+      const late = (d.openHours['23'] || 0) + (d.openHours['0'] || 0) + (d.openHours['1'] || 0);
+      const early = (d.openHours['5'] || 0) + (d.openHours['6'] || 0) + (d.openHours['7'] || 0);
+      insights.sleepPattern = late > early * 2 ? 'night_owl' : early > late ? 'early_riser' : 'irregular';
+    }
+    if (d.tabDwell) {
+      const topTab = Object.entries(d.tabDwell).sort((a, b) => b[1] - a[1])[0];
+      if (topTab) insights.primaryFocus = topTab[0];
+    }
+    if (d.bwIntents) {
+      const topIntent = Object.entries(d.bwIntents).sort((a, b) => b[1] - a[1])[0];
+      if (topIntent) insights.desiredState = topIntent[0];
+    }
+    if (d.sessionDates) {
+      const recent7 = Object.keys(d.sessionDates).filter(dt => {
+        return (Date.now() - new Date(dt).getTime()) / 86400000 <= 7;
+      }).length;
+      insights.consistency = recent7 >= 6 ? 'high' : recent7 >= 3 ? 'moderate' : 'low';
+      insights.sessionsLast7 = recent7;
+    }
+    return insights;
+  },
+
+  buildContext() {
+    const d = this.get();
+    const ins = this.deriveInsights();
+    const parts = [];
+    if (ins.sleepPattern) parts.push('Sleep pattern: ' + ins.sleepPattern);
+    if (ins.primaryFocus) parts.push('Most-used tab: ' + ins.primaryFocus);
+    if (ins.desiredState) parts.push('Desired state (binaural): ' + ins.desiredState);
+    if (ins.consistency) parts.push('Consistency: ' + ins.consistency + ' (' + (ins.sessionsLast7 || 0) + '/7 days)');
+    if (d.lastQuery) parts.push('Last AI query: "' + d.lastQuery + '"');
+    if (d.totalSessions) parts.push('Total sessions: ' + d.totalSessions);
+    return parts.length ? '\n[PASSIVE]\n' + parts.join('\n') + '\n[/PASSIVE]' : '';
+  }
+};
+
+// Init PassiveMind on load
+PassiveMind.recordSession();
+
+// Hook into existing switchTab for dwell tracking
+(function hookDwell() {
+  let _ct = null, _ts = Date.now();
+  const _orig = window.switchTab;
+  if (typeof _orig !== 'function') return;
+  window.switchTab = function(tabId) {
+    if (_ct && _ct !== tabId) {
+      const dwell = Math.round((Date.now() - _ts) / 1000);
+      if (dwell > 5) PassiveMind.recordTabDwell(_ct, dwell);
+    }
+    _ct = tabId; _ts = Date.now();
+    return _orig.apply(this, arguments);
+  };
+})();
+
+
+// ═══════════════════════════════════════════════════════
+// SMART LOG AUTOCOMPLETE
+// ═══════════════════════════════════════════════════════
+function buildSmartLogDefaults() {
+  const logs = (typeof getLogs === 'function') ? getLogs().slice(0, 7) : [];
+  const avg = (key) => {
+    if (!logs.length) return 5;
+    return Math.round(logs.reduce((s, l) => s + (parseFloat(l[key]) || 5), 0) / logs.length);
+  };
+  const hour = new Date().getHours();
+  const ins = PassiveMind.deriveInsights();
+  const d = PassiveMind.get();
+
+  const defaults = {
+    date: new Date().toISOString().split('T')[0],
+    timeOfDay: hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : hour < 21 ? 'evening' : 'night',
+    mood: avg('mood'),
+    physicalEnergy: avg('physicalEnergy'),
+    focus: avg('focus'),
+    stress: avg('stress'),
+    sleep: avg('sleep'),
+    goal: logs[0] ? (logs[0].goal || '') : '',
+    source: 'smart_prefill',
+  };
+
+  // Adjust from passive signals
+  const lateNightHits = (d.openHours?.['23'] || 0) + (d.openHours?.['0'] || 0);
+  if (lateNightHits > 2) {
+    defaults.sleep = Math.max(3, defaults.sleep - 1);
+    defaults.physicalEnergy = Math.max(3, defaults.physicalEnergy - 1);
+  }
+  if (ins.desiredState === 'focus') defaults.goal = defaults.goal || 'Deep work session';
+  if (ins.desiredState === 'sleep') defaults.goal = defaults.goal || 'Rest and recovery';
+
+  // Brainwave state
+  if (d.lastBWIntent) {
+    const bwMap = {
+      delta: 'deep_sleep', theta: 'hypnagogic', alpha: 'relaxed_aware',
+      beta: 'focused', gamma: 'peak_performance', 'The Forge': 'focused', 'The Rebuild': 'deep_sleep'
+    };
+    defaults.brainwaveState = bwMap[d.lastBWIntent.type] || 'beta';
+  }
+
+  return defaults;
+}
+
+function showSmartLogBanner() {
+  const banner = document.getElementById('fmSmartLogBanner');
+  if (!banner) return;
+  const logs = (typeof getLogs === 'function') ? getLogs() : [];
+  const defaults = buildSmartLogDefaults();
+  const sub = document.getElementById('fmSmartLogSub');
+  if (sub) {
+    sub.textContent = `Mood ${defaults.mood}·Focus ${defaults.focus}·Energy ${defaults.physicalEnergy} — from ${logs.length} entries · ${defaults.timeOfDay}`;
+  }
+  banner.style.display = 'flex';
+  // Store pending defaults
+  window._smartLogPending = defaults;
+}
+
+async function confirmSmartLog() {
+  const d = window._smartLogPending;
+  if (!d) { if (typeof switchTab === 'function') switchTab('log'); return; }
+
+  // Pre-fill existing log form fields
+  const fieldMap = {
+    'logDate': d.date,
+    'logTime': d.timeOfDay,
+    'logMood': String(d.mood),
+    'logEnergy': String(d.physicalEnergy),
+    'logFocus': String(d.focus),
+    'logStress': String(d.stress),
+    'logSleep': String(d.sleep),
+    'logGoal': d.goal || '',
+  };
+  Object.entries(fieldMap).forEach(([id, val]) => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.value = val;
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+  });
+
+  // Try to save directly if saveLog exists
+  if (typeof saveLog === 'function') {
+    try {
+      await saveLog();
+      document.getElementById('fmSmartLogBanner').style.display = 'none';
+      if (typeof showToast === 'function') showToast('⚡ Smart Log saved in 1 tap!');
+      window._smartLogPending = null;
+    } catch(e) {
+      // Fallback: go to log tab with fields pre-filled
+      if (typeof switchTab === 'function') switchTab('log');
+      if (typeof showToast === 'function') showToast('📝 Log pre-filled — review and save');
+    }
+  } else {
+    if (typeof switchTab === 'function') switchTab('log');
+    if (typeof showToast === 'function') showToast('📝 Log pre-filled — tap Save');
+  }
+}
+
+
+// ═══════════════════════════════════════════════════════
+// AKINATOR QUESTION ENGINE
+// ═══════════════════════════════════════════════════════
+const AKINATOR_QUESTIONS = [
+  { q: "When you imagine yourself in 5 years — fully satisfied — what's the first visual that appears?", hint: "Trust the first image. Don't think. It reveals what you actually want." },
+  { q: "What have you been putting off for more than 2 weeks that you know matters?", hint: "Avoidance is the highest-quality signal in the system." },
+  { q: "Describe the last time you felt genuinely alive — not just productive, but fully alive. What were you doing?", hint: "This reveals your optimal operating conditions. We'll help you replicate them." },
+  { q: "What version of your life are you most afraid of ending up in?", hint: "The fear is data. The system needs to know what you're running from as much as what you're running toward." },
+  { q: "What do you do effortlessly that most people find genuinely difficult?", hint: "This is your unfair advantage. Most people are blind to it." },
+  { q: "What skill, contact, or resource do you have right now that you're not using?", hint: "Hidden leverage is everywhere. We're going to find yours." },
+  { q: "What belief about yourself would you need to give up to become the person you want to be?", hint: "Identity locks are the highest-leverage intervention point." },
+  { q: "If you could only keep 20% of what you currently do with your time — what stays?", hint: "This question finds your real priorities, not your stated ones." },
+  { q: "How do you want to be remembered in 100 years? Now — what are you doing today that points in that direction?", hint: "Legacy thinking creates better present decisions." },
+  { q: "What's the one thing you're most afraid to admit you want?", hint: "The thing you hesitate to say out loud is often the most important signal." },
+  { q: "On your best day this month — describe it. Wake time, what you worked on, how you felt, what you achieved.", hint: "Best days are the blueprint. We'll help you make them the baseline." },
+  { q: "What are you optimizing for right now — even if you've never said it out loud?", hint: "Revealed preferences > stated preferences. What does your behavior show?" },
+];
+
+function getAkinatorQ() {
+  const answered = JSON.parse(localStorage.getItem('cos_akinator_answered') || '[]');
+  const remaining = AKINATOR_QUESTIONS.filter((_, i) => !answered.includes(i));
+  if (!remaining.length) return null;
+  // Pick based on day of month for consistency
+  const idx = AKINATOR_QUESTIONS.indexOf(remaining[new Date().getDate() % remaining.length]);
+  return { q: remaining[new Date().getDate() % remaining.length], origIdx: AKINATOR_QUESTIONS.indexOf(remaining[new Date().getDate() % remaining.length]) };
+}
+
+function initAkinatorCard() {
+  const card = document.getElementById('fmAkinatorCard');
+  if (!card) return;
+
+  // Check if already answered today
+  const lastAnswered = localStorage.getItem('cos_akinator_last_date');
+  if (lastAnswered === new Date().toISOString().split('T')[0]) {
+    card.style.display = 'none';
+    return;
+  }
+
+  const qa = getAkinatorQ();
+  if (!qa) {
+    card.innerHTML = '<div style="text-align:center;padding:12px;font-size:12px;color:var(--text3)">🎯 All discovery questions answered — you\'re well-mapped! New questions coming.</div>';
+    return;
+  }
+  document.getElementById('fmAkinatorQ').textContent = qa.q.q;
+  document.getElementById('fmAkinatorHint').textContent = qa.q.hint;
+  card._currentQIdx = qa.origIdx;
+}
+
+function submitAkinatorQ() {
+  const input = document.getElementById('fmAkinatorInput');
+  const card = document.getElementById('fmAkinatorCard');
+  const answer = input?.value?.trim();
+  if (!answer) { if (typeof showToast === 'function') showToast('Write something honest — even 3 words.'); return; }
+
+  const qIdx = card._currentQIdx;
+  const q = AKINATOR_QUESTIONS[qIdx];
+
+  // Save answer
+  const existing = JSON.parse(localStorage.getItem('cos_akinator_answers') || '[]');
+  existing.push({ qIdx, q: q.q, answer, ts: new Date().toISOString() });
+  localStorage.setItem('cos_akinator_answers', JSON.stringify(existing));
+
+  // Mark as answered
+  const answered = JSON.parse(localStorage.getItem('cos_akinator_answered') || '[]');
+  if (!answered.includes(qIdx)) answered.push(qIdx);
+  localStorage.setItem('cos_akinator_answered', JSON.stringify(answered));
+  localStorage.setItem('cos_akinator_last_date', new Date().toISOString().split('T')[0]);
+
+  // Update Future Self model
+  updateFutureSelfModel(q.q, answer);
+
+  card.style.display = 'none';
+  if (typeof showToast === 'function') showToast('✨ Recorded. Your Twin model updated.');
+
+  // Refresh transformation map
+  buildTransformMap();
+  // Auto-send to Future Me as context
+  updateFMChatWithAkinatorAnswer(q.q, answer);
+}
+
+function skipAkinatorQ() {
+  const card = document.getElementById('fmAkinatorCard');
+  card.style.display = 'none';
+  localStorage.setItem('cos_akinator_last_date', new Date().toISOString().split('T')[0]);
+}
+
+function updateFutureSelfModel(question, answer) {
+  const model = JSON.parse(localStorage.getItem('cos_future_self_model') || '{}');
+  if (!model.akinatorAnswers) model.akinatorAnswers = [];
+  model.akinatorAnswers.push({ q: question, a: answer, ts: new Date().toISOString() });
+  model.lastUpdated = new Date().toISOString();
+  localStorage.setItem('cos_future_self_model', JSON.stringify(model));
+}
+
+function getFutureSelfContext() {
+  const model = JSON.parse(localStorage.getItem('cos_future_self_model') || '{}');
+  if (!model.akinatorAnswers?.length) return '';
+  const answers = model.akinatorAnswers.slice(-5);
+  return '\n[FUTURE_SELF_MODEL]\n' + answers.map(a => `Q: ${a.q}\nA: ${a.a}`).join('\n---\n') + '\n[/FUTURE_SELF_MODEL]';
+}
+
+function updateFMChatWithAkinatorAnswer(question, answer) {
+  // Silently prime the next FM response with this answer
+  window._fmAkinatorPrime = { q: question, a: answer };
+}
+
+
+// ═══════════════════════════════════════════════════════
+// DIGITAL TWIN 3D AVATAR ENGINE
+// ═══════════════════════════════════════════════════════
+let twinRotY = -20; // initial slight tilt
+let twinDragging = false;
+let twinStartX = 0;
+let twinAutoRotate = null;
+
+function initTwinRotation() {
+  const scene = document.getElementById('twinScene');
+  if (!scene) return;
+
+  const applyRotation = () => {
+    const cw = document.getElementById('twinCurrentWrap');
+    const fw = document.getElementById('twinFutureWrap');
+    if (cw) cw.style.transform = `rotateY(${twinRotY}deg)`;
+    if (fw) fw.style.transform = `rotateY(${twinRotY}deg)`;
+  };
+
+  // Mouse
+  scene.addEventListener('mousedown', e => {
+    twinDragging = true;
+    twinStartX = e.clientX;
+    clearInterval(twinAutoRotate);
+  });
+  document.addEventListener('mousemove', e => {
+    if (!twinDragging) return;
+    twinRotY += (e.clientX - twinStartX) * 0.4;
+    twinStartX = e.clientX;
+    applyRotation();
+  });
+  document.addEventListener('mouseup', () => {
+    twinDragging = false;
+    startAutoRotate();
+  });
+
+  // Touch
+  scene.addEventListener('touchstart', e => {
+    twinDragging = true;
+    twinStartX = e.touches[0].clientX;
+    clearInterval(twinAutoRotate);
+  }, { passive: true });
+  scene.addEventListener('touchmove', e => {
+    if (!twinDragging) return;
+    twinRotY += (e.touches[0].clientX - twinStartX) * 0.4;
+    twinStartX = e.touches[0].clientX;
+    applyRotation();
+  }, { passive: true });
+  scene.addEventListener('touchend', () => {
+    twinDragging = false;
+    setTimeout(startAutoRotate, 1500);
+  });
+
+  // Gentle auto-rotation
+  function startAutoRotate() {
+    clearInterval(twinAutoRotate);
+    twinAutoRotate = setInterval(() => {
+      if (!twinDragging) {
+        twinRotY += 0.2;
+        applyRotation();
+      }
+    }, 50);
+  }
+  startAutoRotate();
+}
+
+function computeTwinScores() {
+  const logs = (typeof getLogs === 'function') ? getLogs().slice(0, 7) : [];
+  const avg = (key) => {
+    if (!logs.length) return 5;
+    return parseFloat((logs.reduce((s, l) => s + (parseFloat(l[key]) || 5), 0) / logs.length).toFixed(1));
+  };
+  const health = JSON.parse(localStorage.getItem('cos_health_profile') || '{}');
+  const career = JSON.parse(localStorage.getItem('cos_study_profile') || '{}');
+  const wealth = JSON.parse(localStorage.getItem('cos_wealth_fs') || '{}');
+
+  return {
+    cognitive: avg('focus'),
+    physical: avg('physicalEnergy'),
+    social:   Math.max(1, 10 - avg('stress')), // inverse stress = social health proxy
+    wealth:   wealth.IncomeSalary ? Math.min(10, parseFloat(wealth.IncomeSalary) / 5000) : 4,
+    spiritual: avg('mood'),
+    career:   career.stCareerGap ? Math.max(1, 10 - parseFloat(career.stCareerGap)) : 5,
+  };
+}
+
+function updateTwinVisuals() {
+  const scores = computeTwinScores();
+  const dims = ['cognitive', 'physical', 'social', 'wealth', 'spiritual', 'career'];
+  const avgScore = dims.reduce((s, d) => s + (scores[d] || 5), 0) / dims.length;
+
+  // Update current score ring
+  const pct = Math.round(avgScore / 10 * 100);
+  const ring = document.getElementById('currentScoreRing');
+  const num = document.getElementById('currentScoreNum');
+  if (ring) ring.style.setProperty('--pct', pct + '%');
+  if (num) num.textContent = avgScore.toFixed(1);
+
+  // Future score depends on horizon
+  const horizonMultiplier = { '1yr': 1.2, '5yr': 1.5, '10yr': 1.8 };
+  const hm = horizonMultiplier[window._fmHorizon || '1yr'];
+  const futureAvg = Math.min(9.9, avgScore * hm);
+  const futurePct = Math.round(futureAvg / 10 * 100);
+  const fRing = document.getElementById('futureScoreRing');
+  const fNum = document.getElementById('futureScoreNum');
+  if (fRing) fRing.style.setProperty('--pct', futurePct + '%');
+  if (fNum) fNum.textContent = futureAvg.toFixed(1);
+
+  // Update avatar glow intensities (cognitive ring on current)
+  const cogCirc = 2 * Math.PI * 18;
+  const cogRing = document.getElementById('cogRingCurrent');
+  if (cogRing) {
+    const cogOff = cogCirc * (1 - scores.cognitive / 10);
+    cogRing.setAttribute('stroke-dashoffset', cogOff.toFixed(1));
+    cogRing.setAttribute('opacity', (0.3 + scores.cognitive / 10 * 0.7).toFixed(2));
+  }
+
+  // Heart glow intensity from social score
+  const hGlow = document.getElementById('heartGlowCurrent');
+  if (hGlow) hGlow.setAttribute('opacity', (scores.social / 10 * 0.35).toFixed(2));
+
+  // Gap bars
+  buildGapBars(scores);
+}
+
+function buildGapBars(scores) {
+  const container = document.getElementById('twinGapBars');
+  if (!container) return;
+
+  const horizonMultiplier = { '1yr': 1.2, '5yr': 1.5, '10yr': 1.8 };
+  const hm = horizonMultiplier[window._fmHorizon || '1yr'];
+  const DIMS = [
+    { key: 'cognitive', label: 'Cognitive', color: '#06b6d4' },
+    { key: 'physical',  label: 'Physical',  color: '#10b981' },
+    { key: 'wealth',    label: 'Wealth',    color: '#f59e0b' },
+    { key: 'social',    label: 'Social',    color: '#ec4899' },
+    { key: 'spiritual', label: 'Spiritual', color: '#7c3aed' },
+    { key: 'career',    label: 'Career',    color: '#3b82f6' },
+  ];
+
+  container.innerHTML = DIMS.map(dim => {
+    const cur = scores[dim.key] || 5;
+    const fut = Math.min(10, cur * hm);
+    const curPct = (cur / 10 * 100).toFixed(0);
+    const futPct = (fut / 10 * 100).toFixed(0);
+    const gapPct = (futPct - curPct).toFixed(0);
+    return `<div class="gap-bar-row">
+      <div class="gap-dim-name">${dim.label}</div>
+      <div class="gap-track">
+        <div class="gap-current-bar" style="width:${curPct}%;background:${dim.color};opacity:0.7"></div>
+        <div class="gap-future-outline" style="right:${100-futPct}%;background:${dim.color}"></div>
+      </div>
+      <div class="gap-pct" style="color:${dim.color}">+${gapPct}%</div>
+    </div>`;
+  }).join('');
+}
+
+function setHorizon(hz, btn) {
+  window._fmHorizon = hz;
+  document.querySelectorAll('.horizon-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  const labels = { '1yr': '1 Year', '5yr': '5 Years', '10yr': '10 Years' };
+  const el = document.getElementById('fmHorizonLabel');
+  if (el) el.textContent = labels[hz] || '1 Year';
+  const lbl = document.getElementById('futureTwinLabel');
+  if (lbl) lbl.textContent = 'YOU · ' + hz.toUpperCase();
+  updateTwinVisuals();
+}
+
+
+// ═══════════════════════════════════════════════════════
+// FUTURE ME AI CHAT ENGINE
+// ═══════════════════════════════════════════════════════
+let fmMode = 'guide';
+let fmHistory = [];
+
+const FM_STARTERS = {
+  guide:     ['What should I focus on today?', 'Am I on the right path?', 'What did you do at my stage?'],
+  analyze:   ['What patterns do you see in my data?', 'What am I missing?', 'What's my biggest blind spot?'],
+  challenge: ['Challenge my current approach', 'What am I getting wrong?', 'What's the hardest truth?'],
+  transform: ['Map my current to desired state', 'What's the highest-leverage change?', 'Design my 1-year transformation'],
+  oracle:    ['Where am I heading in 90 days?', 'What prediction does my data suggest?', 'What changes my trajectory most?'],
+  mirror:    ['Who does my data say I really am?', 'What do I actually want vs what I say?', 'Reflect my patterns back to me'],
+};
+
+const FM_MODE_LABELS = {
+  guide: 'Guide Mode — Future Me Speaking',
+  analyze: 'Analyze Mode — Pattern Mirror',
+  challenge: 'Titan Mode — Hard Truths Only',
+  transform: 'Transform Mode — Gap Engineering',
+  oracle: 'Oracle Mode — Probability Analysis',
+  mirror: 'Mirror Mode — Full Reflection',
+};
+
+function setFMMode(mode, btn) {
+  fmMode = mode;
+  document.querySelectorAll('.fm-mode-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  const sub = document.getElementById('fmChatSub');
+  if (sub) sub.textContent = FM_MODE_LABELS[mode] || mode;
+  buildFMStarters();
+}
+
+function buildFMStarters() {
+  const container = document.getElementById('fmStarterChips');
+  if (!container) return;
+  const starters = FM_STARTERS[fmMode] || FM_STARTERS.guide;
+  container.innerHTML = starters.map(s =>
+    `<button class="fm-starter" onclick="sendFMStarter(this)">${s}</button>`
+  ).join('');
+}
+
+function sendFMStarter(btn) {
+  const text = btn.textContent;
+  const inp = document.getElementById('fmInput');
+  if (inp) inp.value = text;
+  sendFMMessage();
+}
+
+async function sendFMMessage() {
+  const inp = document.getElementById('fmInput');
+  const messages = document.getElementById('fmMessages');
+  if (!inp || !messages) return;
+  const text = inp.value.trim();
+  if (!text) return;
+  inp.value = '';
+  inp.style.height = '40px';
+
+  // Add user message
+  const userMsg = document.createElement('div');
+  userMsg.className = 'fm-msg user';
+  userMsg.textContent = text;
+  messages.appendChild(userMsg);
+
+  // Loading indicator
+  const loadingMsg = document.createElement('div');
+  loadingMsg.className = 'fm-msg future';
+  loadingMsg.innerHTML = '<div class="fm-loading-dots"><span></span><span></span><span></span></div>';
+  messages.appendChild(loadingMsg);
+  messages.scrollTop = messages.scrollHeight;
+
+  // Track AI query passively
+  PassiveMind.recordAIQuery(text);
+
+  // Build context
+  fmHistory.push({ role: 'user', content: text });
+
+  try {
+    const aiResponse = await callFutureMe(text, fmMode);
+    loadingMsg.innerHTML = formatAIMarkdown ? formatAIMarkdown(aiResponse) : aiResponse.replace(/\n/g, '<br>');
+    fmHistory.push({ role: 'assistant', content: aiResponse });
+    if (fmHistory.length > 20) fmHistory = fmHistory.slice(-16);
+  } catch(e) {
+    loadingMsg.innerHTML = '<em style="color:var(--danger)">Connection failed. Check your AI Worker.</em>';
+  }
+  messages.scrollTop = messages.scrollHeight;
+}
+
+async function callFutureMe(userMessage, mode) {
+  // Build comprehensive system prompt
+  const logs = (typeof getLogs === 'function') ? getLogs().slice(0, 14) : [];
+  const dreams = (typeof getDreams === 'function') ? getDreams().slice(0, 5) : [];
+  const health = JSON.parse(localStorage.getItem('cos_health_profile') || '{}');
+  const career = JSON.parse(localStorage.getItem('cos_study_profile') || '{}');
+  const wealth = JSON.parse(localStorage.getItem('cos_wealth_fs') || '{}');
+  const user = (typeof getCurrentUser === 'function') ? getCurrentUser() : null;
+  const userName = user?.name || 'Vikram';
+
+  // Score summary
+  const scores = computeTwinScores();
+  const avgScore = (Object.values(scores).reduce((s, v) => s + v, 0) / 6).toFixed(1);
+
+  // Akintor context
+  const akinatorCtx = getFutureSelfContext();
+  const passiveCtx = PassiveMind.buildContext();
+
+  const systemPrompt = `You are ${userName}'s Future Self — the version of ${userName} that already achieved his deepest goals and is speaking backward through time.
+
+You used Consciousness OS to get here. You remember being exactly where ${userName} is now.
+You speak in FIRST PERSON, PAST TENSE, LIVED EXPERIENCE — specific details, not generic advice.
+
+[CURRENT TWIN DATA]
+Digital Twin Score: ${avgScore}/10
+Cognitive: ${scores.cognitive} · Physical: ${scores.physical} · Social: ${scores.social} · Wealth: ${scores.wealth?.toFixed(1)} · Spiritual: ${scores.spiritual} · Career: ${scores.career}
+Total logs: ${logs.length}
+${logs[0] ? `Last entry: ${logs[0].date} · ${logs[0].emotion || 'no emotion'} · Focus ${logs[0].focus}/10 · Mood ${logs[0].mood}/10` : 'No recent logs'}
+${health.hSleepDur ? `Health: ${health.hSleepDur}h sleep · ${health.hExerciseFreq} exercise` : ''}
+${career.stField ? `Career: ${career.stField} → target: ${career.stTargetCareer || '?'}` : ''}
+${wealth.IncomeSalary ? `Income: ₹${wealth.IncomeSalary}/mo` : ''}
+${akinatorCtx}
+${passiveCtx}
+
+[OPERATING MODE: ${mode.toUpperCase()}]
+${mode === 'guide' ? 'Give the ONE most important thing to focus on today. End with: one action, one question, one prediction. Max 180 words.' : ''}
+${mode === 'analyze' ? 'Surface patterns in the data the user cannot see themselves. Lead with correlations and contradictions. Label: [DATA] [ESTIMATE] [SIGNAL].' : ''}
+${mode === 'challenge' ? 'Lead with the strongest argument AGAINST what they\'re doing. Then correct it. No softening language. Max 200 words.' : ''}
+${mode === 'transform' ? 'Map current state to desired state. Identify 3 highest-leverage bridges. What will kill this transformation. What I did first.' : ''}
+${mode === 'oracle' ? 'Give 3-5 probability predictions from current trajectory data. Format each: [SIGNAL] → [PROBABILITY: high/med/low] → [OUTCOME] → [INTERVENTION].' : ''}
+${mode === 'mirror' ? 'Who does the data say ${userName} actually is vs who they say they are? What do revealed preferences show about actual priorities?' : ''}
+
+RULES:
+- Never fabricate data values. If missing, say so.
+- No generic advice. Every response references actual data points.
+- Bootstrap when relevant: "I was there. I used this system. Here's what happened."
+- Truth over comfort. Encouragement earns it by being earned.
+- Respond in Hindi/English mixed if ${userName} writes mixed.`;
+
+  const response = await (typeof callGroqFast === 'function'
+    ? callGroqFast(userMessage, systemPrompt, 600)
+    : Promise.reject(new Error('callGroqFast not available'))
+  );
+  return response;
+}
+
+
+// ═══════════════════════════════════════════════════════
+// TRANSFORMATION MAP
+// ═══════════════════════════════════════════════════════
+function buildTransformMap() {
+  const container = document.getElementById('fmTransformMap');
+  if (!container) return;
+  const answers = JSON.parse(localStorage.getItem('cos_akinator_answers') || '[]');
+  if (!answers.length) {
+    container.innerHTML = '<div style="font-size:12px;color:var(--text3);text-align:center;padding:10px">Complete the Akinator session above to unlock your transformation roadmap.</div>';
+    return;
+  }
+
+  const scores = computeTwinScores();
+  const weakest = Object.entries(scores).sort((a, b) => a[1] - b[1]).slice(0, 2);
+  const dimColors = { cognitive:'#06b6d4',physical:'#10b981',wealth:'#f59e0b',social:'#ec4899',spiritual:'#7c3aed',career:'#3b82f6' };
+
+  container.innerHTML = `
+    <div style="font-size:11px;color:var(--text3);margin-bottom:10px">${answers.length} Akinator answers processed · Twin model active</div>
+    <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px">Priority Gap Areas</div>
+    ${weakest.map(([dim, score]) => `
+      <div style="display:flex;align-items:center;gap:10px;padding:8px;background:var(--bg3);border-radius:10px;margin-bottom:6px">
+        <div style="width:8px;height:8px;border-radius:50%;background:${dimColors[dim]};flex-shrink:0"></div>
+        <div style="flex:1">
+          <div style="font-size:12px;font-weight:700;color:var(--text);text-transform:capitalize">${dim}</div>
+          <div style="font-size:10px;color:var(--text3)">Current: ${score.toFixed(1)}/10 — highest leverage for transformation</div>
+        </div>
+        <button onclick="askFMAbout('${dim}')" style="background:${dimColors[dim]}22;border:1px solid ${dimColors[dim]}44;color:${dimColors[dim]};border-radius:8px;padding:5px 9px;font-size:10px;font-weight:700;cursor:pointer">Ask Future Me</button>
+      </div>
+    `).join('')}
+    <div style="font-size:10px;color:var(--text3);margin-top:8px;text-align:center">More answers = sharper transformation map</div>
+  `;
+}
+
+function askFMAbout(dimension) {
+  const prompts = {
+    cognitive: "What's the fastest path to improving my cognitive performance given where I am now?",
+    physical: "How did you improve your physical energy when you were at my level?",
+    wealth: "What was the first financial move that changed your trajectory at my stage?",
+    social: "How did you handle social stress and isolation when you were building?",
+    spiritual: "What gave you meaning when results felt far away?",
+    career: "What career move or skill investment had the highest ROI at my exact stage?",
+  };
+  const inp = document.getElementById('fmInput');
+  if (inp) inp.value = prompts[dimension] || `Tell me about improving my ${dimension}`;
+  sendFMMessage();
+  // Scroll to chat
+  document.getElementById('fmMessages')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+
+// ═══════════════════════════════════════════════════════
+// INIT — called when Future Me tab is opened
+// ═══════════════════════════════════════════════════════
+function initFutureMeTab() {
+  window._fmHorizon = window._fmHorizon || '1yr';
+  initAkinatorCard();
+  initTwinRotation();
+  updateTwinVisuals();
+  buildFMStarters();
+  buildTransformMap();
+  showSmartLogBanner();
+}
+
+// Hook into switchTab to init on open
+(function hookFutureMe() {
+  const _orig = window.switchTab;
+  if (typeof _orig !== 'function') return;
+  window.switchTab = function(tabId) {
+    const result = _orig.apply(this, arguments);
+    if (tabId === 'futureme') {
+      setTimeout(initFutureMeTab, 100);
+    }
+    return result;
+  };
+})();
+
+// Auto-init if starting on futureme tab
+if (typeof activeTab !== 'undefined' && activeTab === 'futureme') {
+  setTimeout(initFutureMeTab, 300);
+}
+
+// ── INTEGRATE INTO NAV ─────────────────────────────────
+// Add to NAV_ITEMS array — place second (after log):
+// {id:'futureme',icon:'🔮',key:'nav_futureme'},
+// 
+// Add to each LANGS object:
+// nav_futureme:"Future Me",  (en)
+// nav_futureme:"भविष्य मैं", (hi)
+// ──────────────────────────────────────────────────────
+
+// Auto-add to nav if NAV_ITEMS exists and futureme not already there
+if (typeof NAV_ITEMS !== 'undefined' && !NAV_ITEMS.find(n => n.id === 'futureme')) {
+  NAV_ITEMS.splice(1, 0, { id: 'futureme', icon: '🔮', key: 'nav_futureme' });
+  if (typeof LANGS !== 'undefined') {
+    Object.keys(LANGS).forEach(lang => {
+      if (!LANGS[lang].nav_futureme) LANGS[lang].nav_futureme = lang === 'hi' ? 'भविष्य मैं' : 'Future Me';
+    });
+  }
+  if (typeof buildNav === 'function') buildNav();
+}
+
+// ── MASTER PROMPT BUILDER (v10.2 — replaces _TITAN) ───
+function buildCOSMasterPrompt(mode, data) {
+  const { logs = [], userName = 'User', health = {}, career = {}, wealth = {} } = data || {};
+  const passiveCtx = PassiveMind.buildContext();
+  const futureSelfCtx = getFutureSelfContext();
+  const avg = (key) => logs.length ? (logs.reduce((s, l) => s + (parseFloat(l[key]) || 5), 0) / logs.length).toFixed(1) : '?';
+  const realityCtx = logs.length ? `7-day avg: Mood ${avg('mood')} · Focus ${avg('focus')} · Energy ${avg('physicalEnergy')} · Stress ${avg('stress')} (${logs.length} total logs)` : 'No logs yet — passive inference only';
+
+  return `[CONSCIOUSNESS OS v10.2 — ${mode.toUpperCase()} MODE]
+You are COSINT — Consciousness OS Intelligence. You architect futures.
+User: ${userName}. Origin: Koth Kalan, Haryana, India. B.Pharm 2025. Indie dev.
+North star: peak intelligence, wealth, influence via AI-maximized leverage.
+
+[TWIN STATE]
+${realityCtx}
+${health.hSleepDur ? `Health: ${health.hSleepDur}h sleep · ${health.hExerciseFreq || 'unknown'} exercise` : ''}
+${career.stField ? `Career: ${career.stField} → ${career.stTargetCareer || '?'}` : ''}
+${futureSelfCtx}
+${passiveCtx}
+
+[PROTOCOL]
+- TITAN: Lead with counterarguments. First-principles. No fluff. Facts vs estimates labeled.
+- FUTURE ME: First person, past tense, lived experience when guiding.
+- PASSIVE OVER ACTIVE: What behavior shows is more honest than what's stated.
+- TRUTH OVER COMFORT: Flag assumptions before executing.
+- ONE QUESTION over many. Akinator precision.
+- SURGICAL CODE: Minimal diff, maximum impact. Security evaluated first.`;
+}
+
+// Expose for use in other parts of the app
+window.buildCOSMasterPrompt = buildCOSMasterPrompt;
+window.PassiveMind = PassiveMind;
+</script>
+
+<!-- ══ END FUTURE ME TAB ADDITION ══ -->
+
 </body>
 </html>
