@@ -2,7 +2,7 @@
 // Network-first for HTML, cache-first for static assets
 // NO precache list — avoids 404s from missing files
 
-const CACHE_NAME = 'cos-static-v1001';
+const CACHE_NAME = 'cos-static-v10';
 
 const PRECACHE = [
   '/',
