@@ -1,6 +1,32 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="light">
 <head>
+<script>
+// SW KILL SWITCH — runs before anything else, nukes stale service workers
+(async () => {
+  const CURRENT_CACHE = 'cos-static-v10';
+  if ('serviceWorker' in navigator) {
+    const regs = await navigator.serviceWorker.getRegistrations();
+    for (const r of regs) {
+      const sw = r.active || r.waiting || r.installing;
+      // Unregister if it's not our current version
+      if (sw && !sw.scriptURL.includes('v=10')) {
+        await r.unregister();
+        console.log('[COS] Killed stale SW:', sw.scriptURL);
+      }
+    }
+  }
+  if ('caches' in window) {
+    const keys = await caches.keys();
+    for (const k of keys) {
+      if (k !== CURRENT_CACHE) {
+        await caches.delete(k);
+        console.log('[COS] Purged cache:', k);
+      }
+    }
+  }
+})();
+</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Consciousness OS</title>
