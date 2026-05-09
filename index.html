@@ -5,14 +5,17 @@
 // SW KILL SWITCH — runs before anything else, nukes stale service workers
 (async () => {
   const CURRENT_CACHE = 'cos-static-v10';
+  let nuked = false;
   if ('serviceWorker' in navigator) {
     const regs = await navigator.serviceWorker.getRegistrations();
     for (const r of regs) {
       const sw = r.active || r.waiting || r.installing;
-      // Unregister if it's not our current version
       if (sw && !sw.scriptURL.includes('v=10')) {
+        // Send skip-waiting before unregistering so new SW activates immediately
+        try { sw.postMessage({type:'SKIP_WAITING'}); } catch(e){}
         await r.unregister();
         console.log('[COS] Killed stale SW:', sw.scriptURL);
+        nuked = true;
       }
     }
   }
@@ -22,8 +25,14 @@
       if (k !== CURRENT_CACHE) {
         await caches.delete(k);
         console.log('[COS] Purged cache:', k);
+        nuked = true;
       }
     }
+  }
+  // If we just nuked a stale SW, hard reload once so the new index.html is served fresh
+  if (nuked && !sessionStorage.getItem('cos_sw_reloaded')) {
+    sessionStorage.setItem('cos_sw_reloaded', '1');
+    window.location.reload(true);
   }
 })();
 </script>
@@ -5164,7 +5173,7 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
 const LANGS = {
   en:{
     // Nav
-    nav_log:"Log",nav_waves:"Neural Beats",nav_ai:"AI Hub",nav_analysis:"Analysis",nav_health:"Health",
+    nav_log:"Log",nav_futureme:"Future Me",nav_waves:"Neural Beats",nav_ai:"AI Hub",nav_analysis:"Analysis",nav_health:"Health",
     nav_games:"Games",nav_dreams:"Dreams",nav_memory:"Memory",nav_calendar:"Calendar",
     nav_settings:"Settings",nav_world:"World",nav_path:"Path",nav_career:"Career",nav_science:"Science",nav_system:"System",nav_guide:"Guide",nav_vault:"Vault",nav_wealth:"Wealth",nav_oracle:"Oracle",
     // Daily Log
@@ -5207,7 +5216,7 @@ const LANGS = {
     creative:"Creative",meditation:"Meditation",entertainment:"Entertainment",
   },
   hi:{
-    nav_log:"लॉग",nav_waves:"न्यूरल बीट्स",nav_ai:"AI हब",nav_analysis:"विश्लेषण",nav_health:"स्वास्थ्य",
+    nav_log:"लॉग",nav_futureme:"भविष्य मैं",nav_waves:"न्यूरल बीट्स",nav_ai:"AI हब",nav_analysis:"विश्लेषण",nav_health:"स्वास्थ्य",
     nav_games:"खेल",nav_dreams:"सपने",nav_memory:"स्मृति",nav_calendar:"कैलेंडर",
     nav_settings:"सेटिंग्स",nav_world:"दुनिया",nav_path:"पथ",nav_science:"विज्ञान",nav_system:"सिस्टम",nav_oracle:"ओरेकल",nav_wealth:"संपत्ति",nav_vault:"वॉल्ट",
     daily_log:"दैनिक चेतना लॉग",entry_info:"प्रविष्टि जानकारी",date:"तारीख",time_of_day:"दिन का समय",
@@ -5949,6 +5958,7 @@ function translateFormLabels(dict){
 }
 const NAV_ITEMS=[
   {id:'log',icon:'📝',key:'nav_log'},
+  {id:'futureme',icon:'🔮',key:'nav_futureme'},
   {id:'analysis',icon:'📊',key:'nav_analysis'},
   {id:'vault',icon:'🔮',key:'nav_vault'},
   {id:'oracle',icon:'🌀',key:'nav_oracle'},
