@@ -5147,6 +5147,292 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
       <button class="btn btn-primary btn-sm" id="oBtnNext" onclick="onboardNav(1)">Next →</button>
     </div>
   </div>
+
+<div class="tab-panel" id="tab-futureme">
+  <div style="padding:0">
+
+    <!-- Smart Log Banner (shown when pre-fill is ready) -->
+    <div class="smart-log-banner" id="fmSmartLogBanner" style="display:none">
+      <div class="smart-log-icon">⚡</div>
+      <div class="smart-log-text">
+        <div class="smart-log-title">Smart Log Ready</div>
+        <div class="smart-log-sub" id="fmSmartLogSub">Pre-filled from your patterns</div>
+      </div>
+      <button class="smart-log-confirm" onclick="confirmSmartLog()">Confirm & Save →</button>
+    </div>
+
+    <!-- Akinator Question Card -->
+    <div class="akinator-card" id="fmAkinatorCard">
+      <div class="akinator-label">🎯 Daily Discovery Question</div>
+      <div class="akinator-q" id="fmAkinatorQ">Loading your question...</div>
+      <div class="akinator-hint" id="fmAkinatorHint"></div>
+      <textarea class="akinator-input" id="fmAkinatorInput" placeholder="Answer honestly — only the system sees this..." rows="3"></textarea>
+      <div class="akinator-actions">
+        <button class="akinator-skip" onclick="skipAkinatorQ()">Skip today</button>
+        <button class="akinator-submit" onclick="submitAkinatorQ()">Save answer →</button>
+      </div>
+    </div>
+
+    <!-- 3D Twin Section -->
+    <div class="twin-section">
+      <div class="twin-header">
+        <div class="twin-title">🧬 Your Digital Twin</div>
+        <div class="horizon-btns">
+          <button class="horizon-btn active" onclick="setHorizon('1yr', this)">1 yr</button>
+          <button class="horizon-btn" onclick="setHorizon('5yr', this)">5 yr</button>
+          <button class="horizon-btn" onclick="setHorizon('10yr', this)">10 yr</button>
+        </div>
+      </div>
+
+      <!-- The 3D scene — drag to rotate -->
+      <div class="twin-scene" id="twinScene">
+
+        <!-- Current Self -->
+        <div class="twin-figure-wrap">
+          <div class="twin-label-small current">NOW</div>
+          <div class="twin-body-wrap" id="twinCurrentWrap">
+            <svg class="twin-svg" width="90" height="200" viewBox="0 0 90 200" id="twinCurrentSVG">
+              <!-- Head -->
+              <circle cx="45" cy="22" r="18" fill="var(--bg3)" stroke="var(--border)" stroke-width="1.5"/>
+              <circle cx="45" cy="22" r="18" fill="url(#headGradCurrent)" opacity="0.7"/>
+              <!-- Cognitive ring -->
+              <circle cx="45" cy="22" r="18" fill="none" stroke="#06b6d4" stroke-width="2.5" stroke-dasharray="113" stroke-dashoffset="0" id="cogRingCurrent" opacity="0.6" transform="rotate(-90 45 22)"/>
+              <!-- Face dots -->
+              <circle cx="39" cy="20" r="2" fill="var(--text3)" opacity=".5"/>
+              <circle cx="51" cy="20" r="2" fill="var(--text3)" opacity=".5"/>
+              <path d="M40 27 Q45 31 50 27" stroke="var(--text3)" stroke-width="1.5" fill="none" opacity=".4"/>
+
+              <!-- Neck -->
+              <rect x="41" y="38" width="8" height="8" rx="2" fill="var(--bg3)" stroke="var(--border)" stroke-width="1"/>
+
+              <!-- Torso -->
+              <path d="M20 46 L25 90 L65 90 L70 46 Q60 42 45 42 Q30 42 20 46Z" fill="var(--bg3)" stroke="var(--border)" stroke-width="1.5"/>
+              <path d="M20 46 L25 90 L65 90 L70 46 Q60 42 45 42 Q30 42 20 46Z" fill="url(#torsoGradCurrent)" opacity="0.6"/>
+              <!-- Heart glow (social) -->
+              <circle cx="45" cy="62" r="8" fill="#ec4899" id="heartGlowCurrent" opacity="0.2"/>
+
+              <!-- Left arm -->
+              <path d="M22 48 L10 85 Q8 90 12 91 L15 91 Q18 90 20 85 L28 52Z" fill="var(--bg3)" stroke="var(--border)" stroke-width="1.2"/>
+              <path d="M22 48 L10 85 Q8 90 12 91 L15 91 Q18 90 20 85 L28 52Z" fill="url(#armGradCurrent)" opacity="0.5"/>
+
+              <!-- Right arm -->
+              <path d="M68 48 L80 85 Q82 90 78 91 L75 91 Q72 90 70 85 L62 52Z" fill="var(--bg3)" stroke="var(--border)" stroke-width="1.2"/>
+              <path d="M68 48 L80 85 Q82 90 78 91 L75 91 Q72 90 70 85 L62 52Z" fill="url(#armGradCurrent)" opacity="0.5"/>
+
+              <!-- Pelvis/Hips -->
+              <rect x="22" y="88" width="46" height="14" rx="6" fill="var(--bg3)" stroke="var(--border)" stroke-width="1.2"/>
+              <rect x="22" y="88" width="46" height="14" rx="6" fill="url(#torsoGradCurrent)" opacity="0.4"/>
+
+              <!-- Left leg -->
+              <path d="M26 100 L22 170 Q21 176 26 177 L32 177 Q37 176 36 170 L38 100Z" fill="var(--bg3)" stroke="var(--border)" stroke-width="1.2"/>
+              <path d="M26 100 L22 170 Q21 176 26 177 L32 177 Q37 176 36 170 L38 100Z" fill="url(#legGradCurrent)" opacity="0.5"/>
+
+              <!-- Right leg -->
+              <path d="M64 100 L68 170 Q69 176 64 177 L58 177 Q53 176 54 170 L52 100Z" fill="var(--bg3)" stroke="var(--border)" stroke-width="1.2"/>
+              <path d="M64 100 L68 170 Q69 176 64 177 L58 177 Q53 176 54 170 L52 100Z" fill="url(#legGradCurrent)" opacity="0.5"/>
+
+              <!-- Feet -->
+              <ellipse cx="29" cy="182" rx="10" ry="5" fill="var(--bg3)" stroke="var(--border)" stroke-width="1"/>
+              <ellipse cx="61" cy="182" rx="10" ry="5" fill="var(--bg3)" stroke="var(--border)" stroke-width="1"/>
+
+              <!-- Gradient defs for current self -->
+              <defs>
+                <radialGradient id="headGradCurrent" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stop-color="#06b6d4" stop-opacity="0.3"/>
+                  <stop offset="100%" stop-color="#06b6d4" stop-opacity="0"/>
+                </radialGradient>
+                <linearGradient id="torsoGradCurrent" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#ec4899" stop-opacity="0.4"/>
+                  <stop offset="50%" stop-color="#7c3aed" stop-opacity="0.3"/>
+                  <stop offset="100%" stop-color="#10b981" stop-opacity="0.3"/>
+                </linearGradient>
+                <linearGradient id="armGradCurrent" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.5"/>
+                  <stop offset="100%" stop-color="#f59e0b" stop-opacity="0.1"/>
+                </linearGradient>
+                <linearGradient id="legGradCurrent" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stop-color="#10b981" stop-opacity="0.5"/>
+                  <stop offset="100%" stop-color="#10b981" stop-opacity="0.1"/>
+                </linearGradient>
+              </defs>
+            </svg>
+          </div>
+          <!-- Score ring below current -->
+          <div class="twin-score-ring" id="currentScoreRing" style="--pct:0%">
+            <span class="twin-score-num" id="currentScoreNum">–</span>
+          </div>
+        </div>
+
+        <!-- VS divider -->
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding-bottom:60px">
+          <div style="font-size:9px;font-weight:800;color:var(--text3);letter-spacing:2px">GAP</div>
+          <div style="width:1px;height:60px;background:linear-gradient(to bottom,transparent,var(--border),transparent)"></div>
+          <div style="font-size:9px;color:var(--text3)" id="fmHorizonLabel">1 Year</div>
+        </div>
+
+        <!-- Future Self -->
+        <div class="twin-figure-wrap">
+          <div class="twin-label-small future" id="futureTwinLabel">YOU · 1YR</div>
+          <div class="twin-body-wrap" id="twinFutureWrap">
+            <svg class="twin-svg" width="100" height="220" viewBox="0 0 90 200" id="twinFutureSVG">
+              <!-- Head — glowing -->
+              <circle cx="45" cy="22" r="20" fill="var(--bg3)" stroke="rgba(6,182,212,.5)" stroke-width="2"/>
+              <circle cx="45" cy="22" r="20" fill="url(#headGradFuture)"/>
+              <!-- Cognitive ring — full -->
+              <circle cx="45" cy="22" r="20" fill="none" stroke="#06b6d4" stroke-width="3" stroke-dasharray="126" stroke-dashoffset="0" id="cogRingFuture" opacity="0.9" transform="rotate(-90 45 22)"/>
+              <!-- Aura glow around head -->
+              <circle cx="45" cy="22" r="26" fill="none" stroke="#06b6d4" stroke-width="1" opacity="0.2"/>
+              <circle cx="45" cy="22" r="32" fill="none" stroke="#7c3aed" stroke-width="0.5" opacity="0.1"/>
+              <!-- Face -->
+              <circle cx="39" cy="20" r="2.5" fill="var(--accent)"/>
+              <circle cx="51" cy="20" r="2.5" fill="var(--accent)"/>
+              <path d="M38 28 Q45 33 52 28" stroke="var(--accent)" stroke-width="2" fill="none"/>
+
+              <!-- Neck -->
+              <rect x="40" y="40" width="10" height="10" rx="3" fill="var(--bg3)" stroke="rgba(6,182,212,.4)" stroke-width="1.5"/>
+
+              <!-- Torso — fully glowing -->
+              <path d="M18 48 L22 92 L68 92 L72 48 Q60 43 45 43 Q30 43 18 48Z" fill="var(--bg3)" stroke="rgba(124,58,237,.4)" stroke-width="1.5"/>
+              <path d="M18 48 L22 92 L68 92 L72 48 Q60 43 45 43 Q30 43 18 48Z" fill="url(#torsoGradFuture)"/>
+              <!-- Heart glow strong -->
+              <circle cx="45" cy="63" r="10" fill="#ec4899" id="heartGlowFuture" opacity="0.35"/>
+              <circle cx="45" cy="63" r="6" fill="#ec4899" opacity="0.2"/>
+              <!-- Career shoulders glow -->
+              <ellipse cx="24" cy="52" rx="8" ry="5" fill="#3b82f6" opacity="0.25"/>
+              <ellipse cx="66" cy="52" rx="8" ry="5" fill="#3b82f6" opacity="0.25"/>
+
+              <!-- Left arm -->
+              <path d="M20 50 L7 88 Q5 93 9 94 L13 94 Q16 93 18 88 L26 54Z" fill="var(--bg3)" stroke="rgba(245,158,11,.4)" stroke-width="1.2"/>
+              <path d="M20 50 L7 88 Q5 93 9 94 L13 94 Q16 93 18 88 L26 54Z" fill="url(#armGradFuture)"/>
+              <!-- Gold hand glow -->
+              <ellipse cx="10" cy="92" rx="6" ry="4" fill="#f59e0b" opacity="0.4"/>
+
+              <!-- Right arm -->
+              <path d="M70 50 L83 88 Q85 93 81 94 L77 94 Q74 93 72 88 L64 54Z" fill="var(--bg3)" stroke="rgba(245,158,11,.4)" stroke-width="1.2"/>
+              <path d="M70 50 L83 88 Q85 93 81 94 L77 94 Q74 93 72 88 L64 54Z" fill="url(#armGradFuture)"/>
+              <!-- Gold hand glow -->
+              <ellipse cx="80" cy="92" rx="6" ry="4" fill="#f59e0b" opacity="0.4"/>
+
+              <!-- Pelvis/Hips -->
+              <rect x="20" y="90" width="50" height="16" rx="7" fill="var(--bg3)" stroke="rgba(124,58,237,.3)" stroke-width="1.2"/>
+              <rect x="20" y="90" width="50" height="16" rx="7" fill="url(#torsoGradFuture)" opacity="0.5"/>
+
+              <!-- Left leg -->
+              <path d="M24 104 L19 176 Q18 183 24 184 L31 184 Q37 183 36 176 L38 104Z" fill="var(--bg3)" stroke="rgba(16,185,129,.4)" stroke-width="1.2"/>
+              <path d="M24 104 L19 176 Q18 183 24 184 L31 184 Q37 183 36 176 L38 104Z" fill="url(#legGradFuture)"/>
+
+              <!-- Right leg -->
+              <path d="M66 104 L71 176 Q72 183 66 184 L59 184 Q53 183 54 176 L52 104Z" fill="var(--bg3)" stroke="rgba(16,185,129,.4)" stroke-width="1.2"/>
+              <path d="M66 104 L71 176 Q72 183 66 184 L59 184 Q53 183 54 176 L52 104Z" fill="url(#legGradFuture)"/>
+
+              <!-- Feet with glow -->
+              <ellipse cx="27" cy="188" rx="12" ry="6" fill="#10b981" opacity="0.3"/>
+              <ellipse cx="63" cy="188" rx="12" ry="6" fill="#10b981" opacity="0.3"/>
+
+              <!-- Full body aura -->
+              <ellipse cx="45" cy="120" rx="48" ry="110" fill="url(#bodyAuraFuture)" opacity="0.12"/>
+
+              <defs>
+                <radialGradient id="headGradFuture" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stop-color="#06b6d4" stop-opacity="0.7"/>
+                  <stop offset="100%" stop-color="#7c3aed" stop-opacity="0.2"/>
+                </radialGradient>
+                <linearGradient id="torsoGradFuture" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#ec4899" stop-opacity="0.6"/>
+                  <stop offset="40%" stop-color="#7c3aed" stop-opacity="0.5"/>
+                  <stop offset="100%" stop-color="#10b981" stop-opacity="0.5"/>
+                </linearGradient>
+                <linearGradient id="armGradFuture" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.7"/>
+                  <stop offset="100%" stop-color="#f59e0b" stop-opacity="0.2"/>
+                </linearGradient>
+                <linearGradient id="legGradFuture" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stop-color="#10b981" stop-opacity="0.7"/>
+                  <stop offset="100%" stop-color="#10b981" stop-opacity="0.2"/>
+                </linearGradient>
+                <radialGradient id="bodyAuraFuture" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stop-color="#7c3aed"/>
+                  <stop offset="100%" stop-color="#7c3aed" stop-opacity="0"/>
+                </radialGradient>
+              </defs>
+            </svg>
+          </div>
+          <!-- Score ring below future -->
+          <div class="twin-score-ring" id="futureScoreRing" style="--pct:0%;background:conic-gradient(var(--accent) var(--pct,0%),var(--bg3) var(--pct,0%))">
+            <span class="twin-score-num" id="futureScoreNum">∞</span>
+          </div>
+        </div>
+
+      </div><!-- /twin-scene -->
+
+      <div style="font-size:10px;color:var(--text3);text-align:center;margin:-4px 0 10px">← drag to rotate →</div>
+
+      <!-- Dimension Legend -->
+      <div class="twin-legend">
+        <div class="twin-dim"><div class="twin-dim-dot" style="background:#06b6d4"></div>Cognitive</div>
+        <div class="twin-dim"><div class="twin-dim-dot" style="background:#10b981"></div>Physical</div>
+        <div class="twin-dim"><div class="twin-dim-dot" style="background:#f59e0b"></div>Wealth</div>
+        <div class="twin-dim"><div class="twin-dim-dot" style="background:#ec4899"></div>Social</div>
+        <div class="twin-dim"><div class="twin-dim-dot" style="background:#7c3aed"></div>Spiritual</div>
+        <div class="twin-dim"><div class="twin-dim-dot" style="background:#3b82f6"></div>Career</div>
+      </div>
+
+      <!-- Gap Analysis Bars -->
+      <div class="gap-bar-wrap" id="twinGapBars"></div>
+
+    </div><!-- /twin-section -->
+
+    <!-- Future Me AI Chat -->
+    <div class="fm-chat-section">
+      <div class="fm-chat-header">
+        <div class="fm-avatar-dot">🔮</div>
+        <div class="fm-chat-meta">
+          <div class="fm-chat-name">Future Me</div>
+          <div class="fm-chat-sub" id="fmChatSub">Speak to the version of you that already succeeded</div>
+        </div>
+        <div style="font-size:10px;color:var(--success);font-weight:700">● Live</div>
+      </div>
+
+      <!-- Mode selector -->
+      <div class="fm-mode-bar">
+        <button class="fm-mode-btn active" onclick="setFMMode('guide',this)">🌅 Guide</button>
+        <button class="fm-mode-btn" onclick="setFMMode('analyze',this)">📊 Analyze</button>
+        <button class="fm-mode-btn" onclick="setFMMode('challenge',this)">⚡ Challenge</button>
+        <button class="fm-mode-btn" onclick="setFMMode('transform',this)">🔄 Transform</button>
+        <button class="fm-mode-btn" onclick="setFMMode('oracle',this)">🧿 Oracle</button>
+        <button class="fm-mode-btn" onclick="setFMMode('mirror',this)">🪞 Mirror</button>
+      </div>
+
+      <!-- Quick starters -->
+      <div class="fm-starters" id="fmStarterChips"></div>
+
+      <!-- Messages -->
+      <div class="fm-messages" id="fmMessages">
+        <div class="fm-msg future" id="fmWelcomeMsg">
+          I remember this exact moment. You opened the app, probably feeling like not enough has happened yet. <br><br>Here's what I want you to know: the version of you typing this message right now is the most important version. Not because of what you've done — because of what you're about to decide. <br><br>Ask me anything. I've already lived through what you're facing.
+        </div>
+      </div>
+
+      <!-- Input -->
+      <div class="fm-input-row">
+        <textarea class="fm-input" id="fmInput" placeholder="Ask your future self..." rows="1"></textarea>
+        <button class="fm-send" onclick="sendFMMessage()">↑</button>
+      </div>
+    </div>
+
+    <!-- Transformation Map Card -->
+    <div class="transform-card">
+      <div class="transform-title">🗺️ Transformation Map</div>
+      <div id="fmTransformMap">
+        <div style="font-size:12px;color:var(--text3);text-align:center;padding:10px">
+          Complete the Akinator session to unlock your personal transformation roadmap.
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div><!-- /tab-futureme -->
+
 </div>
 
 <!-- ════ FOOTER ════ -->
@@ -6037,6 +6323,7 @@ function switchTab(tabId) {
   if(id==='guide'){buildGuideNavMap();}
   if(id==='vault'){buildVaultFingerprint();buildVaultPatterns();updatePreservationStats();applyProGates(true);}
   if(id==='analysis'){generateWeeklyReport();}
+  if(id==='futureme' && typeof initFutureMeTab==='function'){setTimeout(initFutureMeTab,120);}
 
   // Lazy init — only run heavy init functions once per tab
   if (!_tabRendered[id]) {
@@ -6054,6 +6341,7 @@ function switchTab(tabId) {
     if (id === 'waves'    && typeof initWavesTab    === 'function') initWavesTab();
     if (id === 'wealth'   && typeof initWealthTab   === 'function') { initWealthTab(); refreshTickerData(); }
     else if (id === 'wealth') { initWealthOS(); refreshTickerData(); }
+    if (id === 'futureme' && typeof initFutureMeTab === 'function') initFutureMeTab();
   }
 }
 
@@ -18928,294 +19216,6 @@ Titan Protocol: no fluff, specific, actionable. Max 500 words.`;
 }
 </style>
 
-<!-- ══════════════════════════════════════════════════
-     FUTURE ME TAB PANEL
-══════════════════════════════════════════════════ -->
-<div class="tab-panel" id="tab-futureme">
-  <div style="padding:0 2px">
-
-    <!-- Smart Log Banner (shown when pre-fill is ready) -->
-    <div class="smart-log-banner" id="fmSmartLogBanner" style="display:none">
-      <div class="smart-log-icon">⚡</div>
-      <div class="smart-log-text">
-        <div class="smart-log-title">Smart Log Ready</div>
-        <div class="smart-log-sub" id="fmSmartLogSub">Pre-filled from your patterns</div>
-      </div>
-      <button class="smart-log-confirm" onclick="confirmSmartLog()">Confirm & Save →</button>
-    </div>
-
-    <!-- Akinator Question Card -->
-    <div class="akinator-card" id="fmAkinatorCard">
-      <div class="akinator-label">🎯 Daily Discovery Question</div>
-      <div class="akinator-q" id="fmAkinatorQ">Loading your question...</div>
-      <div class="akinator-hint" id="fmAkinatorHint"></div>
-      <textarea class="akinator-input" id="fmAkinatorInput" placeholder="Answer honestly — only the system sees this..." rows="3"></textarea>
-      <div class="akinator-actions">
-        <button class="akinator-skip" onclick="skipAkinatorQ()">Skip today</button>
-        <button class="akinator-submit" onclick="submitAkinatorQ()">Save answer →</button>
-      </div>
-    </div>
-
-    <!-- 3D Twin Section -->
-    <div class="twin-section">
-      <div class="twin-header">
-        <div class="twin-title">🧬 Your Digital Twin</div>
-        <div class="horizon-btns">
-          <button class="horizon-btn active" onclick="setHorizon('1yr', this)">1 yr</button>
-          <button class="horizon-btn" onclick="setHorizon('5yr', this)">5 yr</button>
-          <button class="horizon-btn" onclick="setHorizon('10yr', this)">10 yr</button>
-        </div>
-      </div>
-
-      <!-- The 3D scene — drag to rotate -->
-      <div class="twin-scene" id="twinScene">
-
-        <!-- Current Self -->
-        <div class="twin-figure-wrap">
-          <div class="twin-label-small current">NOW</div>
-          <div class="twin-body-wrap" id="twinCurrentWrap">
-            <svg class="twin-svg" width="90" height="200" viewBox="0 0 90 200" id="twinCurrentSVG">
-              <!-- Head -->
-              <circle cx="45" cy="22" r="18" fill="var(--bg3)" stroke="var(--border)" stroke-width="1.5"/>
-              <circle cx="45" cy="22" r="18" fill="url(#headGradCurrent)" opacity="0.7"/>
-              <!-- Cognitive ring -->
-              <circle cx="45" cy="22" r="18" fill="none" stroke="#06b6d4" stroke-width="2.5" stroke-dasharray="113" stroke-dashoffset="0" id="cogRingCurrent" opacity="0.6" transform="rotate(-90 45 22)"/>
-              <!-- Face dots -->
-              <circle cx="39" cy="20" r="2" fill="var(--text3)" opacity=".5"/>
-              <circle cx="51" cy="20" r="2" fill="var(--text3)" opacity=".5"/>
-              <path d="M40 27 Q45 31 50 27" stroke="var(--text3)" stroke-width="1.5" fill="none" opacity=".4"/>
-
-              <!-- Neck -->
-              <rect x="41" y="38" width="8" height="8" rx="2" fill="var(--bg3)" stroke="var(--border)" stroke-width="1"/>
-
-              <!-- Torso -->
-              <path d="M20 46 L25 90 L65 90 L70 46 Q60 42 45 42 Q30 42 20 46Z" fill="var(--bg3)" stroke="var(--border)" stroke-width="1.5"/>
-              <path d="M20 46 L25 90 L65 90 L70 46 Q60 42 45 42 Q30 42 20 46Z" fill="url(#torsoGradCurrent)" opacity="0.6"/>
-              <!-- Heart glow (social) -->
-              <circle cx="45" cy="62" r="8" fill="#ec4899" id="heartGlowCurrent" opacity="0.2"/>
-
-              <!-- Left arm -->
-              <path d="M22 48 L10 85 Q8 90 12 91 L15 91 Q18 90 20 85 L28 52Z" fill="var(--bg3)" stroke="var(--border)" stroke-width="1.2"/>
-              <path d="M22 48 L10 85 Q8 90 12 91 L15 91 Q18 90 20 85 L28 52Z" fill="url(#armGradCurrent)" opacity="0.5"/>
-
-              <!-- Right arm -->
-              <path d="M68 48 L80 85 Q82 90 78 91 L75 91 Q72 90 70 85 L62 52Z" fill="var(--bg3)" stroke="var(--border)" stroke-width="1.2"/>
-              <path d="M68 48 L80 85 Q82 90 78 91 L75 91 Q72 90 70 85 L62 52Z" fill="url(#armGradCurrent)" opacity="0.5"/>
-
-              <!-- Pelvis/Hips -->
-              <rect x="22" y="88" width="46" height="14" rx="6" fill="var(--bg3)" stroke="var(--border)" stroke-width="1.2"/>
-              <rect x="22" y="88" width="46" height="14" rx="6" fill="url(#torsoGradCurrent)" opacity="0.4"/>
-
-              <!-- Left leg -->
-              <path d="M26 100 L22 170 Q21 176 26 177 L32 177 Q37 176 36 170 L38 100Z" fill="var(--bg3)" stroke="var(--border)" stroke-width="1.2"/>
-              <path d="M26 100 L22 170 Q21 176 26 177 L32 177 Q37 176 36 170 L38 100Z" fill="url(#legGradCurrent)" opacity="0.5"/>
-
-              <!-- Right leg -->
-              <path d="M64 100 L68 170 Q69 176 64 177 L58 177 Q53 176 54 170 L52 100Z" fill="var(--bg3)" stroke="var(--border)" stroke-width="1.2"/>
-              <path d="M64 100 L68 170 Q69 176 64 177 L58 177 Q53 176 54 170 L52 100Z" fill="url(#legGradCurrent)" opacity="0.5"/>
-
-              <!-- Feet -->
-              <ellipse cx="29" cy="182" rx="10" ry="5" fill="var(--bg3)" stroke="var(--border)" stroke-width="1"/>
-              <ellipse cx="61" cy="182" rx="10" ry="5" fill="var(--bg3)" stroke="var(--border)" stroke-width="1"/>
-
-              <!-- Gradient defs for current self -->
-              <defs>
-                <radialGradient id="headGradCurrent" cx="50%" cy="50%" r="50%">
-                  <stop offset="0%" stop-color="#06b6d4" stop-opacity="0.3"/>
-                  <stop offset="100%" stop-color="#06b6d4" stop-opacity="0"/>
-                </radialGradient>
-                <linearGradient id="torsoGradCurrent" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stop-color="#ec4899" stop-opacity="0.4"/>
-                  <stop offset="50%" stop-color="#7c3aed" stop-opacity="0.3"/>
-                  <stop offset="100%" stop-color="#10b981" stop-opacity="0.3"/>
-                </linearGradient>
-                <linearGradient id="armGradCurrent" x1="0%" y1="0%" x2="0%" y2="100%">
-                  <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.5"/>
-                  <stop offset="100%" stop-color="#f59e0b" stop-opacity="0.1"/>
-                </linearGradient>
-                <linearGradient id="legGradCurrent" x1="0%" y1="0%" x2="0%" y2="100%">
-                  <stop offset="0%" stop-color="#10b981" stop-opacity="0.5"/>
-                  <stop offset="100%" stop-color="#10b981" stop-opacity="0.1"/>
-                </linearGradient>
-              </defs>
-            </svg>
-          </div>
-          <!-- Score ring below current -->
-          <div class="twin-score-ring" id="currentScoreRing" style="--pct:0%">
-            <span class="twin-score-num" id="currentScoreNum">–</span>
-          </div>
-        </div>
-
-        <!-- VS divider -->
-        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding-bottom:60px">
-          <div style="font-size:9px;font-weight:800;color:var(--text3);letter-spacing:2px">GAP</div>
-          <div style="width:1px;height:60px;background:linear-gradient(to bottom,transparent,var(--border),transparent)"></div>
-          <div style="font-size:9px;color:var(--text3)" id="fmHorizonLabel">1 Year</div>
-        </div>
-
-        <!-- Future Self -->
-        <div class="twin-figure-wrap">
-          <div class="twin-label-small future" id="futureTwinLabel">YOU · 1YR</div>
-          <div class="twin-body-wrap" id="twinFutureWrap">
-            <svg class="twin-svg" width="100" height="220" viewBox="0 0 90 200" id="twinFutureSVG">
-              <!-- Head — glowing -->
-              <circle cx="45" cy="22" r="20" fill="var(--bg3)" stroke="rgba(6,182,212,.5)" stroke-width="2"/>
-              <circle cx="45" cy="22" r="20" fill="url(#headGradFuture)"/>
-              <!-- Cognitive ring — full -->
-              <circle cx="45" cy="22" r="20" fill="none" stroke="#06b6d4" stroke-width="3" stroke-dasharray="126" stroke-dashoffset="0" id="cogRingFuture" opacity="0.9" transform="rotate(-90 45 22)"/>
-              <!-- Aura glow around head -->
-              <circle cx="45" cy="22" r="26" fill="none" stroke="#06b6d4" stroke-width="1" opacity="0.2"/>
-              <circle cx="45" cy="22" r="32" fill="none" stroke="#7c3aed" stroke-width="0.5" opacity="0.1"/>
-              <!-- Face -->
-              <circle cx="39" cy="20" r="2.5" fill="var(--accent)"/>
-              <circle cx="51" cy="20" r="2.5" fill="var(--accent)"/>
-              <path d="M38 28 Q45 33 52 28" stroke="var(--accent)" stroke-width="2" fill="none"/>
-
-              <!-- Neck -->
-              <rect x="40" y="40" width="10" height="10" rx="3" fill="var(--bg3)" stroke="rgba(6,182,212,.4)" stroke-width="1.5"/>
-
-              <!-- Torso — fully glowing -->
-              <path d="M18 48 L22 92 L68 92 L72 48 Q60 43 45 43 Q30 43 18 48Z" fill="var(--bg3)" stroke="rgba(124,58,237,.4)" stroke-width="1.5"/>
-              <path d="M18 48 L22 92 L68 92 L72 48 Q60 43 45 43 Q30 43 18 48Z" fill="url(#torsoGradFuture)"/>
-              <!-- Heart glow strong -->
-              <circle cx="45" cy="63" r="10" fill="#ec4899" id="heartGlowFuture" opacity="0.35"/>
-              <circle cx="45" cy="63" r="6" fill="#ec4899" opacity="0.2"/>
-              <!-- Career shoulders glow -->
-              <ellipse cx="24" cy="52" rx="8" ry="5" fill="#3b82f6" opacity="0.25"/>
-              <ellipse cx="66" cy="52" rx="8" ry="5" fill="#3b82f6" opacity="0.25"/>
-
-              <!-- Left arm -->
-              <path d="M20 50 L7 88 Q5 93 9 94 L13 94 Q16 93 18 88 L26 54Z" fill="var(--bg3)" stroke="rgba(245,158,11,.4)" stroke-width="1.2"/>
-              <path d="M20 50 L7 88 Q5 93 9 94 L13 94 Q16 93 18 88 L26 54Z" fill="url(#armGradFuture)"/>
-              <!-- Gold hand glow -->
-              <ellipse cx="10" cy="92" rx="6" ry="4" fill="#f59e0b" opacity="0.4"/>
-
-              <!-- Right arm -->
-              <path d="M70 50 L83 88 Q85 93 81 94 L77 94 Q74 93 72 88 L64 54Z" fill="var(--bg3)" stroke="rgba(245,158,11,.4)" stroke-width="1.2"/>
-              <path d="M70 50 L83 88 Q85 93 81 94 L77 94 Q74 93 72 88 L64 54Z" fill="url(#armGradFuture)"/>
-              <!-- Gold hand glow -->
-              <ellipse cx="80" cy="92" rx="6" ry="4" fill="#f59e0b" opacity="0.4"/>
-
-              <!-- Pelvis/Hips -->
-              <rect x="20" y="90" width="50" height="16" rx="7" fill="var(--bg3)" stroke="rgba(124,58,237,.3)" stroke-width="1.2"/>
-              <rect x="20" y="90" width="50" height="16" rx="7" fill="url(#torsoGradFuture)" opacity="0.5"/>
-
-              <!-- Left leg -->
-              <path d="M24 104 L19 176 Q18 183 24 184 L31 184 Q37 183 36 176 L38 104Z" fill="var(--bg3)" stroke="rgba(16,185,129,.4)" stroke-width="1.2"/>
-              <path d="M24 104 L19 176 Q18 183 24 184 L31 184 Q37 183 36 176 L38 104Z" fill="url(#legGradFuture)"/>
-
-              <!-- Right leg -->
-              <path d="M66 104 L71 176 Q72 183 66 184 L59 184 Q53 183 54 176 L52 104Z" fill="var(--bg3)" stroke="rgba(16,185,129,.4)" stroke-width="1.2"/>
-              <path d="M66 104 L71 176 Q72 183 66 184 L59 184 Q53 183 54 176 L52 104Z" fill="url(#legGradFuture)"/>
-
-              <!-- Feet with glow -->
-              <ellipse cx="27" cy="188" rx="12" ry="6" fill="#10b981" opacity="0.3"/>
-              <ellipse cx="63" cy="188" rx="12" ry="6" fill="#10b981" opacity="0.3"/>
-
-              <!-- Full body aura -->
-              <ellipse cx="45" cy="120" rx="48" ry="110" fill="url(#bodyAuraFuture)" opacity="0.12"/>
-
-              <defs>
-                <radialGradient id="headGradFuture" cx="50%" cy="50%" r="50%">
-                  <stop offset="0%" stop-color="#06b6d4" stop-opacity="0.7"/>
-                  <stop offset="100%" stop-color="#7c3aed" stop-opacity="0.2"/>
-                </radialGradient>
-                <linearGradient id="torsoGradFuture" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stop-color="#ec4899" stop-opacity="0.6"/>
-                  <stop offset="40%" stop-color="#7c3aed" stop-opacity="0.5"/>
-                  <stop offset="100%" stop-color="#10b981" stop-opacity="0.5"/>
-                </linearGradient>
-                <linearGradient id="armGradFuture" x1="0%" y1="0%" x2="0%" y2="100%">
-                  <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.7"/>
-                  <stop offset="100%" stop-color="#f59e0b" stop-opacity="0.2"/>
-                </linearGradient>
-                <linearGradient id="legGradFuture" x1="0%" y1="0%" x2="0%" y2="100%">
-                  <stop offset="0%" stop-color="#10b981" stop-opacity="0.7"/>
-                  <stop offset="100%" stop-color="#10b981" stop-opacity="0.2"/>
-                </linearGradient>
-                <radialGradient id="bodyAuraFuture" cx="50%" cy="50%" r="50%">
-                  <stop offset="0%" stop-color="#7c3aed"/>
-                  <stop offset="100%" stop-color="#7c3aed" stop-opacity="0"/>
-                </radialGradient>
-              </defs>
-            </svg>
-          </div>
-          <!-- Score ring below future -->
-          <div class="twin-score-ring" id="futureScoreRing" style="--pct:0%;background:conic-gradient(var(--accent) var(--pct,0%),var(--bg3) var(--pct,0%))">
-            <span class="twin-score-num" id="futureScoreNum">∞</span>
-          </div>
-        </div>
-
-      </div><!-- /twin-scene -->
-
-      <div style="font-size:10px;color:var(--text3);text-align:center;margin:-4px 0 10px">← drag to rotate →</div>
-
-      <!-- Dimension Legend -->
-      <div class="twin-legend">
-        <div class="twin-dim"><div class="twin-dim-dot" style="background:#06b6d4"></div>Cognitive</div>
-        <div class="twin-dim"><div class="twin-dim-dot" style="background:#10b981"></div>Physical</div>
-        <div class="twin-dim"><div class="twin-dim-dot" style="background:#f59e0b"></div>Wealth</div>
-        <div class="twin-dim"><div class="twin-dim-dot" style="background:#ec4899"></div>Social</div>
-        <div class="twin-dim"><div class="twin-dim-dot" style="background:#7c3aed"></div>Spiritual</div>
-        <div class="twin-dim"><div class="twin-dim-dot" style="background:#3b82f6"></div>Career</div>
-      </div>
-
-      <!-- Gap Analysis Bars -->
-      <div class="gap-bar-wrap" id="twinGapBars"></div>
-
-    </div><!-- /twin-section -->
-
-    <!-- Future Me AI Chat -->
-    <div class="fm-chat-section">
-      <div class="fm-chat-header">
-        <div class="fm-avatar-dot">🔮</div>
-        <div class="fm-chat-meta">
-          <div class="fm-chat-name">Future Me</div>
-          <div class="fm-chat-sub" id="fmChatSub">Speak to the version of you that already succeeded</div>
-        </div>
-        <div style="font-size:10px;color:var(--success);font-weight:700">● Live</div>
-      </div>
-
-      <!-- Mode selector -->
-      <div class="fm-mode-bar">
-        <button class="fm-mode-btn active" onclick="setFMMode('guide',this)">🌅 Guide</button>
-        <button class="fm-mode-btn" onclick="setFMMode('analyze',this)">📊 Analyze</button>
-        <button class="fm-mode-btn" onclick="setFMMode('challenge',this)">⚡ Challenge</button>
-        <button class="fm-mode-btn" onclick="setFMMode('transform',this)">🔄 Transform</button>
-        <button class="fm-mode-btn" onclick="setFMMode('oracle',this)">🧿 Oracle</button>
-        <button class="fm-mode-btn" onclick="setFMMode('mirror',this)">🪞 Mirror</button>
-      </div>
-
-      <!-- Quick starters -->
-      <div class="fm-starters" id="fmStarterChips"></div>
-
-      <!-- Messages -->
-      <div class="fm-messages" id="fmMessages">
-        <div class="fm-msg future" id="fmWelcomeMsg">
-          I remember this exact moment. You opened the app, probably feeling like not enough has happened yet. <br><br>Here's what I want you to know: the version of you typing this message right now is the most important version. Not because of what you've done — because of what you're about to decide. <br><br>Ask me anything. I've already lived through what you're facing.
-        </div>
-      </div>
-
-      <!-- Input -->
-      <div class="fm-input-row">
-        <textarea class="fm-input" id="fmInput" placeholder="Ask your future self..." rows="1"></textarea>
-        <button class="fm-send" onclick="sendFMMessage()">↑</button>
-      </div>
-    </div>
-
-    <!-- Transformation Map Card -->
-    <div class="transform-card">
-      <div class="transform-title">🗺️ Transformation Map</div>
-      <div id="fmTransformMap">
-        <div style="font-size:12px;color:var(--text3);text-align:center;padding:10px">
-          Complete the Akinator session to unlock your personal transformation roadmap.
-        </div>
-      </div>
-    </div>
-
-  </div>
-</div><!-- /tab-futureme -->
-
 
 <!-- ══════════════════════════════════════════════════
      FUTURE ME TAB — JAVASCRIPT ENGINE
@@ -19921,14 +19921,17 @@ function initFutureMeTab() {
   showSmartLogBanner();
 }
 
-// Hook into switchTab to init on open
+// Hook into switchTab (belt+suspenders — switchTab already calls initFutureMeTab directly)
 (function hookFutureMe() {
+  if (typeof window.switchTab !== 'function') {
+    // switchTab not yet defined at parse time; rely on direct call in switchTab body
+    return;
+  }
   const _orig = window.switchTab;
-  if (typeof _orig !== 'function') return;
   window.switchTab = function(tabId) {
     const result = _orig.apply(this, arguments);
-    if (tabId === 'futureme') {
-      setTimeout(initFutureMeTab, 100);
+    if (tabId === 'futureme' && typeof initFutureMeTab === 'function') {
+      setTimeout(initFutureMeTab, 150);
     }
     return result;
   };
