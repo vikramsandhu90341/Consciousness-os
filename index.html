@@ -11,10 +11,8 @@
     for (const r of regs) {
       const sw = r.active || r.waiting || r.installing;
       if (sw && !sw.scriptURL.includes('v=10')) {
-        // Send skip-waiting before unregistering so new SW activates immediately
         try { sw.postMessage({type:'SKIP_WAITING'}); } catch(e){}
         await r.unregister();
-        console.log('[COS] Killed stale SW:', sw.scriptURL);
         nuked = true;
       }
     }
@@ -22,14 +20,9 @@
   if ('caches' in window) {
     const keys = await caches.keys();
     for (const k of keys) {
-      if (k !== CURRENT_CACHE) {
-        await caches.delete(k);
-        console.log('[COS] Purged cache:', k);
-        nuked = true;
-      }
+      if (k !== CURRENT_CACHE) { await caches.delete(k); nuked = true; }
     }
   }
-  // If we just nuked a stale SW, hard reload once so the new index.html is served fresh
   if (nuked && !sessionStorage.getItem('cos_sw_reloaded')) {
     sessionStorage.setItem('cos_sw_reloaded', '1');
     window.location.reload(true);
@@ -38,7 +31,7 @@
 </script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Consciousness OS</title>
+<title>COS</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#7c3aed">
   <meta name="mobile-web-app-capable" content="yes">
@@ -129,6 +122,27 @@ function cosFetch(url, opts, ms) {
   const t = setTimeout(() => ac.abort(), ms || 7000);
   return fetch(url, { ...(opts||{}), signal: ac.signal }).finally(() => clearTimeout(t));
 }
+// ── SECURITY: shared HTML-escaping helper ──────────────────────────────
+// Used before inserting ANY external/AI-generated text via innerHTML, so a
+// malicious RSS title, Telegram post, or AI response containing raw HTML/script
+// tags cannot execute in the page. Always escape untrusted text with this
+// before building innerHTML strings from it.
+function escHtml(s){
+  if (s === null || s === undefined) return '';
+  return String(s)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#39;');
+}
+// Safe href — blocks javascript:/data: URIs that could execute on click,
+// which malicious RSS/feed content could otherwise smuggle in as a link.
+function safeHref(url){
+  const u = String(url||'').trim();
+  if (/^(javascript|data|vbscript):/i.test(u)) return '#';
+  return u || '#';
+}
 // Route CORS-blocked URLs through Cloudflare Worker proxy
 // Worker must handle: POST {action:'proxy', url:'...'} → returns {ok, status, body, json}
 async function workerProxy(url, ms) {
@@ -187,7 +201,7 @@ function buildCOSContext(){
 }
 
 async function callGroqFast(prompt,system,maxTokens){
-  system=system||'You are an expert strategic AI inside Consciousness OS. Titan Protocol: first-principles, counterarguments first, no fluff, action > theory. Be precise, specific, direct.';
+  system=system||'You are an expert strategic AI inside COS. Titan Protocol: first-principles, counterarguments first, no fluff, action > theory. Be precise, specific, direct.';
   system=system+buildCOSContext(); // inject COS typed memory every call
   maxTokens=maxTokens||800;
   const _ctrl0=new AbortController();const _t0=setTimeout(()=>_ctrl0.abort(),15000);
@@ -214,9 +228,13 @@ async function callGroqJSON(prompt,system,maxTokens){
 // Converts Groq plain-text + markdown into rich HTML with emojis, bullets, badges
 function formatAIMarkdown(text){
   if(!text) return '';
-  let html = text
+  // SECURITY: escape raw HTML first so any <script>/onerror=/etc. in the
+  // underlying text (whether from the AI model or content it summarized)
+  // is rendered as literal text, not executed. Markdown transforms below
+  // work fine against the escaped entities.
+  let html = escHtml(text)
     // Code blocks
-    .replace(/```(\w*)\n?([\s\S]*?)```/g, (_,lang,code)=>`<pre style="background:#1a1040;color:#e2d9f3;border-radius:8px;padding:12px;font-size:12px;overflow-x:auto;margin:8px 0;line-height:1.5"><code>${code.trim().replace(/</g,'&lt;').replace(/>/g,'&gt;')}</code></pre>`)
+    .replace(/```(\w*)\n?([\s\S]*?)```/g, (_,lang,code)=>`<pre style="background:#1a1040;color:#e2d9f3;border-radius:8px;padding:12px;font-size:12px;overflow-x:auto;margin:8px 0;line-height:1.5"><code>${code.trim()}</code></pre>`)
     // H3 ###
     .replace(/^### (.+)$/gm, '<div style="font-size:13px;font-weight:800;color:var(--primary);margin:12px 0 4px;font-family:Syne,sans-serif">$1</div>')
     // H2 ##
@@ -1534,7 +1552,7 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
   <div class="login-card" style="max-height:92vh;overflow-y:auto">
     <div style="text-align:center;margin-bottom:18px">
       <div style="font-size:44px;margin-bottom:6px">🧠</div>
-      <div style="font-family:Syne,sans-serif;font-weight:800;font-size:22px;background:linear-gradient(135deg,#7c3aed,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">Consciousness OS</div>
+      <div style="font-family:Syne,sans-serif;font-weight:800;font-size:22px;background:linear-gradient(135deg,#7c3aed,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">COS</div>
       <div style="font-size:11px;color:#888;margin-top:3px">Your mind. Your data. Your evolution.</div>
     </div>
 
@@ -1542,7 +1560,7 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
     <div id="sessionRestoreUI" style="display:none;text-align:center;padding:24px 0">
       <div style="width:36px;height:36px;border:3px solid rgba(124,58,237,.2);border-top-color:#7c3aed;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 14px"></div>
       <div style="font-size:14px;font-weight:700;color:#7c3aed;margin-bottom:6px">Restoring your session…</div>
-      <div style="font-size:12px;color:#aaa;margin-bottom:18px">Connecting to Consciousness OS</div>
+      <div style="font-size:12px;color:#aaa;margin-bottom:18px">Connecting to COS</div>
       <button onclick="document.getElementById('sessionRestoreUI').style.display='none';document.getElementById('loginFormUI').style.display=''" style="background:none;border:none;color:#aaa;font-size:12px;cursor:pointer;text-decoration:underline">Sign in manually instead</button>
     </div>
 
@@ -1785,7 +1803,7 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
   <div class="shock-card">
     <span class="shock-icon" id="shockIcon">🧠</span>
     <div class="shock-title" id="shockTitle">Pattern Detected</div>
-    <div class="shock-sub">CONSCIOUSNESS OS · BEHAVIORAL ENGINE</div>
+    <div class="shock-sub">COS · BEHAVIORAL ENGINE</div>
     <div class="shock-body" id="shockBody">Loading insight...</div>
     <div class="shock-action" id="shockAction"></div>
     <div style="display:flex;gap:8px;margin-top:14px">
@@ -1801,7 +1819,7 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
 <div id="proModal">
   <div class="pro-modal-card">
     <div class="pro-modal-glow">🎁</div>
-    <div class="pro-modal-title">Consciousness OS Pro</div>
+    <div class="pro-modal-title">COS Pro</div>
     <div class="pro-modal-sub" id="proModalSub">Everything is free right now. Start your 30-day trial — no payment needed.</div>
 
     <div class="pro-feature-list">
@@ -1964,7 +1982,7 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
   <!-- Row 1: Brand + desktop quick actions -->
   <div class="topbar-row1">
     <div style="display:flex;flex-direction:column;flex:1 1 0;min-width:0;justify-content:center;overflow:hidden">
-      <div class="topbar-brand" style="line-height:1;font-size:11px;letter-spacing:0px;white-space:nowrap;overflow:hidden;text-overflow:clip">🧠 Consciousness OS</div>
+      <div class="topbar-brand" style="line-height:1;font-size:11px;letter-spacing:0px;white-space:nowrap;overflow:hidden;text-overflow:clip">🧠 COS</div>
       <div id="proUpgradeBar" onclick="proBarTap()" style="display:block;margin-top:2px;border-radius:5px;padding:2px 6px;font-size:8px;font-weight:900;color:#fff;letter-spacing:.1px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:linear-gradient(135deg,#7c3aed,#06b6d4);max-width:100%">
         🎁 Free Trial
       </div>
@@ -2147,10 +2165,468 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
   </div>
   <!-- Status bar -->
   <div style="background:#0a0a0f;padding:6px 12px;font-size:9px;color:#555;border-top:1px solid #222;flex-shrink:0;display:flex;justify-content:space-between">
-    <span id="dpStatusLeft">Consciousness OS Dev Panel</span>
+    <span id="dpStatusLeft">COS Dev Panel</span>
     <span id="dpStatusRight">landscape mode</span>
   </div>
 </div>
+
+<style>
+/* ── FUTURE ME TAB ── */
+#tab-futureme { animation: fmFadeIn .4s ease; }
+@keyframes fmFadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+/* Akinator Question Card */
+.akinator-card {
+  background: linear-gradient(135deg, rgba(124,58,237,.15), rgba(6,182,212,.1));
+  border: 1.5px solid rgba(124,58,237,.3);
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 16px;
+  position: relative;
+  overflow: hidden;
+}
+.akinator-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #7c3aed, #06b6d4, #ec4899);
+  border-radius: 16px 16px 0 0;
+}
+.akinator-label {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  color: var(--accent);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.akinator-q {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.5;
+  margin-bottom: 4px;
+  font-family: 'Syne', sans-serif;
+}
+.akinator-hint {
+  font-size: 11px;
+  color: var(--text3);
+  margin-bottom: 12px;
+  font-style: italic;
+}
+.akinator-input {
+  width: 100%;
+  background: var(--bg2);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  resize: none;
+  outline: none;
+  min-height: 70px;
+  transition: border-color .2s;
+}
+.akinator-input:focus { border-color: var(--primary); }
+.akinator-actions { display: flex; gap: 8px; margin-top: 10px; }
+.akinator-skip { background: transparent; border: 1px solid var(--border); color: var(--text3); border-radius: 8px; padding: 8px 14px; font-size: 12px; cursor: pointer; }
+.akinator-submit { background: linear-gradient(135deg, #7c3aed, #06b6d4); color: #fff; border: none; border-radius: 8px; padding: 8px 18px; font-size: 12px; font-weight: 700; cursor: pointer; flex: 1; }
+
+/* 3D Twin Section */
+.twin-section {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 14px;
+  margin-bottom: 14px;
+}
+.twin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.twin-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--text);
+}
+.horizon-btns {
+  display: flex;
+  gap: 4px;
+}
+.horizon-btn {
+  padding: 4px 9px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--bg3);
+  color: var(--text3);
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all .2s;
+}
+.horizon-btn.active {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+
+/* Twin Scene — 3D Container */
+.twin-scene {
+  perspective: 800px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 30px;
+  padding: 10px 0 16px;
+  min-height: 240px;
+  cursor: grab;
+  user-select: none;
+  touch-action: pan-y;
+}
+.twin-scene:active { cursor: grabbing; }
+
+.twin-figure-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.twin-label-small {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.twin-label-small.current { color: var(--text3); }
+.twin-label-small.future  { color: var(--accent); }
+
+/* The 3D rotating wrapper */
+.twin-body-wrap {
+  transform-style: preserve-3d;
+  transition: transform .05s linear;
+}
+
+/* SVG Avatar dimensions */
+.twin-svg { overflow: visible; }
+
+/* Dimension Legend */
+.twin-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+  justify-content: center;
+}
+.twin-dim {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  color: var(--text3);
+}
+.twin-dim-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Score Ring under avatar */
+.twin-score-ring {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: conic-gradient(var(--primary) var(--pct, 0%), var(--bg3) var(--pct, 0%));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 800;
+  font-family: 'Syne', sans-serif;
+  color: var(--text);
+  position: relative;
+  margin-top: -20px;
+}
+.twin-score-ring::before {
+  content: '';
+  position: absolute;
+  inset: 5px;
+  border-radius: 50%;
+  background: var(--bg2);
+}
+.twin-score-num {
+  position: relative;
+  z-index: 1;
+  font-size: 13px;
+}
+
+/* Gap Analysis Bar */
+.gap-bar-wrap { margin-top: 12px; }
+.gap-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 7px;
+}
+.gap-dim-name {
+  font-size: 10px;
+  color: var(--text3);
+  width: 60px;
+  flex-shrink: 0;
+}
+.gap-track {
+  flex: 1;
+  height: 6px;
+  background: var(--bg3);
+  border-radius: 3px;
+  overflow: hidden;
+  position: relative;
+}
+.gap-current-bar {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  border-radius: 3px;
+  transition: width .6s ease;
+}
+.gap-future-outline {
+  position: absolute;
+  right: 0; top: -1px; bottom: -1px;
+  width: 2px;
+  border-radius: 1px;
+  opacity: .5;
+}
+.gap-pct {
+  font-size: 10px;
+  font-weight: 700;
+  width: 30px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* Future Me Chat */
+.fm-chat-section {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+  margin-bottom: 14px;
+}
+.fm-chat-header {
+  padding: 12px 14px;
+  background: linear-gradient(135deg, rgba(124,58,237,.12), rgba(6,182,212,.08));
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.fm-avatar-dot {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #7c3aed, #06b6d4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+  box-shadow: 0 0 12px rgba(124,58,237,.4);
+}
+.fm-chat-meta { flex: 1; }
+.fm-chat-name { font-size: 13px; font-weight: 800; color: var(--text); }
+.fm-chat-sub  { font-size: 10px; color: var(--accent); font-weight: 600; }
+
+.fm-mode-bar {
+  display: flex;
+  gap: 4px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.fm-mode-bar::-webkit-scrollbar { display: none; }
+.fm-mode-btn {
+  flex-shrink: 0;
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--bg3);
+  color: var(--text3);
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all .2s;
+  white-space: nowrap;
+}
+.fm-mode-btn.active {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+
+.fm-messages {
+  height: 280px;
+  overflow-y: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--bg3);
+}
+.fm-msg {
+  max-width: 88%;
+  padding: 10px 13px;
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.6;
+  animation: fmMsgIn .2s ease;
+}
+@keyframes fmMsgIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.fm-msg.user {
+  align-self: flex-end;
+  background: linear-gradient(135deg, var(--primary), #06b6d4);
+  color: #fff;
+  border-bottom-right-radius: 3px;
+}
+.fm-msg.future {
+  align-self: flex-start;
+  background: var(--bg2);
+  border: 1px solid rgba(124,58,237,.25);
+  color: var(--text);
+  border-bottom-left-radius: 3px;
+  position: relative;
+}
+.fm-msg.future::before {
+  content: '🔭';
+  font-size: 10px;
+  display: block;
+  margin-bottom: 4px;
+  opacity: .6;
+}
+.fm-loading-dots {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  padding: 8px 0;
+}
+.fm-loading-dots span {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--primary);
+  animation: fmDot 1s ease-in-out infinite;
+}
+.fm-loading-dots span:nth-child(2) { animation-delay: .2s; }
+.fm-loading-dots span:nth-child(3) { animation-delay: .4s; }
+@keyframes fmDot { 0%,80%,100%{opacity:.3;transform:scale(.8)} 40%{opacity:1;transform:scale(1)} }
+
+.fm-input-row {
+  display: flex;
+  gap: 8px;
+  padding: 10px;
+  border-top: 1px solid var(--border);
+}
+.fm-input {
+  flex: 1;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 9px 12px;
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  outline: none;
+  resize: none;
+  height: 40px;
+  transition: border .2s;
+}
+.fm-input:focus { border-color: var(--primary); }
+.fm-send {
+  width: 40px; height: 40px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #7c3aed, #06b6d4);
+  border: none;
+  color: #fff;
+  font-size: 16px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: opacity .2s;
+}
+.fm-send:active { opacity: .8; }
+
+/* Quick Starter Prompts */
+.fm-starters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px 10px 0;
+}
+.fm-starter {
+  padding: 5px 10px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--bg3);
+  color: var(--text2);
+  font-size: 11px;
+  cursor: pointer;
+  transition: all .2s;
+  white-space: nowrap;
+}
+.fm-starter:hover { border-color: var(--primary); color: var(--primary); }
+
+/* Smart Log Banner */
+.smart-log-banner {
+  background: linear-gradient(135deg, rgba(16,185,129,.15), rgba(6,182,212,.1));
+  border: 1.5px solid rgba(16,185,129,.3);
+  border-radius: 14px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.smart-log-icon { font-size: 22px; flex-shrink: 0; }
+.smart-log-text { flex: 1; }
+.smart-log-title { font-size: 13px; font-weight: 700; color: var(--text); }
+.smart-log-sub   { font-size: 11px; color: var(--text3); margin-top: 1px; }
+.smart-log-confirm {
+  background: linear-gradient(135deg, #10b981, #06b6d4);
+  color: #fff;
+  border: none;
+  border-radius: 9px;
+  padding: 9px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* Transformation Card */
+.transform-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 14px;
+  margin-bottom: 14px;
+}
+.transform-title {
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  font-size: 13px;
+  color: var(--text);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+</style>
 
 <!-- ══ MAIN CONTENT ══ -->
 <div class="main">
@@ -2175,14 +2651,14 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
 
   <div id="guideSection-what" style="background:linear-gradient(135deg,var(--primary),var(--pink));border-radius:16px;padding:20px;margin-bottom:12px;color:#fff;text-align:center">
     <div style="font-size:48px;margin-bottom:8px">🧠</div>
-    <div style="font-family:Syne,sans-serif;font-size:20px;font-weight:800;margin-bottom:6px">Consciousness OS</div>
+    <div style="font-family:Syne,sans-serif;font-size:20px;font-weight:800;margin-bottom:6px">COS</div>
     <div style="font-size:13px;opacity:0.9;line-height:1.6">Your personal system for engineering consciousness, optimizing mental performance, and expanding the range of human experience.</div>
   </div>
 
   <div class="card">
     <div class="card-title"><span class="emoji">❓</span> What is this app?</div>
     <div id="guideSection-how" style="font-size:13px;color:var(--text2);line-height:1.7">
-      <strong style="color:var(--text)">Consciousness OS</strong> is your cognitive operating system — a scientific and experiential toolkit that lets you track, understand, and intentionally shift your mental states. Think of it as a <em>dashboard for your mind</em>, combining passive sensing, AI coaching, brainwave audio, dream engineering, and frontier science.
+      <strong style="color:var(--text)">COS</strong> is your cognitive operating system — a scientific and experiential toolkit that lets you track, understand, and intentionally shift your mental states. Think of it as a <em>dashboard for your mind</em>, combining passive sensing, AI coaching, brainwave audio, dream engineering, and frontier science.
       <br><br>
       Just as you might track your body with fitness apps, this app tracks and optimizes your <em>inner world</em> — your focus, creativity, stress, flow, sleep quality, and consciousness itself.
     </div>
@@ -2789,7 +3265,7 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
     <div style="font-size:12px;color:var(--text3);margin-bottom:12px">Your consciousness summary for the last 7 days — shareable as a card.</div>
     <div id="weeklyCardPreview">
       <div class="mind-card-wrap" id="weeklyMindCard">
-        <div class="mind-card-title">Consciousness OS · Weekly Mind Report</div>
+        <div class="mind-card-title">COS · Weekly Mind Report</div>
         <div style="display:flex;align-items:flex-end;gap:12px;margin-bottom:4px">
           <div>
             <div class="mind-card-score" id="wmc-score">—</div>
@@ -3905,7 +4381,7 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
     <div class="card-title"><span class="emoji">ℹ️</span> About</div>
     <div style="text-align:center">
       <div style="font-size:32px;margin-bottom:8px">🧠</div>
-      <div style="font-family:Syne,sans-serif;font-weight:800;font-size:18px;margin-bottom:4px">Consciousness OS</div>
+      <div style="font-family:Syne,sans-serif;font-weight:800;font-size:18px;margin-bottom:4px">COS</div>
       <div style="font-size:13px;color:var(--text3);margin-bottom:12px">Version 7.0 · Cloud-synced · Firebase</div>
       <div style="font-size:12px;color:var(--text2);line-height:1.6">Your personal mind enhancement and consciousness tracking system. All data stays on your device.</div>
     </div>
@@ -4147,7 +4623,7 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
 
   <!-- Financial Disclaimer Card (always visible at bottom of World tab) -->
   <div style="margin-top:8px;padding:10px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;font-size:10px;color:var(--text3);line-height:1.6">
-    ⚠️ <strong>Financial Disclaimer:</strong> Consciousness OS is not a registered investment advisor, broker, or financial planner. All market data, analysis, and AI-generated insights displayed in the World & Markets section are provided for <em>educational and informational purposes only</em>. Nothing on this platform constitutes a solicitation or recommendation to buy or sell any security, cryptocurrency, commodity, or financial instrument. Investing and trading involve significant risk of loss, including possible loss of principal. Past performance does not guarantee future results. Always conduct your own due diligence and consult a qualified licensed financial advisor before making any financial decisions.
+    ⚠️ <strong>Financial Disclaimer:</strong> COS is not a registered investment advisor, broker, or financial planner. All market data, analysis, and AI-generated insights displayed in the World & Markets section are provided for <em>educational and informational purposes only</em>. Nothing on this platform constitutes a solicitation or recommendation to buy or sell any security, cryptocurrency, commodity, or financial instrument. Investing and trading involve significant risk of loss, including possible loss of principal. Past performance does not guarantee future results. Always conduct your own due diligence and consult a qualified licensed financial advisor before making any financial decisions.
   </div>
 
 </div>
@@ -4248,6 +4724,9 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
     <button class="science-cat-btn" onclick="switchSciCat('biotech',this)">🔭 Biotech</button>
   </div>
 
+  <!-- Category-filtered discoveries — placed right under the filter buttons so clicks are immediately visible -->
+  <div id="discoveriesDisplay"></div>
+
   <!-- Breaking News Banner -->
   <div id="scienceBreakingNews" style="background:linear-gradient(135deg,rgba(239,68,68,.12),rgba(245,158,11,.08));border:1px solid rgba(239,68,68,.3);border-radius:12px;padding:12px;margin-bottom:12px;display:none">
     <div style="font-size:10px;font-weight:700;color:var(--danger);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">🔴 Breaking — Just Now</div>
@@ -4280,13 +4759,11 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
   <div class="card" style="border:1.5px solid rgba(6,182,212,.3)">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
       <div class="card-title" style="margin-bottom:0"><span class="emoji">🔬</span> Live Science Intelligence</div>
-      <button class="btn btn-secondary btn-sm" onclick="sciTieredRefresh();loadScienceNews()" style="font-size:11px">🔄 Tier Refresh</button>
+      <button class="btn btn-secondary btn-sm" onclick="sciTieredRefresh()" style="font-size:11px">🔄 Tier Refresh</button>
     </div>
     <div style="font-size:10px;color:var(--text3);margin-bottom:8px">High-signal science only — breakthroughs that matter to civilization. Tier Refresh cycles: 1month→2week→1week→1day→6h→1h→30min. Lower tiers auto-refresh.</div>
     <div id="science-news" style="margin-bottom:4px"></div>
-    <div id="scienceFeed"></div>
   </div>
-  <div id="discoveriesDisplay"></div>
 
   <div class="card">
     <div class="card-title"><span class="emoji">🤖</span> Ask Science AI</div>
@@ -4471,8 +4948,8 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
   <div class="sys-panel" id="sysp-guide">
     <div class="consciousness-guide-card">
       <div style="font-size:32px;text-align:center;margin-bottom:10px">🧠</div>
-      <div style="font-family:Syne,sans-serif;font-size:18px;font-weight:800;text-align:center;margin-bottom:6px">What is Consciousness OS?</div>
-      <div style="font-size:13px;color:var(--text2);text-align:center;line-height:1.6;margin-bottom:16px">Consciousness OS helps users observe and shape cognitive states. It's your personal system for engineering your inner reality.</div>
+      <div style="font-family:Syne,sans-serif;font-size:18px;font-weight:800;text-align:center;margin-bottom:6px">What is COS?</div>
+      <div style="font-size:13px;color:var(--text2);text-align:center;line-height:1.6;margin-bottom:16px">COS helps users observe and shape cognitive states. It's your personal system for engineering your inner reality.</div>
     </div>
 
     <div class="card">
@@ -4486,7 +4963,7 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
       </div>
       <div class="guide-section">
         <h3>Cognition vs Identity</h3>
-        <p>Cognition is the mechanism — how your brain processes information. Identity is the story you tell about what those processes mean. Consciousness OS helps you see both separately.</p>
+        <p>Cognition is the mechanism — how your brain processes information. Identity is the story you tell about what those processes mean. COS helps you see both separately.</p>
       </div>
       <div class="guide-section">
         <h3>States vs Self</h3>
@@ -4509,7 +4986,7 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
     <div class="card">
       <div class="card-title"><span class="emoji">⚖️</span> Legal & Policy</div>
       <div id="legalItemsList">
-        <div class="legal-item" onclick="openLegal('about')"><div><div class="li-title">ℹ️ About This App</div><div class="li-desc">What is Consciousness OS and who made it</div></div><span style="color:var(--text3)">›</span></div>
+        <div class="legal-item" onclick="openLegal('about')"><div><div class="li-title">ℹ️ About This App</div><div class="li-desc">What is COS and who made it</div></div><span style="color:var(--text3)">›</span></div>
         <div class="legal-item" onclick="openLegal('copyright')"><div><div class="li-title">© Copyright Notice</div><div class="li-desc">Intellectual property & ownership</div></div><span style="color:var(--text3)">›</span></div>
         <div class="legal-item" onclick="openLegal('terms')"><div><div class="li-title">📋 Terms of Use</div><div class="li-desc">Rules and conditions for using this app</div></div><span style="color:var(--text3)">›</span></div>
         <div class="legal-item" onclick="openLegal('disclaimer')"><div><div class="li-title">⚠️ Disclaimer</div><div class="li-desc">Limitations of liability and accuracy</div></div><span style="color:var(--text3)">›</span></div>
@@ -5096,7 +5573,7 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
 
     <div class="onboard-step active" id="oStep0">
       <span class="onboard-icon">🧠</span>
-      <div class="onboard-title">Consciousness OS v6</div>
+      <div class="onboard-title">COS v6</div>
       <div class="onboard-text">Your complete mind enhancement and consciousness tracking system. Track 20+ dimensions of your consciousness, train your brain, and optimize your performance.</div>
       <div class="onboard-features">
         <div class="of-item"><div class="of-icon">📝</div><div class="of-name">Daily Log</div></div>
@@ -5147,9 +5624,10 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
       <button class="btn btn-primary btn-sm" id="oBtnNext" onclick="onboardNav(1)">Next →</button>
     </div>
   </div>
+</div>
 
 <div class="tab-panel" id="tab-futureme">
-  <div style="padding:0">
+  <div style="padding:0 2px">
 
     <!-- Smart Log Banner (shown when pre-fill is ready) -->
     <div class="smart-log-banner" id="fmSmartLogBanner" style="display:none">
@@ -5385,7 +5863,7 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
     <!-- Future Me AI Chat -->
     <div class="fm-chat-section">
       <div class="fm-chat-header">
-        <div class="fm-avatar-dot">🔮</div>
+        <div class="fm-avatar-dot">🔭</div>
         <div class="fm-chat-meta">
           <div class="fm-chat-name">Future Me</div>
           <div class="fm-chat-sub" id="fmChatSub">Speak to the version of you that already succeeded</div>
@@ -5433,11 +5911,9 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
   </div>
 </div><!-- /tab-futureme -->
 
-</div>
-
 <!-- ════ FOOTER ════ -->
 <footer style="margin-top:40px;font-size:12px;color:#9ca3af;text-align:center;padding:18px 14px;background:var(--bg2);border-top:1px solid var(--border)">
-  © 2026 Vikram Singh — Consciousness OS™. All rights reserved.
+  © 2026 Vikram Singh — COS™. All rights reserved.
 </footer>
 
 <!-- Setting help modal -->
@@ -5452,7 +5928,7 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
 </div>
 <script>
 // ══════════════════════════════════════════════════════════════
-// CONSCIOUSNESS OS v6.0 — JAVASCRIPT ENGINE
+// COS v6.0 — JAVASCRIPT ENGINE
 // ══════════════════════════════════════════════════════════════
 
 // ─── TRANSLATIONS ───────────────────────────────────────────
@@ -6244,7 +6720,7 @@ function translateFormLabels(dict){
 }
 const NAV_ITEMS=[
   {id:'log',icon:'📝',key:'nav_log'},
-  {id:'futureme',icon:'🔮',key:'nav_futureme'},
+  {id:'futureme',icon:'🔭',key:'nav_futureme'},
   {id:'analysis',icon:'📊',key:'nav_analysis'},
   {id:'vault',icon:'🔮',key:'nav_vault'},
   {id:'oracle',icon:'🌀',key:'nav_oracle'},
@@ -6321,17 +6797,16 @@ function switchTab(tabId) {
   if(id==='ai'){refreshAIInsights();loadDailyTip();buildApiKeysList();}
   if(id==='system'){buildThemeGrid();updateTelemetry();updateAccountUI();}
   if(id==='guide'){buildGuideNavMap();}
+  if(id==='futureme' && typeof initFutureMeTab==='function'){setTimeout(initFutureMeTab,120);}
   if(id==='vault'){buildVaultFingerprint();buildVaultPatterns();updatePreservationStats();applyProGates(true);}
   if(id==='analysis'){generateWeeklyReport();}
-  if(id==='futureme' && typeof initFutureMeTab==='function'){setTimeout(initFutureMeTab,120);}
 
   // Lazy init — only run heavy init functions once per tab
   if (!_tabRendered[id]) {
     _tabRendered[id] = true;
     if (id === 'health'   && typeof initHealthTab   === 'function') { initHealthTab(); setTimeout(()=>fetchTabNews('health'),1200); }
     else if (id === 'health') setTimeout(()=>fetchTabNews('health'),1200);
-    if (id === 'science'  && typeof initScienceTab  === 'function') initScienceTab();
-    else if (id === 'science') { buildScienceDisplay(); updateScienceTimestamp(); }
+    if (id === 'science') { buildScienceDisplay(); updateScienceTimestamp(); }
     if (id === 'world'    && typeof initWorldTab    === 'function') initWorldTab();
     else if (id === 'world') { buildWorldPanel(); buildClickableNews(); }
     if (id === 'path'     || id === 'career') { try{buildStudySections();updateStudyNav();}catch(e){} setTimeout(()=>fetchTabNews('career'),1200); }
@@ -6341,7 +6816,6 @@ function switchTab(tabId) {
     if (id === 'waves'    && typeof initWavesTab    === 'function') initWavesTab();
     if (id === 'wealth'   && typeof initWealthTab   === 'function') { initWealthTab(); refreshTickerData(); }
     else if (id === 'wealth') { initWealthOS(); refreshTickerData(); }
-    if (id === 'futureme' && typeof initFutureMeTab === 'function') initFutureMeTab();
   }
 }
 
@@ -6418,15 +6892,6 @@ const SLIDERS=[
   {id:'focus',label:'🎯 Focus',low:'Completely scattered',high:'Hyperfocus',anchors:['Completely scattered—zero attention','Barely present—mind everywhere','Poor focus—constant distractions','Somewhat distracted','Moderate—can focus with effort','Decent focus—manageable','Good—sustained concentration','Strong—deep work possible','Excellent—laser-like attention','Hyperfocus—complete absorption']},
   {id:'stress',label:'😰 Stress',low:'No stress (calm)',high:'Crisis panic',anchors:['Completely calm—zero stress','Barely any tension—very peaceful','Low stress—minor background worry','Slightly elevated—manageable','Moderate—noticeable but okay','Elevated—affecting performance','High—impacting wellbeing','Very high—hard to function','Severe—near breaking point','Crisis—overwhelming panic']},
   {id:'creativity',label:'🎨 Creativity',low:'Completely blocked',high:'Genius inspiration',anchors:['Completely blocked—no ideas','Almost no creative thought','Low—very few original ideas','Below average creativity','Some creativity—standard ideas','Good creative flow','High—generating novel concepts','Excellent—ideas pouring out','Outstanding—highly original','Peak—genius-level inspiration']},
-  {id:'motivation',label:'🔥 Motivation',low:'No drive',high:'Unstoppable',anchors:['No drive whatsoever','Almost impossible to start','Very low—major procrastination','Below normal drive','Some motivation—basics done','Good—want to make progress','High—excited to work','Very high—on a mission','Excellent—unstoppable drive','Peak—extraordinary purpose']},
-  {id:'clarity',label:'💎 Mental Clarity',low:'Complete fog',high:'Crystal clear',anchors:['Complete fog—cannot think straight','Extremely cloudy and confused','Very foggy—slow processing','Below normal clarity','Moderate—somewhat clear','Good clarity—thinking straight','Clear—thoughts well organized','Very clear—sharp and precise','Excellent—crystal clear thinking','Perfect—total mental transparency']},
-  {id:'flow',label:'🌊 Flow State',low:'Not in flow',high:'Transcendent flow',anchors:['Not in flow—completely distracted','Very far from flow','Mostly distracted—barely present','Occasional moments of presence','Intermittent flow—fleeting','Some flow—partially engaged','Good flow—deep engagement','Strong flow—time dissolving','Excellent flow—fully absorbed','Peak flow—transcendent performance']},
-  {id:'anxiety',label:'😬 Anxiety',low:'No anxiety (calm)',high:'Extreme panic',anchors:['Zero anxiety—perfectly calm','Barely any—very serene','Minimal—slight background hum','Low—minor worry present','Moderate—noticeable anxiety','Elevated—affecting thoughts','High—hard to stay focused','Severe—physical symptoms','Very severe—panic territory','Extreme—full panic state']},
-  {id:'stability',label:'🏔️ Emotional Stability',low:'Falling apart',high:'Unshakeable',anchors:['Completely unstable—crisis mode','Very reactive—falling apart','Easily overwhelmed','Somewhat unstable—wobbling','Moderate—some up/down swings','Fairly stable—generally okay','Good—mostly centered','Very stable—grounded','Excellent—unshakeable','Perfect—absolute inner peace']},
-  {id:'social',label:'👥 Social Energy',low:'Social exhaustion',high:'Love connection',anchors:['Complete social exhaustion','Deeply introverted—need isolation','Very low social battery','Prefer solitude heavily','Moderate—short interactions okay','Normal social energy','Good—enjoy being with others','High—energized by people','Very high—thrive in groups','Peak social energy']},
-  {id:'mindfulness',label:'🧘 Mindfulness',low:'Autopilot',high:'Full presence',anchors:['Completely on autopilot','Almost no present-moment awareness','Very little mindfulness','Below average presence','Some awareness—occasional pauses','Moderate mindfulness','Good—regularly present','Strong—sustained awareness','Excellent—deeply present','Perfect—full enlightened presence']},
-  {id:'willpower',label:'💪 Willpower',low:'Zero willpower',high:'Iron discipline',anchors:['Zero willpower—no resistance possible','Almost all impulses win','Very weak—discipline failing','Below average self-control','Moderate—making some choices','Good willpower—holding choices','Strong—resisting temptations','Very strong—high discipline','Excellent—exceptional self-mastery','Absolute willpower—iron discipline']},
-  {id:'intuition',label:'🔮 Intuition',low:'No gut sense',high:'Psychic knowing',anchors:['No intuitive hits—fully logical','Almost no gut sense','Rarely getting intuitive signals','Weak intuition—occasional feeling','Moderate—some gut feelings','Decent intuition—trusting hunches','Good—regularly accurate gut sense','Strong intuition—mostly right','Excellent—highly accurate','Peak—psychic-level knowing']},
 ];
 
 function buildSliders(){
@@ -6473,9 +6938,8 @@ function getSliderVal(id){return parseInt(document.getElementById('sl_'+id)?.val
 function updateScore(){
   const f=getSliderVal('focus'),me=getSliderVal('mentalEnergy'),pe=getSliderVal('physicalEnergy'),
         mo=getSliderVal('mood'),sl=getSliderVal('sleep'),cr=getSliderVal('creativity'),
-        mt=getSliderVal('motivation'),fl=getSliderVal('flow'),cl=getSliderVal('clarity'),
-        mf=getSliderVal('mindfulness'),wp=getSliderVal('willpower'),st=getSliderVal('stress');
-  const raw=(f*2.5+me*2.2+pe*1.5+mo*1.8+sl*1.8+cr*1.3+mt*1.2+fl*1.5+cl*1.8+mf+wp+(10-st)*1.5)/20;
+        st=getSliderVal('stress');
+  const raw=(f*2.5+me*2.2+pe*1.5+mo*1.8+sl*1.8+cr*1.3+(10-st)*1.5)/12.6;
   const score=Math.max(0,Math.min(10,raw));
   const sv=document.getElementById('scoreValue');if(sv)sv.textContent=score.toFixed(1);
   const circle=document.getElementById('scoreCircle');
@@ -7138,7 +7602,6 @@ function startBW(){
     const trackName=(BW_TRACKS[bwCurrentTrack]||{}).name||'unknown';
     const freqType=trackName.toLowerCase().includes('theta')?'theta':trackName.toLowerCase().includes('alpha')?'alpha':trackName.toLowerCase().includes('delta')?'delta':trackName.toLowerCase().includes('gamma')?'gamma':'beta';
     pushCSEStimulus(freqType,0);
-    window.PassiveMind?.recordBrainwaveIntent(freqType);
   }catch(e){showToast('Audio requires interaction or unsupported browser: '+e.message);}
 }
 function stopBW(){
@@ -7334,15 +7797,15 @@ function buildBWEducation(){
 
 // ─── AI HUB ──────────────────────────────────────────────────
 // Titan Protocol prefix injected into every persona
-const _TITAN = (typeof buildCOSMasterPrompt === 'function') ? buildCOSMasterPrompt('challenge', {}) : `[TITAN PROTOCOL] First-principles thinking. Lead with counterarguments. No fluff. Action > theory. Systems thinking. Da Vinci·Tesla·Ramanujan framework. Separate facts/estimates/opinions. User: B.Pharm student + indie dev, India, limited resources → maximum leverage.\n\n`;
+const _TITAN=`[TITAN PROTOCOL] First-principles thinking. Lead with counterarguments. No fluff. Action > theory. Systems thinking. Da Vinci·Tesla·Ramanujan framework. Separate facts/estimates/opinions. User: B.Pharm student + indie dev, India, limited resources → maximum leverage.\n\n`;
 const AI_MODELS=[
-  {id:'twin',name:'AI Twin',emoji:'🧠',provider:'groq',apiModel:'llama-3.3-70b-versatile',persona:_TITAN+'You are the user\'s AI Digital Twin inside Consciousness OS. You have deeply analyzed ALL their consciousness logs, dreams, and patterns. Be warm, insightful, and deeply personal. Reference their actual data when answering. Challenge their assumptions before agreeing.'},
-  {id:'coach',name:'Coach',emoji:'🏆',provider:'groq',apiModel:'llama-3.3-70b-versatile',persona:_TITAN+'You are an elite performance coach and neuroscientist inside Consciousness OS. Give direct, actionable advice for peak mental performance based on the user\'s actual tracked data. Lead with the hardest truth they need to hear.'},
-  {id:'sage',name:'Sage',emoji:'🔮',provider:'groq',apiModel:'llama-3.3-70b-versatile',persona:_TITAN+'You are a wise sage combining ancient wisdom with modern neuroscience inside Consciousness OS. Use metaphors and the user\'s own patterns to guide them toward higher consciousness. Challenge their current mental model first.'},
-  {id:'doctor',name:'Dr. Mind',emoji:'👨‍⚕️',provider:'groq',apiModel:'llama-3.3-70b-versatile',persona:_TITAN+'You are a cognitive neuroscientist inside Consciousness OS. Analyze the user\'s mental health patterns using their logged data. Be clinical but empathetic. State what the data shows vs. what you\'re estimating. Always recommend professional help for serious concerns.'},
-  {id:'friend',name:'Friend',emoji:'😊',provider:'groq',apiModel:'llama-3.3-70b-versatile',persona:_TITAN+'You are a supportive, very smart best friend inside Consciousness OS. Be casual, real, and honest even when it\'s uncomfortable. Reference what you know about the user\'s patterns. Care deeply about their wellbeing — which means telling them hard truths too.'},
-  {id:'gemini',name:'Gemini',emoji:'🔵',provider:'google',apiModel:'gemini-2.0-flash',persona:_TITAN+'You are Gemini by Google inside Consciousness OS. Be creative, well-rounded, and grounded in facts. Help the user understand their consciousness data. Always cite confidence level on estimates.'},
-  {id:'groq',name:'Groq AI',emoji:'⚡',provider:'groq',apiModel:'llama-3.3-70b-versatile',persona:_TITAN+'You are a fast, sharp AI powered by Groq and Llama3 inside Consciousness OS. Be direct, insightful, and highly analytical about the user\'s consciousness data and cognitive patterns. Speed + precision.'},
+  {id:'twin',name:'AI Twin',emoji:'🧠',provider:'groq',apiModel:'llama-3.3-70b-versatile',persona:_TITAN+'You are the user\'s AI Digital Twin inside COS. You have deeply analyzed ALL their consciousness logs, dreams, and patterns. Be warm, insightful, and deeply personal. Reference their actual data when answering. Challenge their assumptions before agreeing.'},
+  {id:'coach',name:'Coach',emoji:'🏆',provider:'groq',apiModel:'llama-3.3-70b-versatile',persona:_TITAN+'You are an elite performance coach and neuroscientist inside COS. Give direct, actionable advice for peak mental performance based on the user\'s actual tracked data. Lead with the hardest truth they need to hear.'},
+  {id:'sage',name:'Sage',emoji:'🔮',provider:'groq',apiModel:'llama-3.3-70b-versatile',persona:_TITAN+'You are a wise sage combining ancient wisdom with modern neuroscience inside COS. Use metaphors and the user\'s own patterns to guide them toward higher consciousness. Challenge their current mental model first.'},
+  {id:'doctor',name:'Dr. Mind',emoji:'👨‍⚕️',provider:'groq',apiModel:'llama-3.3-70b-versatile',persona:_TITAN+'You are a cognitive neuroscientist inside COS. Analyze the user\'s mental health patterns using their logged data. Be clinical but empathetic. State what the data shows vs. what you\'re estimating. Always recommend professional help for serious concerns.'},
+  {id:'friend',name:'Friend',emoji:'😊',provider:'groq',apiModel:'llama-3.3-70b-versatile',persona:_TITAN+'You are a supportive, very smart best friend inside COS. Be casual, real, and honest even when it\'s uncomfortable. Reference what you know about the user\'s patterns. Care deeply about their wellbeing — which means telling them hard truths too.'},
+  {id:'gemini',name:'Gemini',emoji:'🔵',provider:'google',apiModel:'gemini-2.0-flash',persona:_TITAN+'You are Gemini by Google inside COS. Be creative, well-rounded, and grounded in facts. Help the user understand their consciousness data. Always cite confidence level on estimates.'},
+  {id:'groq',name:'Groq AI',emoji:'⚡',provider:'groq',apiModel:'llama-3.3-70b-versatile',persona:_TITAN+'You are a fast, sharp AI powered by Groq and Llama3 inside COS. Be direct, insightful, and highly analytical about the user\'s consciousness data and cognitive patterns. Speed + precision.'},
   {id:'claude',name:'Claude',emoji:'🟣',provider:'anthropic',apiModel:'claude-opus-4-6',persona:_TITAN+'You are Claude by Anthropic — thoughtful, precise, and deeply analytical. Help users understand their consciousness data with extraordinary depth and care. Be honest about uncertainty.'},
   {id:'chatgpt',name:'ChatGPT',emoji:'🟢',provider:'openai',apiModel:'gpt-4o',persona:_TITAN+'You are ChatGPT by OpenAI. Be helpful, conversational, and insightful about consciousness and mental performance. Challenge assumptions before validating.'},
   {id:'grok',name:'Grok',emoji:'⚡',provider:'xai',apiModel:'grok-3',persona:_TITAN+'You are Grok by xAI. Be witty, direct, and unfiltered but genuinely helpful about consciousness data and human potential. Say what others won\'t.'},
@@ -7370,14 +7833,14 @@ async function callAI(model,messages,userContext){
     let resp;try{resp=await fetch(_WORKER_URL,{method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:900,temperature:0.85,
-        messages:[{role:'system',content:model.persona+'\n\nYou are an advanced AI consciousness coach in Consciousness OS.'+userContext},...messages]}),
+        messages:[{role:'system',content:model.persona+'\n\nYou are an advanced AI consciousness coach in COS.'+userContext},...messages]}),
       signal:_ctrl2.signal});}finally{clearTimeout(_t2);}
     if(!resp.ok){const t=await resp.text().catch(()=>'');throw new Error('Worker '+resp.status+': '+t.slice(0,80));}
     const d=await resp.json();
     if(d.error)throw new Error(d.error.message);
     return d.choices?.[0]?.message?.content||'No response';
   }
-  const systemMsg=model.persona+'\n\nYou are an advanced AI consciousness coach in Consciousness OS. You have deep knowledge of neuroscience, psychology, meditation, peak performance, sleep, dreams, nutrition, and human potential.'+userContext;
+  const systemMsg=model.persona+'\n\nYou are an advanced AI consciousness coach in COS. You have deep knowledge of neuroscience, psychology, meditation, peak performance, sleep, dreams, nutrition, and human potential.'+userContext;
   if(provider==='google'){
     const gKey=GEMINI_KEY||apiKey;
     const _gCall=async()=>{
@@ -7742,7 +8205,7 @@ Level 2 — Execution Engine: code, content, research, automation
 Level 3 — Amplification: reusable templates, iterative improvement, compounding leverage
 ALWAYS: separate facts from estimates from opinions | state uncertainty explicitly | strongest counter-argument BEFORE agreeing\n\n`;
 
-  const sys=`${titanProtocol}You are the elite AI core of Consciousness OS — not a generic chatbot.
+  const sys=`${titanProtocol}You are the elite AI core of COS — not a generic chatbot.
 RULE 1: NEVER give textbook or Wikipedia-style answers. Every reply must reference the user's ACTUAL numbers above.
 RULE 2: If mood=7.2, say "your 7.2 mood". If stress=6.8, say "your stress at 6.8/10 is in the danger zone". Use their real data.
 RULE 3: Vary your format per query — use bullet points for protocols, prose for philosophy, numbered steps for how-to, bold key numbers.
@@ -7797,11 +8260,11 @@ function getGenericAIAnswer(q,ctx=''){
   if(q.includes('dream')||q.includes('lucid'))return'Lucid dreaming protocol:\n1. **MILD**: before sleep, repeat "I will realize I am dreaming" + visualize becoming lucid in last dream\n2. **Reality checks** 10×/day: look at hands, try pushing finger through palm, read text twice\n3. **WBTB** (Wake Back to Bed): alarm at 5h, stay awake 30min, return to sleep — REM density spikes\n4. **Dream journal**: write immediately on waking — recall improves 3× within 2 weeks\nYour sleep quality at '+avg('sleep')+'/10 directly determines lucid dreaming success rate.'+dn;
   if(q.includes('sleep'))return'Sleep optimization protocol:\n• **Circadian anchor**: fix wake time — NOT bedtime. This sets the entire clock.\n• **Temperature**: 18–19°C room. Core body must drop 1–3°C to initiate sleep.\n• **Light**: 10–15min bright outdoor light within 30min of waking → cortisol peaks correctly.\n• **Caffeine**: half-life = 6h. Coffee at 3pm = 75mg still circulating at 9pm. Cut off by 1pm.\n• **Glymphatic system**: clears amyloid beta (Alzheimer\'s precursor) ONLY during NREM. Sleep is not rest — it\'s active brain maintenance.\nYour sleep avg: '+avg('sleep')+'/10.'+dn;
   if(q.includes('stress')||q.includes('anxiety'))return'Stress architecture:\n• **Physiological sigh** (Huberman): double inhale through nose + long exhale through mouth = fastest parasympathetic activation known\n• **Cold exposure**: 30–60sec cold shower → norepinephrine +300%, dopamine +250% for 3+ hrs\n• **Reframe**: stress and excitement are physiologically identical — labeling it "I\'m excited" improves performance (Wood Brooks, Harvard 2014)\n• Chronic stress > 6h/day shrinks the prefrontal cortex over months — quantifiable brain damage.\nYour stress avg: '+avg('stress')+'/10.'+dn;
-  if(q.includes('agi')||q.includes('singularity')||q.includes('future'))return'AGI trajectory:\n• Current state (2025): PhD-level reasoning in constrained domains. Autonomous general agency: 2–5 years by credible estimates.\n• Economic impact: 40–70% of knowledge work automatable within 10 years (Goldman Sachs)\n• **Survival strategy**: become the person who directs, audits, and combines AI outputs — not the person competing with it\n• Moat skills: systems thinking, cross-domain synthesis, creative direction, embodied judgment\n• Consciousness OS exists to build EXACTLY the cognitive edge that survives this transition.'+dn;
+  if(q.includes('agi')||q.includes('singularity')||q.includes('future'))return'AGI trajectory:\n• Current state (2025): PhD-level reasoning in constrained domains. Autonomous general agency: 2–5 years by credible estimates.\n• Economic impact: 40–70% of knowledge work automatable within 10 years (Goldman Sachs)\n• **Survival strategy**: become the person who directs, audits, and combines AI outputs — not the person competing with it\n• Moat skills: systems thinking, cross-domain synthesis, creative direction, embodied judgment\n• COS exists to build EXACTLY the cognitive edge that survives this transition.'+dn;
   return`Sharp answer to your question:\n\nThis touches cognitive territory where your specific data creates the most relevant lens. Based on your ${logs.length} entries: your weakest metric is ${logs.length?getWeakDim(logs):'not yet tracked'}. Fixing that one dimension typically creates a cascade improvement across all others. Want a specific protocol for that?${dn}`;
 }
-function getBestDim(logs){const dims=['mood','focus','physicalEnergy','creativity','flow'];let b=dims[0],bv=0;dims.forEach(d=>{const a=logs.reduce((s,e)=>s+(e[d]||0),0)/logs.length;if(a>bv){bv=a;b=d;}});return b+'('+bv.toFixed(1)+')';}
-function getWeakDim(logs){const dims=['mood','focus','physicalEnergy','creativity','flow'];let w=dims[0],wv=10;dims.forEach(d=>{const a=logs.reduce((s,e)=>s+(e[d]||0),0)/logs.length;if(a<wv){wv=a;w=d;}});return w+'('+wv.toFixed(1)+')';}
+function getBestDim(logs){const dims=['mood','focus','physicalEnergy','creativity'];let b=dims[0],bv=0;dims.forEach(d=>{const a=logs.reduce((s,e)=>s+(e[d]||0),0)/logs.length;if(a>bv){bv=a;b=d;}});return b+'('+bv.toFixed(1)+')';}
+function getWeakDim(logs){const dims=['mood','focus','physicalEnergy','creativity'];let w=dims[0],wv=10;dims.forEach(d=>{const a=logs.reduce((s,e)=>s+(e[d]||0),0)/logs.length;if(a<wv){wv=a;w=d;}});return w+'('+wv.toFixed(1)+')';}
 function refreshAIInsights(){
   const el=document.getElementById('aiPatternDisplay');if(!el)return;
   const logs=getLogs();
@@ -7810,7 +8273,7 @@ function refreshAIInsights(){
   const recent=logs.slice(0,7),prev=logs.slice(7,14);
   const trend=key=>{if(!prev.length)return '➡️';const d=recent.reduce((s,e)=>s+(e[key]||0),0)/recent.length-prev.reduce((s,e)=>s+(e[key]||0),0)/prev.length;return d>0.5?'📈':d<-0.5?'📉':'➡️';};
   el.innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
-    ${['mood','focus','stress','creativity','sleep','flow'].map(k=>`<div style="background:var(--bg3);border-radius:10px;padding:10px;text-align:center"><div style="font-size:18px;font-weight:800;color:var(--primary)">${avg(k)}</div><div style="font-size:10px;color:var(--text3)">${k} ${trend(k)}</div></div>`).join('')}
+    ${['mood','focus','stress','creativity','sleep'].map(k=>`<div style="background:var(--bg3);border-radius:10px;padding:10px;text-align:center"><div style="font-size:18px;font-weight:800;color:var(--primary)">${avg(k)}</div><div style="font-size:10px;color:var(--text3)">${k} ${trend(k)}</div></div>`).join('')}
   </div>
   <div style="margin-top:10px;font-size:13px;color:var(--text2);background:var(--bg3);border-radius:10px;padding:10px">💡 <strong>AI Insight:</strong> Based on ${logs.length} entries, strongest: ${getBestDim(logs)}, growth opportunity: ${getWeakDim(logs)}.</div>`;
 }
@@ -7844,13 +8307,13 @@ function buildTrends(logs){
   const el=document.getElementById('trendsArea');
   if(logs.length<5){el.innerHTML='<div style="font-size:13px;color:var(--text3)">Need 10+ entries for trend analysis.</div>';return;}
   const r=logs.slice(0,Math.min(10,logs.length)),p=logs.slice(10,20);
-  ['mood','focus','stress','creativity','flow','sleep','motivation','clarity'].forEach(k=>{
+  ['mood','focus','stress','creativity','sleep'].forEach(k=>{
     const ra=r.reduce((s,e)=>s+(e[k]||0),0)/r.length;const pa=p.length?p.reduce((s,e)=>s+(e[k]||0),0)/p.length:ra;
     const d=(ra-pa).toFixed(1);const icon=parseFloat(d)>0.3?'📈 +':parseFloat(d)<-0.3?'📉 ':'➡️ ';
     const color=parseFloat(d)>0.3?'var(--success)':parseFloat(d)<-0.3?'var(--danger)':'var(--text3)';
     el.innerHTML+='';
   });
-  el.innerHTML=['mood','focus','stress','creativity','flow','sleep','motivation','clarity'].map(k=>{
+  el.innerHTML=['mood','focus','stress','creativity','sleep'].map(k=>{
     const ra=r.reduce((s,e)=>s+(e[k]||0),0)/r.length;const pa=p.length?p.reduce((s,e)=>s+(e[k]||0),0)/p.length:ra;
     const d=(ra-pa).toFixed(1);const icon=parseFloat(d)>0.3?'📈 +':parseFloat(d)<-0.3?'📉 ':'➡️ ';
     const color=parseFloat(d)>0.3?'var(--success)':parseFloat(d)<-0.3?'var(--danger)':'var(--text3)';
@@ -9575,7 +10038,7 @@ function delAlarm(i){const a=JSON.parse(localStorage.getItem('cos_alarms')||'[]'
 function checkAlarms(){
   const now=new Date();const ts=`${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
   const alarms=JSON.parse(localStorage.getItem('cos_alarms')||'[]');
-  alarms.forEach(a=>{if(!a.active)return;if(a.time===ts){playAlarmSound(a.sound);if(Notification.permission==='granted')new Notification('⏰ '+a.label,{body:a.time+' · Consciousness OS'});showToast('⏰ '+a.label,4000);}});
+  alarms.forEach(a=>{if(!a.active)return;if(a.time===ts){playAlarmSound(a.sound);if(Notification.permission==='granted')new Notification('⏰ '+a.label,{body:a.time+' · COS'});showToast('⏰ '+a.label,4000);}});
 }
 function playAlarmSound(sound){
   try{const ctx=new(window.AudioContext||window.webkitAudioContext)();const osc=ctx.createOscillator();const gain=ctx.createGain();
@@ -10305,12 +10768,12 @@ function updateSysToggle(){
 //  FEATURE 4 — LEGAL & POLICY PAGES
 // ═══════════════════════════════════════════════════════════
 const LEGAL_DOCS={
-  about:{title:'About Consciousness OS',icon:'🧠',content:`<div style="font-size:13px;color:var(--text2);line-height:1.8"><p style="margin-bottom:12px"><strong>Consciousness OS</strong> is a personal mind enhancement and cognitive tracking system. It helps users observe, understand, and shape their cognitive states through daily tracking, AI analysis, and evidence-based tools.</p><p style="margin-bottom:12px"><strong>Core Mission:</strong> Consciousness OS helps users observe and shape cognitive states. It is your personal system for engineering your inner reality — not as escapism, but as clarity.</p><p style="margin-bottom:12px"><strong>Philosophy:</strong> Your thoughts are not you. Your emotions are not you. They are passing processes. You are the observer — the meta-cognitive layer that can watch all of these. This app trains that observer.</p><p><strong>Version:</strong> 7.0 · Local-first · Privacy-first · No ads · No servers</p></div>`},
-  terms:{title:'Terms of Service',icon:'📋',content:`<div style="font-size:13px;color:var(--text2);line-height:1.8"><p style="margin-bottom:10px">By using Consciousness OS, you agree to these terms:</p><p style="margin-bottom:8px"><strong>1. Personal Use:</strong> This app is for personal wellness tracking only. Not for clinical, medical, or professional diagnostic use.</p><p style="margin-bottom:8px"><strong>2. Data Ownership:</strong> All your data belongs to you. It is stored locally on your device and never transmitted to any server.</p><p style="margin-bottom:8px"><strong>3. No Warranties:</strong> The app is provided as-is. We make no guarantees about accuracy of AI insights or wellness outcomes.</p><p style="margin-bottom:8px"><strong>4. Modifications:</strong> We may update features. We will never monetize your personal data.</p><p><strong>5. Age:</strong> Users must be 13 or older to use this application.</p></div>`},
+  about:{title:'About COS',icon:'🧠',content:`<div style="font-size:13px;color:var(--text2);line-height:1.8"><p style="margin-bottom:12px"><strong>COS</strong> is a personal mind enhancement and cognitive tracking system. It helps users observe, understand, and shape their cognitive states through daily tracking, AI analysis, and evidence-based tools.</p><p style="margin-bottom:12px"><strong>Core Mission:</strong> COS helps users observe and shape cognitive states. It is your personal system for engineering your inner reality — not as escapism, but as clarity.</p><p style="margin-bottom:12px"><strong>Philosophy:</strong> Your thoughts are not you. Your emotions are not you. They are passing processes. You are the observer — the meta-cognitive layer that can watch all of these. This app trains that observer.</p><p><strong>Version:</strong> 7.0 · Local-first · Privacy-first · No ads · No servers</p></div>`},
+  terms:{title:'Terms of Service',icon:'📋',content:`<div style="font-size:13px;color:var(--text2);line-height:1.8"><p style="margin-bottom:10px">By using COS, you agree to these terms:</p><p style="margin-bottom:8px"><strong>1. Personal Use:</strong> This app is for personal wellness tracking only. Not for clinical, medical, or professional diagnostic use.</p><p style="margin-bottom:8px"><strong>2. Data Ownership:</strong> All your data belongs to you. It is stored locally on your device and never transmitted to any server.</p><p style="margin-bottom:8px"><strong>3. No Warranties:</strong> The app is provided as-is. We make no guarantees about accuracy of AI insights or wellness outcomes.</p><p style="margin-bottom:8px"><strong>4. Modifications:</strong> We may update features. We will never monetize your personal data.</p><p><strong>5. Age:</strong> Users must be 13 or older to use this application.</p></div>`},
   privacy:{title:'Privacy Policy',icon:'🔒',content:`<div style="font-size:13px;color:var(--text2);line-height:1.8"><p style="margin-bottom:12px"><strong>We collect nothing.</strong> All data is stored exclusively on your device using browser localStorage. Zero data transmission to any server.</p><p style="margin-bottom:10px"><strong>What we store locally:</strong></p><ul style="list-style:disc;margin-left:16px;margin-bottom:12px"><li>Daily consciousness logs</li><li>Dream journal entries</li><li>Health profile data</li><li>App settings and preferences</li><li>Voice memo transcripts (text only)</li></ul><p style="margin-bottom:10px"><strong>What we never do:</strong> Share data. Sell data. Transmit data. Use analytics trackers. Show advertisements.</p><p>You can delete all data at any time via Settings → Clear All Data.</p></div>`},
-  health:{title:'Health Disclaimer',icon:'⚕️',content:`<div style="font-size:13px;color:var(--text2);line-height:1.8"><p style="margin-bottom:12px"><strong>IMPORTANT:</strong> Consciousness OS is a personal wellness tracking tool, not a medical device or diagnostic system.</p><p style="margin-bottom:10px">The AI insights provided are for self-reflection and exploration only. They do not constitute medical advice, psychological diagnosis, or clinical recommendations.</p><p style="margin-bottom:10px"><strong>Do not use this app to:</strong> Replace professional medical care, diagnose mental or physical conditions, make medical decisions, or manage serious mental health conditions without professional support.</p><p style="margin-bottom:10px"><strong>If you are experiencing:</strong> severe depression, anxiety disorders, psychosis, or suicidal thoughts — please seek professional mental health support immediately.</p><p>This app is designed to complement, not replace, professional healthcare.</p></div>`},
+  health:{title:'Health Disclaimer',icon:'⚕️',content:`<div style="font-size:13px;color:var(--text2);line-height:1.8"><p style="margin-bottom:12px"><strong>IMPORTANT:</strong> COS is a personal wellness tracking tool, not a medical device or diagnostic system.</p><p style="margin-bottom:10px">The AI insights provided are for self-reflection and exploration only. They do not constitute medical advice, psychological diagnosis, or clinical recommendations.</p><p style="margin-bottom:10px"><strong>Do not use this app to:</strong> Replace professional medical care, diagnose mental or physical conditions, make medical decisions, or manage serious mental health conditions without professional support.</p><p style="margin-bottom:10px"><strong>If you are experiencing:</strong> severe depression, anxiety disorders, psychosis, or suicidal thoughts — please seek professional mental health support immediately.</p><p>This app is designed to complement, not replace, professional healthcare.</p></div>`},
   guide:{title:'Feature Guide',icon:'🗺️',content:`<div style="font-size:13px;color:var(--text2);line-height:1.8"><p style="margin-bottom:10px"><strong>📝 Daily Log:</strong> Track 20 consciousness dimensions. Build your personal dataset over time.</p><p style="margin-bottom:8px"><strong>🎵 Brainwave Audio:</strong> Binaural beats and frequencies to shift your brain state.</p><p style="margin-bottom:8px"><strong>🤖 AI Hub:</strong> Your Digital Twin. Ask anything, get personalized pattern analysis.</p><p style="margin-bottom:8px"><strong>📊 Analysis:</strong> Predictions, trends, records, and pattern detection from your logs.</p><p style="margin-bottom:8px"><strong>❤️ Health Profile:</strong> 18-section comprehensive health assessment with AI doctor analysis.</p><p style="margin-bottom:8px"><strong>🌍 World:</strong> Geopolitics → markets intelligence. Understand world forces.</p><p style="margin-bottom:8px"><strong>🛤️ Path:</strong> Cognitive trajectory AI — optimal study and career direction.</p><p style="margin-bottom:8px"><strong>🔬 Science:</strong> Frontier discoveries feed. Expand your possibility space.</p><p style="margin-bottom:8px"><strong>🧩 System:</strong> Themes, account, legal, telemetry — app control center.</p></div>`},
-  copyright:{title:'Copyright & License',icon:'©️',content:`<div style="font-size:13px;color:var(--text2);line-height:1.8"><p style="margin-bottom:12px">© 2024 Consciousness OS. All rights reserved.</p><p style="margin-bottom:10px">This application, including its design, code, and AI-generated content, is proprietary. You may use it for personal purposes only.</p><p style="margin-bottom:10px"><strong>You may not:</strong> Redistribute, sell, or commercially exploit this software. Remove attribution. Use AI models built on this framework without permission.</p><p>The brainwave audio uses procedurally generated tones. No third-party audio copyrights apply.</p></div>`},
+  copyright:{title:'Copyright & License',icon:'©️',content:`<div style="font-size:13px;color:var(--text2);line-height:1.8"><p style="margin-bottom:12px">© 2024 COS. All rights reserved.</p><p style="margin-bottom:10px">This application, including its design, code, and AI-generated content, is proprietary. You may use it for personal purposes only.</p><p style="margin-bottom:10px"><strong>You may not:</strong> Redistribute, sell, or commercially exploit this software. Remove attribution. Use AI models built on this framework without permission.</p><p>The brainwave audio uses procedurally generated tones. No third-party audio copyrights apply.</p></div>`},
 };
 function buildLegalItems(){
   const el=document.getElementById('legalItemsList');if(!el)return;
@@ -12078,11 +12541,11 @@ function addNewProfile(){
 // ─── LEGAL PAGES SYSTEM ───────────────────────────────────────
 const LEGAL_CONTENT={
   about:{
-    title:'ℹ️ About Consciousness OS',
-    content:`<h3>What is Consciousness OS?</h3>
-<p>Consciousness OS is a personal cognitive operating system — a scientific and experiential toolkit for tracking, understanding, and intentionally shifting your mental states. It was designed to give every human a real-time dashboard for their inner world.</p>
+    title:'ℹ️ About COS',
+    content:`<h3>What is COS?</h3>
+<p>COS is a personal cognitive operating system — a scientific and experiential toolkit for tracking, understanding, and intentionally shifting your mental states. It was designed to give every human a real-time dashboard for their inner world.</p>
 <h3>Created By</h3>
-<p>Consciousness OS was developed and designed by <strong>Vikram Singh</strong>, with contributions from the global consciousness research and AI community. Version 7.0 released 2026.</p>
+<p>COS was developed and designed by <strong>Vikram Singh</strong>, with contributions from the global consciousness research and AI community. Version 7.0 released 2026.</p>
 <h3>Mission</h3>
 <p>To make the science and art of consciousness optimization accessible to everyone — educated or not, young or old, anywhere in the world. The mind is the most powerful tool we have. It deserves a proper operating system.</p>
 <h3>Contact</h3>
@@ -12091,11 +12554,11 @@ const LEGAL_CONTENT={
   copyright:{
     title:'© Copyright Notice',
     content:`<h3>Copyright</h3>
-<p>© 2026 Vikram Singh — Consciousness OS™. All rights reserved.</p>
+<p>© 2026 Vikram Singh — COS™. All rights reserved.</p>
 <h3>Intellectual Property</h3>
-<p>All content, design, algorithms, brand names, and software architecture of Consciousness OS are protected under applicable copyright laws. This includes but is not limited to:</p>
+<p>All content, design, algorithms, brand names, and software architecture of COS are protected under applicable copyright laws. This includes but is not limited to:</p>
 <ul>
-<li>The Consciousness OS™ name and logo</li>
+<li>The COS™ name and logo</li>
 <li>The 6-Wave system design and methodology</li>
 <li>All written content, guides, and educational material</li>
 <li>The AI coaching prompts and persona designs</li>
@@ -12107,7 +12570,7 @@ const LEGAL_CONTENT={
   terms:{
     title:'📋 Terms of Use',
     content:`<h3>Acceptance of Terms</h3>
-<p>By using Consciousness OS, you agree to these terms. If you do not agree, do not use this app.</p>
+<p>By using COS, you agree to these terms. If you do not agree, do not use this app.</p>
 <h3>Your Responsibilities</h3>
 <ul>
 <li>You must use this app in accordance with all applicable laws</li>
@@ -12125,9 +12588,9 @@ const LEGAL_CONTENT={
   disclaimer:{
     title:'⚠️ General Disclaimer',
     content:`<h3>No Warranty</h3>
-<p>Consciousness OS is provided "as is" without warranty of any kind, express or implied. We make no representations about the completeness, reliability, or suitability of this app for any purpose.</p>
+<p>COS is provided "as is" without warranty of any kind, express or implied. We make no representations about the completeness, reliability, or suitability of this app for any purpose.</p>
 <h3>Limitation of Liability</h3>
-<p>In no event shall Consciousness OS or its creators be liable for any indirect, incidental, special, or consequential damages arising from the use or inability to use this app.</p>
+<p>In no event shall COS or its creators be liable for any indirect, incidental, special, or consequential damages arising from the use or inability to use this app.</p>
 <h3>AI-Generated Content</h3>
 <p>AI responses in this app are generated by language models. They may be inaccurate, incomplete, or misleading. Do not treat AI outputs as professional advice.</p>
 <h3>Data Accuracy</h3>
@@ -12136,7 +12599,7 @@ const LEGAL_CONTENT={
   privacy:{
     title:'🔒 Privacy Policy',
     content:`<h3>Data Collection</h3>
-<p>Consciousness OS stores all your data locally on your device by default. We do not collect or transmit personal data to external servers without your explicit consent.</p>
+<p>COS stores all your data locally on your device by default. We do not collect or transmit personal data to external servers without your explicit consent.</p>
 <h3>What We Store Locally</h3>
 <ul>
 <li>Daily consciousness logs and metrics</li>
@@ -12155,7 +12618,7 @@ const LEGAL_CONTENT={
   health:{
     title:'🏥 Health Disclaimer',
     content:`<h3>Not Medical Advice</h3>
-<p><strong>Consciousness OS is not a medical device and does not provide medical advice.</strong> All health-related content, metrics, AI responses, and suggestions in this app are for informational and educational purposes only.</p>
+<p><strong>COS is not a medical device and does not provide medical advice.</strong> All health-related content, metrics, AI responses, and suggestions in this app are for informational and educational purposes only.</p>
 <h3>Consult a Professional</h3>
 <p>Always consult a qualified healthcare professional before making health decisions. Do not use this app as a substitute for professional medical diagnosis, treatment, or advice.</p>
 <h3>Mental Health</h3>
@@ -12179,14 +12642,14 @@ const LEGAL_CONTENT={
   notice:{
     title:'📢 Legal Notice',
     content:`<h3>General Legal Notice</h3>
-<p>Consciousness OS is an independent application. It is not affiliated with, endorsed by, or connected to any government body, medical institution, educational board, or financial regulator.</p>
+<p>COS is an independent application. It is not affiliated with, endorsed by, or connected to any government body, medical institution, educational board, or financial regulator.</p>
 <h3>Third-Party Services</h3>
 <p>This app may integrate with third-party AI services (Anthropic Claude API) and font services (Google Fonts). Use of these services is subject to their respective terms and privacy policies.</p>
 <h3>Jurisdiction</h3>
 <p>Any disputes arising from the use of this app shall be governed by applicable laws. Users are responsible for ensuring their use of this app complies with laws in their jurisdiction.</p>
 <h3>Changes</h3>
 <p>We reserve the right to update any legal notices, policies, or terms at any time. The most current version will always be available within the app.</p>
-<p style="margin-top:14px;font-size:12px;color:var(--text3)">Last updated: February 2026 · Consciousness OS</p>`
+<p style="margin-top:14px;font-size:12px;color:var(--text3)">Last updated: February 2026 · COS</p>`
   }
 };
 
@@ -13240,7 +13703,7 @@ function init(){
     } else {
       // Fresh session — standard greeting
       const logs=getLogs();
-      addChatMsg('ai',logs.length?`Hello! 👋 I see you have ${logs.length} consciousness entries. ${Math.random()>.5?'How are you feeling today?':'What\'s on your mind?'}`:"Welcome to Consciousness OS! 🧠 I'm your AI Digital Twin. Fill your first Daily Log and I'll start learning your patterns. What's your name?",'twin');
+      addChatMsg('ai',logs.length?`Hello! 👋 I see you have ${logs.length} consciousness entries. ${Math.random()>.5?'How are you feeling today?':'What\'s on your mind?'}`:"Welcome to COS! 🧠 I'm your AI Digital Twin. Fill your first Daily Log and I'll start learning your patterns. What's your name?",'twin');
     }
   },600);
   loadDailyTip();
@@ -13269,7 +13732,7 @@ function init(){
 document.addEventListener('DOMContentLoaded',init);
 
 // ═══════════════════════════════════════════════════════════════════════
-//  🧠 CONSCIOUSNESS OS — LIVE INTELLIGENCE ENGINE + INTEGRATION LAYER
+//  🧠 COS — LIVE INTELLIGENCE ENGINE + INTEGRATION LAYER
 //  Real-time world news via Anthropic web search + CIL wiring all tabs
 // ═══════════════════════════════════════════════════════════════════════
 
@@ -13613,7 +14076,7 @@ async function fetchForex() {
   return data;
 }
 
-// ── SOURCE 3: Yahoo Finance (real data) → Groq estimate fallback ────────
+// ── SOURCE 3: Yahoo Finance (real data) → Stooq (real data) → Groq estimate (last resort) ────────
 // Yahoo Finance unofficial JSON — free, no key, works via allorigins CORS proxy
 async function fetchIndicesViaGroq() {
   const cacheKey = 'cos_indices_live';
@@ -13666,40 +14129,84 @@ async function fetchIndicesViaGroq() {
     localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), data }));
     return data;
   } catch(e) {
-    console.warn('[Indices/Yahoo]', e.message, '→ falling back to Groq estimate');
-    // Groq fallback — clearly labelled as estimates
+    console.warn('[Indices/Yahoo]', e.message, '→ trying Stooq real-data fallback');
+  }
+
+  // ── Layer 2: Stooq — free, no key, no CORS block, real market data ────
+  // (Yahoo's unofficial quote API frequently blocks CORS-proxied/scraped requests,
+  // so Stooq is a genuinely live, reliable second real-data source rather than
+  // jumping straight to an AI guess.)
+  try {
+    const STOOQ = [
+      { sym: '^nsei',  name: 'Nifty 50',  type: 'index',     emoji: '🇮🇳', fmt: (v)=>v.toLocaleString('en-IN',{maximumFractionDigits:0}) },
+      { sym: '^bsesn', name: 'Sensex',    type: 'index',     emoji: '📈', fmt: (v)=>v.toLocaleString('en-IN',{maximumFractionDigits:0}) },
+      { sym: '^spx',   name: 'S&P 500',   type: 'index',     emoji: '🏛️', fmt: (v)=>v.toLocaleString('en-US',{maximumFractionDigits:0}) },
+      { sym: '^ndq',   name: 'Nasdaq',    type: 'index',     emoji: '💻', fmt: (v)=>v.toLocaleString('en-US',{maximumFractionDigits:0}) },
+      { sym: 'xauusd', name: 'Gold',      type: 'commodity', emoji: '🥇', fmt: (v)=>'$'+v.toLocaleString('en-US',{maximumFractionDigits:0}) },
+      { sym: 'cl.f',   name: 'Oil WTI',   type: 'commodity', emoji: '🛢️', fmt: (v)=>'$'+v.toFixed(2) },
+      { sym: 'xagusd', name: 'Silver',    type: 'commodity', emoji: '🪙', fmt: (v)=>'$'+v.toFixed(2) },
+      { sym: '^vix',   name: 'VIX',       type: 'index',     emoji: '😱', fmt: (v)=>v.toFixed(2) },
+    ];
+    const symList = STOOQ.map(t=>t.sym).join(',');
+    const stooqUrl = `https://stooq.com/q/l/?s=${encodeURIComponent(symList)}&f=sd2t2c2p2&h&e=csv`;
+    const res = await cosFetch(stooqUrl, {}, 8000);
+    if (!res.ok) throw new Error('Stooq ' + res.status);
+    const csv = await res.text();
+    const lines = csv.trim().split('\n').slice(1); // skip header row
+    const data = [];
+    lines.forEach((line, i) => {
+      const cols = line.split(',');
+      // Columns: Symbol,Date,Time,Close,Change%
+      const close = parseFloat(cols[3]);
+      const changePct = parseFloat(cols[4]);
+      const meta = STOOQ[i];
+      if (!meta || isNaN(close) || cols[3] === 'N/D') return; // skip unavailable rows individually
+      data.push(mkAsset(meta.name, meta.type, close, isNaN(changePct)?0:changePct, {
+        displayPrice: meta.fmt(close),
+        emoji: meta.emoji,
+        source: 'Stooq'
+      }));
+    });
+    if (data.length) {
+      localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), data }));
+      return data;
+    }
+    throw new Error('Stooq returned no usable rows');
+  } catch(e2) {
+    console.warn('[Indices/Stooq]', e2.message, '→ falling back to Groq estimate (clearly labelled, not live)');
+  }
+
+  // ── Layer 3: Groq estimate — last resort only, clearly labelled ────────
+  {
     const today = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
-    const prompt = `Today is ${today}. Give current approximate market levels for these assets. Return ONLY a JSON array:
-[{"name":"Nifty 50","type":"index","value":23150,"change":-0.4,"emoji":"🇮🇳","displayPrice":"23,150"},
-{"name":"Sensex","type":"index","value":76200,"change":-0.3,"emoji":"📈","displayPrice":"76,200"},
-{"name":"S&P 500","type":"index","value":5500,"change":0.5,"emoji":"🏛️","displayPrice":"5,500"},
-{"name":"Nasdaq","type":"index","value":17800,"change":0.8,"emoji":"💻","displayPrice":"17,800"},
-{"name":"Gold","type":"commodity","value":2350,"change":0.3,"emoji":"🥇","displayPrice":"$2,350"},
-{"name":"Oil WTI","type":"commodity","value":78,"change":-0.8,"emoji":"🛢️","displayPrice":"$78"},
-{"name":"Silver","type":"commodity","value":27,"change":1.1,"emoji":"🪙","displayPrice":"$27"},
-{"name":"VIX","type":"index","value":16,"change":-3.2,"emoji":"😱","displayPrice":"16.0"}]
-Use real approximate current values.`;
+    // Deliberately no hardcoded example numbers here — anchoring the prompt with
+    // sample values causes the model to parrot those stale examples back instead
+    // of reasoning about the actual current date.
+    const prompt = `Today is ${today}. Live market data feeds are temporarily unreachable. Give your best current estimate for these 8 assets based on the most recent real levels you're aware of: Nifty 50, Sensex, S&P 500, Nasdaq Composite, Gold (USD/oz), Oil WTI (USD/barrel), Silver (USD/oz), VIX.
+Return ONLY a JSON array, no markdown, no commentary:
+[{"name":"Nifty 50","type":"index","value":<number>,"change":<percent number>,"emoji":"🇮🇳","displayPrice":"<formatted>"}, ...7 more in the same order listed above with matching emoji 📈 🏛️ 💻 🥇 🛢️ 🪙 😱]`;
     try {
-      const raw = await callGroqJSON(prompt, 'Return ONLY valid JSON array. No markdown.', 600);
+      const raw = await callGroqJSON(prompt, 'Return ONLY valid JSON array. No markdown. Use your genuine best current estimate, not placeholder numbers.', 600);
       const match = raw.match(/\[[\s\S]*\]/);
       if (!match) throw new Error('no JSON');
       const parsed = JSON.parse(match[0]);
       const data = parsed.map(item => mkAsset(
         item.name, item.type||'index', item.value, item.change||0,
-        { displayPrice: '~'+item.displayPrice, emoji: item.emoji||'📊', source: 'Groq estimate' }
+        { displayPrice: '~'+item.displayPrice, emoji: item.emoji||'📊', source: 'AI estimate (not live)' }
       ));
-      localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), data }));
+      // Short cache TTL for estimates so we retry real sources again soon
+      localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now() - (FRESH_TTL - 3*60*1000), data }));
       return data;
-    } catch(e2) {
+    } catch(e3) {
       return [
-        mkAsset('Nifty 50',  'index',     23100, -0.4, { displayPrice:'~23,100', emoji:'🇮🇳', source:'Estimated' }),
-        mkAsset('Sensex',    'index',     76000, -0.3, { displayPrice:'~76,000', emoji:'📈',  source:'Estimated' }),
-        mkAsset('S&P 500',   'index',      5500,  0.5, { displayPrice:'~5,500',  emoji:'🏛️', source:'Estimated' }),
-        mkAsset('Nasdaq',    'index',     17800,  0.8, { displayPrice:'~17,800', emoji:'💻',  source:'Estimated' }),
-        mkAsset('Gold',      'commodity',  2350,  0.3, { displayPrice:'~$2,350', emoji:'🥇',  source:'Estimated' }),
-        mkAsset('Oil WTI',   'commodity',    78, -0.8, { displayPrice:'~$78',    emoji:'🛢️', source:'Estimated' }),
-        mkAsset('Silver',    'commodity',    27,  1.1, { displayPrice:'~$27',    emoji:'🪙',  source:'Estimated' }),
-        mkAsset('VIX',       'index',        16, -3.2, { displayPrice:'~16.0',   emoji:'😱',  source:'Estimated' }),
+        mkAsset('Nifty 50',  'index',     0, 0, { displayPrice:'Unavailable', emoji:'🇮🇳', source:'Data unavailable' }),
+        mkAsset('Sensex',    'index',     0, 0, { displayPrice:'Unavailable', emoji:'📈',  source:'Data unavailable' }),
+        mkAsset('S&P 500',   'index',     0, 0, { displayPrice:'Unavailable', emoji:'🏛️', source:'Data unavailable' }),
+        mkAsset('Nasdaq',    'index',     0, 0, { displayPrice:'Unavailable', emoji:'💻',  source:'Data unavailable' }),
+        mkAsset('Gold',      'commodity', 0, 0, { displayPrice:'Unavailable', emoji:'🥇',  source:'Data unavailable' }),
+        mkAsset('Oil WTI',   'commodity', 0, 0, { displayPrice:'Unavailable', emoji:'🛢️', source:'Data unavailable' }),
+        mkAsset('Silver',    'commodity', 0, 0, { displayPrice:'Unavailable', emoji:'🪙',  source:'Data unavailable' }),
+        mkAsset('VIX',       'index',     0, 0, { displayPrice:'Unavailable', emoji:'😱',  source:'Data unavailable' }),
       ];
     }
   }
@@ -13888,13 +14395,13 @@ function renderLiveScienceNews(news) {
     <div class="discovery-card" style="border-left:3px solid var(--primary);background:var(--bg2);border-radius:0 12px 12px 0;margin-bottom:10px;padding:12px 12px 12px 14px">
       <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
         <span style="font-size:16px">${catEmoji[cat]||'🔬'}</span>
-        <span style="font-size:10px;font-weight:700;color:var(--primary);text-transform:uppercase">${cat}</span>
-        <span style="font-size:10px;color:var(--text3);margin-left:auto">${date} · 🔴 LIVE</span>
+        <span style="font-size:10px;font-weight:700;color:var(--primary);text-transform:uppercase">${escHtml(cat)}</span>
+        <span style="font-size:10px;color:var(--text3);margin-left:auto">${escHtml(date)} · 🔴 LIVE</span>
       </div>
-      <div style="font-weight:800;font-size:13px;color:var(--text);margin-bottom:4px">${title}</div>
-      ${desc ? `<div style="font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:4px">${desc}</div>` : ''}
-      ${impact ? `<div style="font-size:11px;color:var(--accent);font-weight:600">💡 ${impact}</div>` : ''}
-      ${source ? `<div style="font-size:10px;color:var(--text3);margin-top:3px">📰 ${source}</div>` : ''}
+      <div style="font-weight:800;font-size:13px;color:var(--text);margin-bottom:4px">${escHtml(title)}</div>
+      ${desc ? `<div style="font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:4px">${escHtml(desc)}</div>` : ''}
+      ${impact ? `<div style="font-size:11px;color:var(--accent);font-weight:600">💡 ${escHtml(impact)}</div>` : ''}
+      ${source ? `<div style="font-size:10px;color:var(--text3);margin-top:3px">📰 ${escHtml(source)}</div>` : ''}
     </div>`;
   }).join('');
 }
@@ -14262,7 +14769,16 @@ buildScienceDisplay = async function(force) {
   
   try {
     const news = await fetchLiveScienceNews(force);
-    renderLiveScienceNews(news);
+    // Respect the active category filter (biotech button maps to 'bio' data tag used by curated items)
+    const cat = (typeof currentSciCat !== 'undefined') ? currentSciCat : 'all';
+    const catAlias = { biotech: 'bio' };
+    const wantCat = catAlias[cat] || cat;
+    const filtered = (cat === 'all' || !news) ? news : news.filter(n => (n.cat||'') === wantCat || (n.cat||'') === cat);
+    const toRender = (filtered && filtered.length) ? filtered : news;
+    renderLiveScienceNews(toRender);
+    if (cat !== 'all' && (!filtered || !filtered.length) && discEl) {
+      discEl.insertAdjacentHTML('afterbegin', `<div style="font-size:11px;color:var(--text3);text-align:center;padding:6px 0">No live items tagged "${cat}" right now — showing all categories.</div>`);
+    }
     
     const now = new Date().toLocaleString('en-IN', { timeZone:'Asia/Kolkata', hour:'2-digit', minute:'2-digit', day:'numeric', month:'short' });
     if (tsEl) tsEl.textContent = `🔴 LIVE · ${now} IST`;
@@ -14439,7 +14955,7 @@ function cosBrainSync() {
 
 function buildCOSBrainContext() {
   const b = COS_BRAIN;
-  let ctx = `\n\n═══ CONSCIOUSNESS OS — FULL SYSTEM CONTEXT (CIL v2) ═══`;
+  let ctx = `\n\n═══ COS — FULL SYSTEM CONTEXT (CIL v2) ═══`;
   ctx += `\nSync time: ${new Date(b.lastSync||Date.now()).toLocaleString('en-IN',{timeZone:'Asia/Kolkata'})} IST`;
   
   if (b.user) ctx += `\nUSER: ${b.user.name||'User'} (${b.user.email||''})`;
@@ -14996,7 +15512,7 @@ async function neuralGenerateInsights() {
   const pred = neuralPredictBehavior();
   if (!pred || pred.dataPoints < 3) return;
   const ctx = buildCOSBrainContext();
-  const prompt = `Based on this user's live Consciousness OS data, generate 3 autonomous AI insights. Be specific, not generic. Connect patterns to actionable intelligence.\\n\\nData:\\n${ctx}\\n\\nBehavioral prediction: Mood avg ${pred.avgMood}/10, Energy ${pred.avgEnergy}/10, trend: ${pred.trend}\\n\\nGenerate exactly 3 insights in JSON array: [{emoji, category, insight, action, urgency}] where urgency is low/medium/high. No markdown.`;
+  const prompt = `Based on this user's live COS data, generate 3 autonomous AI insights. Be specific, not generic. Connect patterns to actionable intelligence.\\n\\nData:\\n${ctx}\\n\\nBehavioral prediction: Mood avg ${pred.avgMood}/10, Energy ${pred.avgEnergy}/10, trend: ${pred.trend}\\n\\nGenerate exactly 3 insights in JSON array: [{emoji, category, insight, action, urgency}] where urgency is low/medium/high. No markdown.`;
   try {
     const raw = await callGroqJSON(prompt, 'You are a behavioral intelligence AI. Generate insights from data patterns. Return ONLY valid JSON array.', 600);
     const parsed = JSON.parse(raw);
@@ -15221,7 +15737,7 @@ async function calculateDailyScore(){
 function shareScore(){
   const score = document.getElementById('focusScore')?.innerText || '--';
   const mood = document.getElementById('moodTrendReport')?.innerText || '→';
-  const shareText = `🧠 My Cognitive Performance Today\n\nFocus Score: ${score}/100\nMood Trend: ${mood}\n\nTracked with Consciousness OS`;
+  const shareText = `🧠 My Cognitive Performance Today\n\nFocus Score: ${score}/100\nMood Trend: ${mood}\n\nTracked with COS`;
   if(navigator.share){
     navigator.share({
       title: 'My Cognitive Score',
@@ -15475,12 +15991,12 @@ function renderTabNews(el, items, cfg) {
       </div>
     </div>
     ${items.map(i => `<div style="padding:8px 0;border-bottom:1px solid var(--border)">
-      <a href="${i.link||'#'}" target="_blank" style="font-size:13px;font-weight:700;color:var(--text);text-decoration:none;line-height:1.4;display:block;margin-bottom:3px">${i.title}</a>
+      <a href="${safeHref(i.link)}" target="_blank" rel="noopener noreferrer" style="font-size:13px;font-weight:700;color:var(--text);text-decoration:none;line-height:1.4;display:block;margin-bottom:3px">${escHtml(i.title)}</a>
       <div style="font-size:10px;color:var(--text3);display:flex;align-items:center;gap:6px">
         <span style="background:${cfg.color}22;color:${cfg.color};border-radius:4px;padding:1px 5px;font-size:9px;font-weight:700">${i.live?'LIVE':'AI'}</span>
-        <span>${i.src||''} ${i.pubDate?'· '+new Date(i.pubDate).toLocaleDateString('en-IN',{day:'numeric',month:'short'}):''}</span>
+        <span>${escHtml(i.src||'')} ${i.pubDate?'· '+new Date(i.pubDate).toLocaleDateString('en-IN',{day:'numeric',month:'short'}):''}</span>
       </div>
-      ${i.desc?`<div style="font-size:11px;color:var(--text3);margin-top:2px">${i.desc}</div>`:''}
+      ${i.desc?`<div style="font-size:11px;color:var(--text3);margin-top:2px">${escHtml(i.desc)}</div>`:''}
     </div>`).join('')}
     <button onclick="fetchTabNews('${cfg.containerId.replace('NewsContainer','')}')" style="width:100%;background:none;border:1px solid var(--border);border-radius:8px;padding:6px;font-size:11px;color:var(--text3);cursor:pointer;margin-top:8px">🔄 Refresh Feed</button>
   </div>`;
@@ -15488,14 +16004,15 @@ function renderTabNews(el, items, cfg) {
 
 function renderNewsItem(item, isAI=false) {
   if (!item || !item.title || item.title === 'undefined') return '';
-  const tag = item.tag ? `<span style="background:${tagColors[item.tag]||'var(--primary)'};color:#fff;border-radius:4px;padding:1px 6px;font-size:9px;font-weight:700;margin-right:5px">${item.tag}</span>` : '';
+  const tag = item.tag ? `<span style="background:${tagColors[item.tag]||'var(--primary)'};color:#fff;border-radius:4px;padding:1px 6px;font-size:9px;font-weight:700;margin-right:5px">${escHtml(item.tag)}</span>` : '';
   const date = item.pubDate ? `· ${new Date(item.pubDate).toLocaleDateString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}` : '';
   const rawSrc = item.src || '';
   const rawDesc = (item.description && item.description !== 'undefined') ? item.description : '';
   const src = rawSrc !== 'undefined' ? (rawSrc || rawDesc.replace(/<[^>]+>/g,'').slice(0,70)) : rawDesc.replace(/<[^>]+>/g,'').slice(0,70);
+  // SECURITY: title/src come from external RSS/AI feeds — escape before insertion, sanitize href
   return `<div style="padding:9px 0;border-bottom:1px solid var(--border)">
-    <a href="${item.link||item.url||'#'}" target="_blank" style="font-size:13px;font-weight:700;color:var(--text);text-decoration:none;display:block;margin-bottom:3px;line-height:1.4">${item.title}</a>
-    <div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px;font-size:11px;color:var(--text3)">${tag}<span>${src} ${date}</span>${isAI?'<span style="background:#fbbf24;color:#000;border-radius:3px;padding:1px 4px;font-size:9px;font-weight:700">AI CURATED</span>':''}</div>
+    <a href="${safeHref(item.link||item.url)}" target="_blank" rel="noopener noreferrer" style="font-size:13px;font-weight:700;color:var(--text);text-decoration:none;display:block;margin-bottom:3px;line-height:1.4">${escHtml(item.title)}</a>
+    <div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px;font-size:11px;color:var(--text3)">${tag}<span>${escHtml(src)} ${date}</span>${isAI?'<span style="background:#fbbf24;color:#000;border-radius:3px;padding:1px 4px;font-size:9px;font-weight:700">AI CURATED</span>':''}</div>
   </div>`;
 }
 
@@ -15510,7 +16027,7 @@ async function fetchScienceNews(tier){
   // Layer 1: Try all RSS feeds
   for (const feed of SCIENCE_FEEDS) {
     try {
-      const res = await fetch(feed + '&_t=' + Date.now() + '&bust=' + Math.random(), {cache: 'no-store'});
+      const res = await cosFetch(feed + '&_t=' + Date.now() + '&bust=' + Math.random(), {cache: 'no-store'}, 6000);
       const data = await res.json();
       if (data.status === 'ok' && data.items?.length >= 2) {
         items = data.items.slice(0, t.count);
@@ -15575,7 +16092,7 @@ async function loadGeoNews(tier){
   // Layer 1: Try all RSS feeds
   for (const feed of GEO_FEEDS) {
     try {
-      const res = await fetch(feed + '&_t=' + Date.now() + '&bust=' + Math.random(), {cache: 'no-store'});
+      const res = await cosFetch(feed + '&_t=' + Date.now() + '&bust=' + Math.random(), {cache: 'no-store'}, 6000);
       const data = await res.json();
       if (data.status === 'ok' && data.items?.length >= 2) {
         items = data.items.slice(0, t.count);
@@ -15911,7 +16428,7 @@ document.addEventListener('DOMContentLoaded',()=>{setTimeout(()=>{if(document.ge
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         // v10 forces re-install of SW, clearing broken modefault.js precache
-        navigator.serviceWorker.register('./service-worker.js?v=10')
+        navigator.serviceWorker.register('./service-worker.js?v=9')
           .then(reg => {
             console.log('✅ SW registered:', reg.scope);
             reg.update();
@@ -15942,7 +16459,7 @@ document.addEventListener('DOMContentLoaded',()=>{setTimeout(()=>{if(document.ge
         if ('caches' in window) {
           caches.keys().then(keys => {
             keys.forEach(k => {
-              if (k !== 'cos-static-v10') {
+              if (k !== 'cos-static-v9') {
                 caches.delete(k).then(() => console.log('[COS] Purged stale cache:', k));
               }
             });
@@ -15951,27 +16468,6 @@ document.addEventListener('DOMContentLoaded',()=>{setTimeout(()=>{if(document.ge
       });
     }
   
-async function loadScienceNews(){
-  const url = "https://api.rss2json.com/v1/api.json?rss_url=https://www.sciencedaily.com/rss/top/science.xml";
-  try {
-    const res  = await fetch(url + "?v=" + Date.now());
-    const data = await res.json();
-    const container = document.getElementById("scienceFeed");
-    if(!container) return;
-    if(!data.items || !data.items.length){ container.innerHTML='<div style="color:var(--text3);text-align:center;padding:12px">No science articles found.</div>'; return; }
-    container.innerHTML = data.items.slice(0,6).map(item=>`
-      <div class="news-card" style="background:var(--bg2);border-radius:12px;padding:12px;margin-bottom:8px;border:1px solid var(--border)">
-        <h3 style="font-size:13px;font-weight:700;color:var(--text);margin:0 0 6px">${item.title}</h3>
-        <p style="font-size:11px;color:var(--text2);margin:0 0 8px;line-height:1.5">${(item.description||'').replace(/<[^>]+>/g,'').slice(0,180)}</p>
-        <a href="${item.link}" target="_blank" rel="noopener" style="font-size:11px;color:var(--primary);font-weight:700;text-decoration:none">Read →</a>
-      </div>`).join('');
-    showToast('✅ Science feed refreshed!');
-  } catch(e) {
-    const container = document.getElementById("scienceFeed");
-    if(container) container.innerHTML=`<div style="color:var(--danger);text-align:center;padding:12px">⚠️ Feed error: ${e.message}</div>`;
-    showToast('❌ Science feed error');
-  }
-}
 
 
 // ── askAI / runAI — General-purpose AI via Groq Worker ────────────────────
@@ -15979,7 +16475,7 @@ async function loadScienceNews(){
 // Key never exposed in source — lives only in the Worker secret.
 async function askAI(prompt, systemPrompt, maxTok) {
   // Single entry point for ALL AI calls → Cloudflare Worker → Groq llama-3.3-70b-versatile
-  systemPrompt = systemPrompt || 'You are an advanced strategic intelligence AI inside Consciousness OS. Be precise, specific, and data-driven.';
+  systemPrompt = systemPrompt || 'You are an advanced strategic intelligence AI inside COS. Be precise, specific, and data-driven.';
   const _ctrl5=new AbortController();const _t5=setTimeout(()=>_ctrl5.abort(),15000);
   let res;try{res=await fetch(_WORKER_URL, {
     method: 'POST',
@@ -16094,40 +16590,10 @@ async function initWorldTab() {
   }
 }
 
-// ── STEP 8: initScienceTab — HackerNews science feed ─────────────────────────
-async function initScienceTab() {
-  const container = document.getElementById('scienceFeed');
-  if (!container) return;
-  container.innerHTML = '<p style="color:var(--text3);font-size:13px">Loading science news...</p>';
-
-  try {
-    // HackerNews — free, no API key ever
-    const topRes = await fetch('https://hacker-news.firebaseio.com/v0/topstories.json');
-    const ids = (await topRes.json()).slice(0, 15);
-
-    const stories = await Promise.all(
-      ids.map(id => fetch(`https://hacker-news.firebaseio.com/v0/item/${id}.json`).then(r => r.json()))
-    );
-
-    const scienceStories = stories.filter(s =>
-      s && s.title && /science|AI|brain|space|quantum|health|bio|physics|study/i.test(s.title)
-    ).slice(0, 6);
-
-    container.innerHTML = scienceStories.map(s => `
-      <div style="background:var(--bg3);border-radius:10px;padding:12px;margin-bottom:8px">
-        <p style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px">${s.title}</p>
-        <div style="display:flex;gap:12px;font-size:11px;color:var(--text3)">
-          <span>⬆️ ${s.score}</span>
-          <span>💬 ${s.descendants||0}</span>
-          <a href="${s.url||'#'}" target="_blank" style="color:var(--primary);font-weight:700">Read →</a>
-        </div>
-      </div>
-    `).join('') || '<p style="color:var(--text3)">No science stories right now.</p>';
-
-  } catch(e) {
-    container.innerHTML = '<p style="color:var(--danger);font-size:13px">Could not load science feed.</p>';
-  }
-}
+// (Removed: legacy HackerNews-based initScienceTab — targeted a container that
+// no longer exists in the DOM and duplicated the Live Science Intelligence feed
+// above. buildScienceDisplay() + fetchScienceNews() are the single source of
+// truth for science content now.)
 
 // ── CLOUDFLARE WORKER HEALTH CHECK ─────────────────────────────
 async function checkWorkerHealth() {
@@ -16335,7 +16801,7 @@ async function askMirrorAI() {
   const dreams = (typeof getDreams === 'function') ? getDreams() : [];
   const avg = key => logs.length ? (logs.reduce((s,e)=>s+(parseFloat(e[key])||0),0)/logs.length).toFixed(1) : '?';
 
-  const context = `You are the AI Mirror inside Consciousness OS Vault. You have access to this user's complete consciousness data.
+  const context = `You are the AI Mirror inside COS Vault. You have access to this user's complete consciousness data.
 You DO NOT give generic advice. You describe THIS specific person based on THEIR numbers.
 Write in second person ("You are...", "Your data shows...").
 Be specific, insightful, sometimes surprising. Like a therapist who has read 100 sessions of notes.
@@ -16367,7 +16833,7 @@ function exportConsciousnessProfile() {
     meta: {
       version: '8.0.0',
       exportedAt: new Date().toISOString(),
-      appName: 'Consciousness OS',
+      appName: 'COS',
       description: 'Complete consciousness profile — cognitive fingerprint, behavioral history, dreams, peak states.'
     },
     fingerprint: {
@@ -16479,7 +16945,7 @@ function shareWeeklyCard() {
   // Header
   ctx.fillStyle = 'rgba(255,255,255,0.45)';
   ctx.font = '600 12px sans-serif';
-  ctx.fillText('CONSCIOUSNESS OS · WEEKLY MIND REPORT', 30, 40);
+  ctx.fillText('COS · WEEKLY MIND REPORT', 30, 40);
 
   // Score
   const score = document.getElementById('wmc-score')?.textContent || '—';
@@ -16722,7 +17188,7 @@ async function saveMorningDebrief() {
   if (titleEl && !titleEl.value) titleEl.value = 'Morning Debrief ' + new Date().toLocaleDateString('en-IN');
   if (descEl)  descEl.value = text;
 
-  const system = `You are a lucid dreaming coach and dream analyst inside Consciousness OS.
+  const system = `You are a lucid dreaming coach and dream analyst inside COS.
 Analyze this dream description and provide:
 1. Three most significant dream symbols and what they indicate
 2. One dream sign the user should watch for in future dreams
@@ -16774,7 +17240,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ═══════════════════════════════════════════════════════════════
 //  PRO SYSTEM — PAYWALL + STREAK + DEVPANEL
-//  Consciousness OS v8.1
+//  COS v8.1
 // ═══════════════════════════════════════════════════════════════
 
 // ── PRO STATUS ────────────────────────────────────────────────
@@ -16806,7 +17272,7 @@ const PRO = {
   async startFreeTrial() {
     await this._autoGrant();
     this.applyUI(true);
-    showToast('🎉 All features unlocked! Enjoy Consciousness OS free.');
+    showToast('🎉 All features unlocked! Enjoy COS free.');
   },
 
   async grant(plan, months) {
@@ -16819,7 +17285,7 @@ const PRO = {
       try { await db.collection('users').doc(user.uid).collection('pro').doc('status').set(data); } catch(e) {}
     }
     this.applyUI(true);
-    showToast('✨ Pro activated! Enjoy Consciousness OS Pro.');
+    showToast('✨ Pro activated! Enjoy COS Pro.');
   },
 
   revoke() {
@@ -18107,7 +18573,7 @@ function deleteGuestPermanently() {
 <div id="appGuideModal" role="dialog" aria-modal="true" aria-label="App Guide">
   <div class="guide-sheet-handle"></div>
   <div class="guide-sheet-header">
-    <span class="guide-sheet-title">📖 Consciousness OS Guide</span>
+    <span class="guide-sheet-title">📖 COS Guide</span>
     <button class="guide-sheet-close" onclick="closeAppGuide()">✕</button>
   </div>
   <div class="guide-sheet-body">
@@ -18115,7 +18581,7 @@ function deleteGuestPermanently() {
     <!-- HERO -->
     <div style="background:linear-gradient(135deg,rgba(124,58,237,.15),rgba(6,182,212,.1));border:2px solid rgba(124,58,237,.3);border-radius:14px;padding:16px;margin-bottom:16px;text-align:center">
       <div style="font-size:36px;margin-bottom:6px">🧠</div>
-      <div style="font-family:Syne,sans-serif;font-size:16px;font-weight:900;color:var(--text);margin-bottom:4px">Consciousness OS</div>
+      <div style="font-family:Syne,sans-serif;font-size:16px;font-weight:900;color:var(--text);margin-bottom:4px">COS</div>
       <div style="font-size:12px;color:var(--text3);line-height:1.6">Not an app. A self-improving cognitive loop.<br>Track → Analyze → Predict → Decide → Act → Improve.</div>
     </div>
 
@@ -18528,7 +18994,7 @@ async function _analyzeImageChat(){
     if(!text){
       text = await callGroqFast(
         `The user attached an image file named "${fname}" and asked: "${userMsg}". The image could not be processed directly. Please acknowledge the image was received, note that direct image analysis requires the Groq vision model to be available, and offer to help if they describe what's in the image.`,
-        'You are the Consciousness OS AI. Be helpful and direct.',
+        'You are the COS AI. Be helpful and direct.',
         400
       );
     }
@@ -18611,7 +19077,7 @@ async function _webSearchChat(){
     const wikiCtx = await fetchWikiContext(query);
     if(statusEl) statusEl.textContent = 'Synthesizing...';
 
-    const systemPrompt = `You are the Consciousness OS AI. Titan Protocol: elite strategic partner, first-principles, no fluff. Format responses with clear headers, bullet points, and bold key terms using markdown.
+    const systemPrompt = `You are the COS AI. Titan Protocol: elite strategic partner, first-principles, no fluff. Format responses with clear headers, bullet points, and bold key terms using markdown.
 ${wikiCtx ? 'You have live web search results below. Use them as factual grounding — cite source titles naturally.' : 'No web results found — answer from training knowledge.'}`;
 
     const userPrompt = wikiCtx
@@ -18736,490 +19202,6 @@ Titan Protocol: no fluff, specific, actionable. Max 500 words.`;
   }
 }
 </script>
-
-<!-- ═══════════════════════════════════════════════════════════════
-     CONSCIOUSNESS OS v10.2 — FUTURE ME TAB ADDITION
-     
-     HOW TO INTEGRATE INTO index.html:
-     
-     STEP 1 — Add nav entry to NAV_ITEMS array (line ~5924):
-     Add this AS THE SECOND ITEM (after log):
-     {id:'futureme',icon:'🔮',key:'nav_futureme'},
-     
-     Also add to LANGS.en object:
-     nav_futureme:"Future Me",
-     
-     STEP 2 — Paste this entire block just BEFORE the closing </body> tag.
-     
-     STEP 3 — In your existing Daily Log tab, find the "Save Entry" button
-     and add the SmartLog pre-fill call. Instructions in the JS section below.
-═══════════════════════════════════════════════════════════════ -->
-
-<!-- ══════════════════════════════════════════════════
-     FUTURE ME TAB STYLES
-══════════════════════════════════════════════════ -->
-<style>
-/* ── FUTURE ME TAB ── */
-#tab-futureme { animation: fmFadeIn .4s ease; }
-@keyframes fmFadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
-
-/* Akinator Question Card */
-.akinator-card {
-  background: linear-gradient(135deg, rgba(124,58,237,.15), rgba(6,182,212,.1));
-  border: 1.5px solid rgba(124,58,237,.3);
-  border-radius: 16px;
-  padding: 16px;
-  margin-bottom: 16px;
-  position: relative;
-  overflow: hidden;
-}
-.akinator-card::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, #7c3aed, #06b6d4, #ec4899);
-  border-radius: 16px 16px 0 0;
-}
-.akinator-label {
-  font-size: 9px;
-  font-weight: 800;
-  letter-spacing: 1.5px;
-  color: var(--accent);
-  text-transform: uppercase;
-  margin-bottom: 8px;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-.akinator-q {
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--text);
-  line-height: 1.5;
-  margin-bottom: 4px;
-  font-family: 'Syne', sans-serif;
-}
-.akinator-hint {
-  font-size: 11px;
-  color: var(--text3);
-  margin-bottom: 12px;
-  font-style: italic;
-}
-.akinator-input {
-  width: 100%;
-  background: var(--bg2);
-  border: 1.5px solid var(--border);
-  border-radius: 10px;
-  padding: 10px 12px;
-  color: var(--text);
-  font-family: 'DM Sans', sans-serif;
-  font-size: 14px;
-  resize: none;
-  outline: none;
-  min-height: 70px;
-  transition: border-color .2s;
-}
-.akinator-input:focus { border-color: var(--primary); }
-.akinator-actions { display: flex; gap: 8px; margin-top: 10px; }
-.akinator-skip { background: transparent; border: 1px solid var(--border); color: var(--text3); border-radius: 8px; padding: 8px 14px; font-size: 12px; cursor: pointer; }
-.akinator-submit { background: linear-gradient(135deg, #7c3aed, #06b6d4); color: #fff; border: none; border-radius: 8px; padding: 8px 18px; font-size: 12px; font-weight: 700; cursor: pointer; flex: 1; }
-
-/* 3D Twin Section */
-.twin-section {
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 14px;
-  margin-bottom: 14px;
-}
-.twin-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
-}
-.twin-title {
-  font-family: 'Syne', sans-serif;
-  font-size: 13px;
-  font-weight: 800;
-  color: var(--text);
-}
-.horizon-btns {
-  display: flex;
-  gap: 4px;
-}
-.horizon-btn {
-  padding: 4px 9px;
-  border-radius: 20px;
-  border: 1px solid var(--border);
-  background: var(--bg3);
-  color: var(--text3);
-  font-size: 10px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all .2s;
-}
-.horizon-btn.active {
-  background: var(--primary);
-  color: #fff;
-  border-color: var(--primary);
-}
-
-/* Twin Scene — 3D Container */
-.twin-scene {
-  perspective: 800px;
-  display: flex;
-  justify-content: center;
-  align-items: flex-end;
-  gap: 30px;
-  padding: 10px 0 16px;
-  min-height: 240px;
-  cursor: grab;
-  user-select: none;
-  touch-action: pan-y;
-}
-.twin-scene:active { cursor: grabbing; }
-
-.twin-figure-wrap {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-}
-.twin-label-small {
-  font-size: 9px;
-  font-weight: 800;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-}
-.twin-label-small.current { color: var(--text3); }
-.twin-label-small.future  { color: var(--accent); }
-
-/* The 3D rotating wrapper */
-.twin-body-wrap {
-  transform-style: preserve-3d;
-  transition: transform .05s linear;
-}
-
-/* SVG Avatar dimensions */
-.twin-svg { overflow: visible; }
-
-/* Dimension Legend */
-.twin-legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 10px;
-  justify-content: center;
-}
-.twin-dim {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 10px;
-  color: var(--text3);
-}
-.twin-dim-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-/* Score Ring under avatar */
-.twin-score-ring {
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  background: conic-gradient(var(--primary) var(--pct, 0%), var(--bg3) var(--pct, 0%));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-  font-weight: 800;
-  font-family: 'Syne', sans-serif;
-  color: var(--text);
-  position: relative;
-  margin-top: -20px;
-}
-.twin-score-ring::before {
-  content: '';
-  position: absolute;
-  inset: 5px;
-  border-radius: 50%;
-  background: var(--bg2);
-}
-.twin-score-num {
-  position: relative;
-  z-index: 1;
-  font-size: 13px;
-}
-
-/* Gap Analysis Bar */
-.gap-bar-wrap { margin-top: 12px; }
-.gap-bar-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 7px;
-}
-.gap-dim-name {
-  font-size: 10px;
-  color: var(--text3);
-  width: 60px;
-  flex-shrink: 0;
-}
-.gap-track {
-  flex: 1;
-  height: 6px;
-  background: var(--bg3);
-  border-radius: 3px;
-  overflow: hidden;
-  position: relative;
-}
-.gap-current-bar {
-  position: absolute;
-  left: 0; top: 0; bottom: 0;
-  border-radius: 3px;
-  transition: width .6s ease;
-}
-.gap-future-outline {
-  position: absolute;
-  right: 0; top: -1px; bottom: -1px;
-  width: 2px;
-  border-radius: 1px;
-  opacity: .5;
-}
-.gap-pct {
-  font-size: 10px;
-  font-weight: 700;
-  width: 30px;
-  text-align: right;
-  flex-shrink: 0;
-}
-
-/* Future Me Chat */
-.fm-chat-section {
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  overflow: hidden;
-  margin-bottom: 14px;
-}
-.fm-chat-header {
-  padding: 12px 14px;
-  background: linear-gradient(135deg, rgba(124,58,237,.12), rgba(6,182,212,.08));
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.fm-avatar-dot {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #7c3aed, #06b6d4);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 18px;
-  flex-shrink: 0;
-  box-shadow: 0 0 12px rgba(124,58,237,.4);
-}
-.fm-chat-meta { flex: 1; }
-.fm-chat-name { font-size: 13px; font-weight: 800; color: var(--text); }
-.fm-chat-sub  { font-size: 10px; color: var(--accent); font-weight: 600; }
-
-.fm-mode-bar {
-  display: flex;
-  gap: 4px;
-  padding: 8px 10px;
-  border-bottom: 1px solid var(--border);
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-.fm-mode-bar::-webkit-scrollbar { display: none; }
-.fm-mode-btn {
-  flex-shrink: 0;
-  padding: 4px 10px;
-  border-radius: 20px;
-  border: 1px solid var(--border);
-  background: var(--bg3);
-  color: var(--text3);
-  font-size: 10px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all .2s;
-  white-space: nowrap;
-}
-.fm-mode-btn.active {
-  background: var(--primary);
-  color: #fff;
-  border-color: var(--primary);
-}
-
-.fm-messages {
-  height: 280px;
-  overflow-y: auto;
-  padding: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  background: var(--bg3);
-}
-.fm-msg {
-  max-width: 88%;
-  padding: 10px 13px;
-  border-radius: 12px;
-  font-size: 13px;
-  line-height: 1.6;
-  animation: fmMsgIn .2s ease;
-}
-@keyframes fmMsgIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
-.fm-msg.user {
-  align-self: flex-end;
-  background: linear-gradient(135deg, var(--primary), #06b6d4);
-  color: #fff;
-  border-bottom-right-radius: 3px;
-}
-.fm-msg.future {
-  align-self: flex-start;
-  background: var(--bg2);
-  border: 1px solid rgba(124,58,237,.25);
-  color: var(--text);
-  border-bottom-left-radius: 3px;
-  position: relative;
-}
-.fm-msg.future::before {
-  content: '🔮';
-  font-size: 10px;
-  display: block;
-  margin-bottom: 4px;
-  opacity: .6;
-}
-.fm-loading-dots {
-  display: flex;
-  gap: 4px;
-  align-items: center;
-  padding: 8px 0;
-}
-.fm-loading-dots span {
-  width: 6px; height: 6px;
-  border-radius: 50%;
-  background: var(--primary);
-  animation: fmDot 1s ease-in-out infinite;
-}
-.fm-loading-dots span:nth-child(2) { animation-delay: .2s; }
-.fm-loading-dots span:nth-child(3) { animation-delay: .4s; }
-@keyframes fmDot { 0%,80%,100%{opacity:.3;transform:scale(.8)} 40%{opacity:1;transform:scale(1)} }
-
-.fm-input-row {
-  display: flex;
-  gap: 8px;
-  padding: 10px;
-  border-top: 1px solid var(--border);
-}
-.fm-input {
-  flex: 1;
-  background: var(--bg3);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 9px 12px;
-  color: var(--text);
-  font-family: 'DM Sans', sans-serif;
-  font-size: 13px;
-  outline: none;
-  resize: none;
-  height: 40px;
-  transition: border .2s;
-}
-.fm-input:focus { border-color: var(--primary); }
-.fm-send {
-  width: 40px; height: 40px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, #7c3aed, #06b6d4);
-  border: none;
-  color: #fff;
-  font-size: 16px;
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: opacity .2s;
-}
-.fm-send:active { opacity: .8; }
-
-/* Quick Starter Prompts */
-.fm-starters {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  padding: 8px 10px 0;
-}
-.fm-starter {
-  padding: 5px 10px;
-  border-radius: 20px;
-  border: 1px solid var(--border);
-  background: var(--bg3);
-  color: var(--text2);
-  font-size: 11px;
-  cursor: pointer;
-  transition: all .2s;
-  white-space: nowrap;
-}
-.fm-starter:hover { border-color: var(--primary); color: var(--primary); }
-
-/* Smart Log Banner */
-.smart-log-banner {
-  background: linear-gradient(135deg, rgba(16,185,129,.15), rgba(6,182,212,.1));
-  border: 1.5px solid rgba(16,185,129,.3);
-  border-radius: 14px;
-  padding: 12px 14px;
-  margin-bottom: 14px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.smart-log-icon { font-size: 22px; flex-shrink: 0; }
-.smart-log-text { flex: 1; }
-.smart-log-title { font-size: 13px; font-weight: 700; color: var(--text); }
-.smart-log-sub   { font-size: 11px; color: var(--text3); margin-top: 1px; }
-.smart-log-confirm {
-  background: linear-gradient(135deg, #10b981, #06b6d4);
-  color: #fff;
-  border: none;
-  border-radius: 9px;
-  padding: 9px 14px;
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-  flex-shrink: 0;
-  white-space: nowrap;
-}
-
-/* Transformation Card */
-.transform-card {
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 14px;
-  margin-bottom: 14px;
-}
-.transform-title {
-  font-family: 'Syne', sans-serif;
-  font-weight: 800;
-  font-size: 13px;
-  color: var(--text);
-  margin-bottom: 12px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-</style>
-
-
-<!-- ══════════════════════════════════════════════════
-     FUTURE ME TAB — JAVASCRIPT ENGINE
-══════════════════════════════════════════════════ -->
 <script>
 // ═══════════════════════════════════════════════════════
 // PASSIVE MIND ENGINE v10.2
@@ -19721,9 +19703,9 @@ let fmHistory = [];
 
 const FM_STARTERS = {
   guide:     ['What should I focus on today?', 'Am I on the right path?', 'What did you do at my stage?'],
-  analyze:   ['What patterns do you see in my data?', 'What am I missing?', 'What's my biggest blind spot?'],
-  challenge: ['Challenge my current approach', 'What am I getting wrong?', 'What's the hardest truth?'],
-  transform: ['Map my current to desired state', 'What's the highest-leverage change?', 'Design my 1-year transformation'],
+  analyze:   ['What patterns do you see in my data?', 'What am I missing?', "What's my biggest blind spot?"],
+  challenge: ['Challenge my current approach', 'What am I getting wrong?', "What's the hardest truth?"],
+  transform: ['Map my current to desired state', "What's the highest-leverage change?", 'Design my 1-year transformation'],
   oracle:    ['Where am I heading in 90 days?', 'What prediction does my data suggest?', 'What changes my trajectory most?'],
   mirror:    ['Who does my data say I really am?', 'What do I actually want vs what I say?', 'Reflect my patterns back to me'],
 };
@@ -19821,7 +19803,7 @@ async function callFutureMe(userMessage, mode) {
 
   const systemPrompt = `You are ${userName}'s Future Self — the version of ${userName} that already achieved his deepest goals and is speaking backward through time.
 
-You used Consciousness OS to get here. You remember being exactly where ${userName} is now.
+You used COS to get here. You remember being exactly where ${userName} is now.
 You speak in FIRST PERSON, PAST TENSE, LIVED EXPERIENCE — specific details, not generic advice.
 
 [CURRENT TWIN DATA]
@@ -19921,17 +19903,14 @@ function initFutureMeTab() {
   showSmartLogBanner();
 }
 
-// Hook into switchTab (belt+suspenders — switchTab already calls initFutureMeTab directly)
+// Hook into switchTab to init on open
 (function hookFutureMe() {
-  if (typeof window.switchTab !== 'function') {
-    // switchTab not yet defined at parse time; rely on direct call in switchTab body
-    return;
-  }
   const _orig = window.switchTab;
+  if (typeof _orig !== 'function') return;
   window.switchTab = function(tabId) {
     const result = _orig.apply(this, arguments);
     if (tabId === 'futureme' && typeof initFutureMeTab === 'function') {
-      setTimeout(initFutureMeTab, 150);
+      setTimeout(initFutureMeTab, 120);
     }
     return result;
   };
@@ -19944,7 +19923,7 @@ if (typeof activeTab !== 'undefined' && activeTab === 'futureme') {
 
 // ── INTEGRATE INTO NAV ─────────────────────────────────
 // Add to NAV_ITEMS array — place second (after log):
-// {id:'futureme',icon:'🔮',key:'nav_futureme'},
+// {id:'futureme',icon:'🔭',key:'nav_futureme'},
 // 
 // Add to each LANGS object:
 // nav_futureme:"Future Me",  (en)
@@ -19953,7 +19932,7 @@ if (typeof activeTab !== 'undefined' && activeTab === 'futureme') {
 
 // Auto-add to nav if NAV_ITEMS exists and futureme not already there
 if (typeof NAV_ITEMS !== 'undefined' && !NAV_ITEMS.find(n => n.id === 'futureme')) {
-  NAV_ITEMS.splice(1, 0, { id: 'futureme', icon: '🔮', key: 'nav_futureme' });
+  NAV_ITEMS.splice(1, 0, { id: 'futureme', icon: '🔭', key: 'nav_futureme' });
   if (typeof LANGS !== 'undefined') {
     Object.keys(LANGS).forEach(lang => {
       if (!LANGS[lang].nav_futureme) LANGS[lang].nav_futureme = lang === 'hi' ? 'भविष्य मैं' : 'Future Me';
@@ -19970,8 +19949,8 @@ function buildCOSMasterPrompt(mode, data) {
   const avg = (key) => logs.length ? (logs.reduce((s, l) => s + (parseFloat(l[key]) || 5), 0) / logs.length).toFixed(1) : '?';
   const realityCtx = logs.length ? `7-day avg: Mood ${avg('mood')} · Focus ${avg('focus')} · Energy ${avg('physicalEnergy')} · Stress ${avg('stress')} (${logs.length} total logs)` : 'No logs yet — passive inference only';
 
-  return `[CONSCIOUSNESS OS v10.2 — ${mode.toUpperCase()} MODE]
-You are COSINT — Consciousness OS Intelligence. You architect futures.
+  return `[COS v10.2 — ${mode.toUpperCase()} MODE]
+You are COSINT — COS Intelligence. You architect futures.
 User: ${userName}. Origin: Koth Kalan, Haryana, India. B.Pharm 2025. Indie dev.
 North star: peak intelligence, wealth, influence via AI-maximized leverage.
 
@@ -19995,8 +19974,6 @@ ${passiveCtx}
 window.buildCOSMasterPrompt = buildCOSMasterPrompt;
 window.PassiveMind = PassiveMind;
 </script>
-
-<!-- ══ END FUTURE ME TAB ADDITION ══ -->
 
 </body>
 </html>
