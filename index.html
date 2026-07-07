@@ -486,7 +486,7 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
 
 /* ── MAIN CONTENT ── */
 .main{padding-top:calc(var(--topbar-h) + 12px);padding-bottom:16px;padding-left:calc(var(--sidebar-w) + 10px);padding-right:10px;min-height:100vh}
-.tab-panel{display:none;padding:0 14px;animation:fadeUp .3s ease}
+.tab-panel{display:none;padding:0 14px;animation:fadeUp .3s ease;overflow-anchor:none}
 .tab-panel.active{display:block}
 @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
 
@@ -2691,6 +2691,25 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:var(--bg);colo
         <div style="font-size:24px;flex-shrink:0">6️⃣</div>
         <div><div style="font-weight:700;font-size:14px">Read the Science tab daily</div><div style="font-size:12px;color:var(--text3);margin-top:3px">Frontier discoveries across neuroscience, AI, longevity & space — updated with real dates so you always know what's current.</div></div>
       </div>
+      <div style="display:flex;gap:12px;align-items:flex-start;background:var(--bg3);border-radius:10px;padding:12px">
+        <div style="font-size:24px;flex-shrink:0">7️⃣</div>
+        <div><div style="font-weight:700;font-size:14px">Talk to your Future Self in Future Me</div><div style="font-size:12px;color:var(--text3);margin-top:3px">Answer the daily discovery question, then ask your future self anything — it reasons from where your current patterns are actually heading, not generic advice.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="emoji">🔭</span> Future Me — talk to who you're becoming</div>
+    <div style="font-size:13px;color:var(--text2);line-height:1.7">
+      Future Me is a running model of where your logged patterns — mood, sleep, focus, dreams, money — are actually taking you, not a generic chatbot.
+      <br><br>
+      <strong style="color:var(--text)">Daily Discovery Question:</strong> a short, honest question each day. Your answers quietly refine what "Future You" knows about your real motivations — skip a day, no penalty, but the more you answer the sharper it gets.
+      <br><br>
+      <strong style="color:var(--text)">Digital Twin:</strong> a side-by-side view of where you are now vs. a 1/5/10-year projection across six dimensions — cognitive, physical, wealth, social, spiritual, career — built from your actual log history, not a guess.
+      <br><br>
+      <strong style="color:var(--text)">Six conversation modes:</strong> <em>Guide</em> (what to focus on today), <em>Analyze</em> (patterns you're missing), <em>Challenge</em> (pushes back on your assumptions), <em>Transform</em> (maps current → desired state), <em>Oracle</em> (predicts where your 90-day trajectory leads), and <em>Mirror</em> (reflects who your data says you really are).
+      <br><br>
+      Ask it anything in the chat box — it always reasons from your own history first, generic motivation second.
     </div>
   </div>
 
@@ -6770,10 +6789,20 @@ function switchTab(tabId) {
   // Reset scroll position — the whole document scrolls (tabs just toggle
   // display:none/block), so without this the new tab inherits whatever
   // scroll offset the previous tab was left at, which looks like a big
-  // blank gap above the new tab's content.
-  window.scrollTo(0, 0);
-  const mainEl = document.querySelector('.main');
-  if (mainEl) mainEl.scrollTop = 0;
+  // blank gap above the new tab's content. Reset every possible scroll
+  // target (browsers vary on which element actually owns the scroll),
+  // and reset again after a short delay in case async content inserted
+  // above the fold (e.g. the Hive status bar) shifts scroll via anchoring.
+  const resetScroll = () => {
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+    const mainEl = document.querySelector('.main');
+    if (mainEl) mainEl.scrollTop = 0;
+  };
+  resetScroll();
+  setTimeout(resetScroll, 50);
+  setTimeout(resetScroll, 400); // after Hive bar / async inserts settle
 
   // Preserve existing eager logic for analysis tab
   if(id==='analysis'){
@@ -19872,18 +19901,10 @@ function initFutureMeTab() {
   showSmartLogBanner();
 }
 
-// Hook into switchTab to init on open
-(function hookFutureMe() {
-  const _orig = window.switchTab;
-  if (typeof _orig !== 'function') return;
-  window.switchTab = function(tabId) {
-    const result = _orig.apply(this, arguments);
-    if (tabId === 'futureme' && typeof initFutureMeTab === 'function') {
-      setTimeout(initFutureMeTab, 120);
-    }
-    return result;
-  };
-})();
+// (initFutureMeTab is already invoked directly from the main switchTab()
+// function body — see the `if(id==='futureme'...)` line there. The extra
+// switchTab-wrapping hook that used to live here caused it to fire twice on
+// every tab switch, so it's been removed.)
 
 // Auto-init if starting on futureme tab
 if (typeof activeTab !== 'undefined' && activeTab === 'futureme') {
