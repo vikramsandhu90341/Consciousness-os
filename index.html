@@ -6767,6 +6767,14 @@ const _tabRendered = {};
 function switchTab(tabId) {
   const id = tabId; // keep backward compat with callers using 'id'
 
+  // Reset scroll position — the whole document scrolls (tabs just toggle
+  // display:none/block), so without this the new tab inherits whatever
+  // scroll offset the previous tab was left at, which looks like a big
+  // blank gap above the new tab's content.
+  window.scrollTo(0, 0);
+  const mainEl = document.querySelector('.main');
+  if (mainEl) mainEl.scrollTop = 0;
+
   // Preserve existing eager logic for analysis tab
   if(id==='analysis'){
     setTimeout(()=>{
@@ -14747,57 +14755,18 @@ async function fetchLiveScienceNews(force) {
 }
 
 
-buildScienceDisplay = async function(force) {
+// NOTE: this used to also fetch a second "live AI news" feed into
+// #discoveriesDisplay, which duplicated the Live Science Intelligence section
+// below (Tier Refresh / #science-news). That duplication has been removed —
+// this section now shows only the static, category-filterable discoveries,
+// and Live Science Intelligence below is the single real-time news feed.
+buildScienceDisplay = function() {
+  if (_origBuildScienceDisplay2) { _origBuildScienceDisplay2(); return; }
   const discEl = document.getElementById('discoveriesDisplay');
-  const tsEl = document.getElementById('scienceTimestamp');
-  
-  // Show loading
-  if (discEl) discEl.innerHTML = `
-    <div style="text-align:center;padding:20px">
-      <div style="font-size:24px;animation:cosSpinAnim 1.2s linear infinite;display:inline-block">🔬</div>
-      <div style="font-size:13px;font-weight:700;color:var(--text2);margin-top:8px">Fetching frontier science intelligence...</div>
-      <div style="font-size:11px;color:var(--text3);margin-top:4px">Claude searching: Anthropic news, cryonics, AGI, longevity...</div>
-    </div>`;
-  
-  // Also update the static super facts (these are timeless)
-  const superEl = document.getElementById('superFactsDisplay');
-  if (superEl && typeof SUPER_FACTS !== 'undefined') {
-    const idx = (Math.floor(Date.now()/86400000) + (typeof sciRefreshIdx!=='undefined'?sciRefreshIdx:0)) % SUPER_FACTS.length;
-    const f = SUPER_FACTS[idx];
-    if (f) superEl.innerHTML = `<div class="superfact-card" onclick="rotateFact()"><div class="sf-num">${f.num}</div><div class="sf-text">${f.text}</div><div style="font-size:10px;color:var(--text3);margin-top:8px">Tap for next fact</div></div>`;
-  }
-  
-  try {
-    const news = await fetchLiveScienceNews(force);
-    // Respect the active category filter (biotech button maps to 'bio' data tag used by curated items)
-    const cat = (typeof currentSciCat !== 'undefined') ? currentSciCat : 'all';
-    const catAlias = { biotech: 'bio' };
-    const wantCat = catAlias[cat] || cat;
-    const filtered = (cat === 'all' || !news) ? news : news.filter(n => (n.cat||'') === wantCat || (n.cat||'') === cat);
-    const toRender = (filtered && filtered.length) ? filtered : news;
-    renderLiveScienceNews(toRender);
-    if (cat !== 'all' && (!filtered || !filtered.length) && discEl) {
-      discEl.insertAdjacentHTML('afterbegin', `<div style="font-size:11px;color:var(--text3);text-align:center;padding:6px 0">No live items tagged "${cat}" right now — showing all categories.</div>`);
-    }
-    
-    const now = new Date().toLocaleString('en-IN', { timeZone:'Asia/Kolkata', hour:'2-digit', minute:'2-digit', day:'numeric', month:'short' });
-    if (tsEl) tsEl.textContent = `🔴 LIVE · ${now} IST`;
-    
-    // Store for CIL
-    if (news) liveCache('cos_science_for_cil', { news, ts: Date.now() });
-    cosBrainSync();
-  } catch(e) {
-    if (discEl) discEl.innerHTML = `<div style="text-align:center;padding:16px;color:var(--danger)">❌ Science feed error: ${e.message}<br><button class="btn btn-secondary btn-sm" onclick="buildScienceDisplay(true)" style="margin-top:8px">Retry</button></div>`;
-    // Fall back to static DISCOVERIES
-    if (_origBuildScienceDisplay2) try { _origBuildScienceDisplay2(); } catch(e2) {}
-  }
+  if (discEl) discEl.innerHTML = '<div style="text-align:center;padding:16px;color:var(--text3)">Discoveries unavailable.</div>';
 };
 
-// ── updateScienceTimestamp patch ──────────────────────────────────────
-function updateScienceTimestamp() {
-  const el = document.getElementById('scienceTimestamp');
-  if (el) el.textContent = '🔴 LIVE · Loading...';
-}
+// (updateScienceTimestamp is defined once, earlier in the file — see #scienceLastUpdated)
 
 // ════════════════════════════════════════════════════════════════════════
 //  🧠 COS_BRAIN — CONSCIOUSNESS INTEGRATION LAYER (CIL)
@@ -15223,11 +15192,11 @@ document.addEventListener('DOMContentLoaded', function() {
     cosBrainSync();
     injectCILPanel();
     updateCILPulse();
-    // Auto-load world + science if cached (instant)
+    // Auto-load world + markets if cached (instant). Science's discoveries
+    // section is static now (see buildScienceDisplay) — Live Science
+    // Intelligence below handles real-time science news on its own.
     const cachedWorld = liveCache('cos_live_world_news');
     if (cachedWorld) renderLiveWorldNews(cachedWorld);
-    const cachedSci = liveCache('cos_live_science_news');
-    if (cachedSci) renderLiveScienceNews(cachedSci);
     const cachedMkt = liveCache('cos_live_markets');
     if (cachedMkt) renderLiveMarkets(cachedMkt);
   }, 1500);
